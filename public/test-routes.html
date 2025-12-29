@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Test - JKUAT Innovation Club</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; background: #1a1a1a; color: white; }
+        .test-link { display: block; padding: 1rem; margin: 1rem 0; background: #333; border-radius: 8px; text-decoration: none; color: #10b981; }
+        .test-link:hover { background: #444; }
+    </style>
+</head>
+<body>
+    <h1>Route Testing Page</h1>
+    <p>Click these links to test if the routes are working:</p>
+    
+    <a href="/" class="test-link">🏠 Home</a>
+    <a href="/events" class="test-link">📅 Events</a>
+    <a href="/governance" class="test-link">🏛️ Governance</a>
+    <a href="/financial" class="test-link">💰 Financial</a>
+    <a href="/ideas" class="test-link">💡 Ideas</a>
+    
+    <h2>Direct Navigation Test</h2>
+    <button onclick="window.location.href='/governance'" style="padding: 1rem; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer;">
+        Go to Governance (JavaScript)
+    </button>
+    
+    <h2>Current Page Info</h2>
+    <p>Current URL: <span id="currentUrl"></span></p>
+    <p>Current Path: <span id="currentPath"></span></p>
+    
+    <script>
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('currentPath').textContent = window.location.pathname;
+        
+        // Log navigation attempts
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                console.log('Navigating to:', this.href);
+            });
+        });
+    </script>
+</body>
+</html>
+</text>
+</invoke>

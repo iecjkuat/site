@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Button Test - JKUAT Innovation Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body class="bg-pattern">
+    <div style="padding: 2rem; min-height: 100vh;">
+        <div class="container" style="max-width: 800px; margin: 0 auto;">
+            
+            <!-- Test Header -->
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem; text-align: center;">
+                <h1 style="font-size: 2rem; font-weight: 700; color: white; margin-bottom: 1rem;">
+                    Authentication Button Test
+                </h1>
+                <p style="color: rgba(255, 255, 255, 0.8);">
+                    Testing login and register button functionality
+                </p>
+            </div>
+
+            <!-- Navigation Template Test -->
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <h2 style="color: white; margin-bottom: 1rem;">Navigation Template</h2>
+                <div id="navigation-placeholder"></div>
+            </div>
+
+            <!-- Direct Button Test -->
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                <h2 style="color: white; margin-bottom: 1rem;">Direct Buttons</h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="testLoginBtn" class="btn btn-secondary">
+                        <i class="fas fa-sign-in-alt"></i>Test Login
+                    </button>
+                    <button id="testRegisterBtn" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>Test Register
+                    </button>
+                </div>
+            </div>
+
+            <!-- Debug Info -->
+            <div class="glass-card" style="padding: 2rem;">
+                <h2 style="color: white; margin-bottom: 1rem;">Debug Information</h2>
+                <div id="debugInfo" style="color: rgba(255, 255, 255, 0.8); font-family: monospace; font-size: 0.875rem; line-height: 1.6;">
+                    Loading debug information...
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/components/navigation.js"></script>
+    
+    <script>
+        let debugInfo = [];
+        
+        function addDebugInfo(message) {
+            debugInfo.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+            document.getElementById('debugInfo').innerHTML = debugInfo.join('<br>');
+        }
+
+        // Load navigation template and test
+        document.addEventListener('DOMContentLoaded', async () => {
+            addDebugInfo('DOM Content Loaded');
+            
+            try {
+                // Load navigation template
+                addDebugInfo('Loading navigation template...');
+                const response = await fetch('/templates/components/navigation.html');
+                const navigationHTML = await response.text();
+                document.getElementById('navigation-placeholder').innerHTML = navigationHTML;
+                addDebugInfo('Navigation template loaded successfully');
+                
+                // Initialize navigation
+                if (window.Navigation) {
+                    window.navigation = new Navigation();
+                    addDebugInfo('Navigation component initialized');
+                } else {
+                    addDebugInfo('ERROR: Navigation class not found');
+                }
+                
+                // Initialize auth manager after navigation loads
+                setTimeout(() => {
+                    addDebugInfo('Initializing AuthManager...');
+                    
+                    if (typeof AuthManager !== 'undefined') {
+                        window.authManager = new AuthManager();
+                        addDebugInfo('AuthManager initialized successfully');
+                        
+                        // Test button existence
+                        const loginBtn = document.getElementById('loginBtn');
+                        const registerBtn = document.getElementById('registerBtn');
+                        
+                        addDebugInfo(`Navigation loginBtn exists: ${!!loginBtn}`);
+                        addDebugInfo(`Navigation registerBtn exists: ${!!registerBtn}`);
+                        
+                        if (loginBtn) {
+                            addDebugInfo(`Login button innerHTML: ${loginBtn.innerHTML}`);
+                            addDebugInfo(`Login button onclick: ${typeof loginBtn.onclick}`);
+                        }
+                        
+                        if (registerBtn) {
+                            addDebugInfo(`Register button innerHTML: ${registerBtn.innerHTML}`);
+                            addDebugInfo(`Register button onclick: ${typeof registerBtn.onclick}`);
+                        }
+                        
+                        // Test direct button clicks
+                        const testLoginBtn = document.getElementById('testLoginBtn');
+                        const testRegisterBtn = document.getElementById('testRegisterBtn');
+                        
+                        if (testLoginBtn) {
+                            testLoginBtn.addEventListener('click', (e) => {
+                                addDebugInfo('Direct test login button clicked');
+                                e.preventDefault();
+                                if (window.authManager) {
+                                    addDebugInfo('Calling authManager.showLogin()');
+                                    window.authManager.showLogin();
+                                } else {
+                                    addDebugInfo('ERROR: authManager not available');
+                                }
+                            });
+                        }
+                        
+                        if (testRegisterBtn) {
+                            testRegisterBtn.addEventListener('click', (e) => {
+                                addDebugInfo('Direct test register button clicked');
+                                e.preventDefault();
+                                if (window.authManager) {
+                                    addDebugInfo('Calling authManager.showRegister()');
+                                    window.authManager.showRegister();
+                                } else {
+                                    addDebugInfo('ERROR: authManager not available');
+                                }
+                            });
+                        }
+                        
+                    } else {
+                        addDebugInfo('ERROR: AuthManager class not found');
+                    }
+                }, 200);
+                
+            } catch (error) {
+                addDebugInfo(`ERROR loading navigation: ${error.message}`);
+            }
+        });
+
+        // Global click listener for debugging
+        document.addEventListener('click', (e) => {
+            if (e.target.id) {
+                addDebugInfo(`Click detected on element: ${e.target.id} (${e.target.tagName})`);
+            }
+        });
+    </script>
+</body>
+</html>

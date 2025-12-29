@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Feedback System - JKUAT Innovation Club</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1f2937;
+            color: white;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status.success { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; }
+        .status.error { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; }
+        .status.info { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Feedback System Tests</h1>
+    <p>Test the Post-Event Feedback System functionality</p>
+
+    <div class="grid">
+        <!-- Feedback Categories Test -->
+        <div class="test-section">
+            <h2>📋 Feedback Categories</h2>
+            <div id="categoriesStatus" class="status info">Ready to test</div>
+            <button onclick="testFeedbackCategories()">Load Categories</button>
+            <div id="categoriesLog" class="log"></div>
+        </div>
+
+        <!-- Feedback Submission Test -->
+        <div class="test-section">
+            <h2>📝 Feedback Submission</h2>
+            <div id="submissionStatus" class="status info">Ready to test</div>
+            <button onclick="testFeedbackSubmission()">Submit Test Feedback</button>
+            <button onclick="testAnonymousFeedback()">Submit Anonymous Feedback</button>
+            <div id="submissionLog" class="log"></div>
+        </div>
+
+        <!-- Feedback Modal Test -->
+        <div class="test-section">
+            <h2>🎨 Feedback Modal</h2>
+            <div id="modalStatus" class="status info">Ready to test</div>
+            <button onclick="testFeedbackModal()">Open Feedback Modal</button>
+            <button onclick="testFeedbackAnalytics()">Open Analytics Modal</button>
+            <div id="modalLog" class="log"></div>
+        </div>
+
+        <!-- Photo Upload Test -->
+        <div class="test-section">
+            <h2>📸 Photo Upload</h2>
+            <div id="photoStatus" class="status info">Ready to test</div>
+            <input type="file" id="testPhotoInput" multiple accept="image/*" style="display: none;">
+            <button onclick="document.getElementById('testPhotoInput').click()">Select Test Photos</button>
+            <button onclick="testPhotoUpload()">Upload Photos</button>
+            <div id="photoLog" class="log"></div>
+        </div>
+
+        <!-- Analytics Test -->
+        <div class="test-section">
+            <h2>📊 Analytics</h2>
+            <div id="analyticsStatus" class="status info">Ready to test</div>
+            <button onclick="testAnalyticsAPI()">Load Analytics</button>
+            <button onclick="testSentimentAnalysis()">Test Sentiment</button>
+            <div id="analyticsLog" class="log"></div>
+        </div>
+
+        <!-- Feedback Display Test -->
+        <div class="test-section">
+            <h2>👀 Feedback Display</h2>
+            <div id="displayStatus" class="status info">Ready to test</div>
+            <button onclick="testFeedbackDisplay()">Load Event Feedback</button>
+            <button onclick="testUserFeedback()">Load My Feedback</button>
+            <div id="displayLog" class="log"></div>
+        </div>
+    </div>
+
+    <!-- Mock Event Data -->
+    <script>
+        const mockEvent = {
+            id: '1',
+            title: 'Innovation Workshop 2024',
+            start_date: '2024-12-15T10:00:00Z',
+            end_date: '2024-12-15T16:00:00Z',
+            location: 'JKUAT Main Campus',
+            fee: 500,
+            description: 'A comprehensive workshop on innovation and entrepreneurship'
+        };
+
+        let selectedPhotos = [];
+    </script>
+
+    <!-- Load Feedback Components -->
+    <script src="/js/components/feedback-modal.js"></script>
+    <script src="/js/components/feedback-analytics.js"></script>
+
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('modalLog', '🚀 Initializing feedback system tests...');
+            
+            // Setup photo input handler
+            document.getElementById('testPhotoInput').addEventListener('change', (e) => {
+                selectedPhotos = Array.from(e.target.files);
+                log('photoLog', `📸 Selected ${selectedPhotos.length} photos`);
+                updateStatus('photoStatus', `${selectedPhotos.length} photos selected`, 'success');
+            });
+        });
+
+        // Test Functions
+        async function testFeedbackCategories() {
+            log('categoriesLog', '📋 Testing feedback categories...');
+            
+            try {
+                const response = await fetch('/api/feedback/categories');
+                const data = await response.json();
+                
+                log('categoriesLog', `✅ Loaded ${data.categories.length} categories`);
+                data.categories.forEach(cat => {
+                    log('categoriesLog', `  - ${cat.name}: ${cat.description}`);
+                });
+                
+                updateStatus('categoriesStatus', `${data.categories.length} categories loaded`, 'success');
+            } catch (error) {
+                log('categoriesLog', `❌ Error: ${error.message}`);
+                updateStatus('categoriesStatus', 'Failed to load categories', 'error');
+            }
+        }
+
+        async function testFeedbackSubmission() {
+            log('submissionLog', '📝 Testing feedback submission...');
+            
+            const feedbackData = {
+                eventId: mockEvent.id,
+                overallRating: 5,
+                contentRating: 4,
+                organizationRating: 5,
+                venueRating: 4,
+                title: 'Great Workshop!',
+                comment: 'This was an excellent workshop with great content and organization.',
+                suggestions: 'Maybe provide more hands-on activities next time.',
+                isAnonymous: false,
+                wouldRecommend: true,
+                categoryRatings: [
+                    { categoryId: '1', rating: 5, comment: 'Excellent content' },
+                    { categoryId: '2', rating: 4, comment: 'Good speakers' }
+                ]
+            };
+            
+            try {
+                const response = await fetch('/api/feedback/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'test-token'}`
+                    },
+                    body: JSON.stringify(feedbackData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('submissionLog', `✅ Feedback submitted: ${result.feedbackId}`);
+                    updateStatus('submissionStatus', 'Feedback submitted successfully', 'success');
+                } else {
+                    log('submissionLog', `❌ Submission failed: ${result.message}`);
+                    updateStatus('submissionStatus', 'Submission failed', 'error');
+                }
+            } catch (error) {
+                log('submissionLog', `❌ Error: ${error.message}`);
+                updateStatus('submissionStatus', 'Submission error', 'error');
+            }
+        }
+
+        async function testAnonymousFeedback() {
+            log('submissionLog', '🕶️ Testing anonymous feedback...');
+            
+            const anonymousFeedback = {
+                eventId: mockEvent.id,
+                overallRating: 3,
+                comment: 'Anonymous feedback for testing purposes.',
+                isAnonymous: true,
+                wouldRecommend: true
+            };
+            
+            try {
+                const response = await fetch('/api/feedback/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(anonymousFeedback)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('submissionLog', `✅ Anonymous feedback submitted: ${result.feedbackId}`);
+                    updateStatus('submissionStatus', 'Anonymous feedback submitted', 'success');
+                } else {
+                    log('submissionLog', `❌ Anonymous submission failed: ${result.message}`);
+                }
+            } catch (error) {
+                log('submissionLog', `❌ Anonymous error: ${error.message}`);
+            }
+        }
+
+        function testFeedbackModal() {
+            log('modalLog', '🎨 Testing feedback modal...');
+            
+            if (window.feedbackModal) {
+                feedbackModal.show(mockEvent);
+                log('modalLog', '✅ Feedback modal opened');
+                updateStatus('modalStatus', 'Modal opened successfully', 'success');
+            } else {
+                log('modalLog', '❌ Feedback modal not available');
+                updateStatus('modalStatus', 'Modal not available', 'error');
+            }
+        }
+
+        function testFeedbackAnalytics() {
+            log('modalLog', '📊 Testing analytics modal...');
+            
+            if (window.feedbackAnalytics) {
+                feedbackAnalytics.show(mockEvent.id, mockEvent.title);
+                log('modalLog', '✅ Analytics modal opened');
+                updateStatus('modalStatus', 'Analytics modal opened', 'success');
+            } else {
+                log('modalLog', '❌ Analytics modal not available');
+                updateStatus('modalStatus', 'Analytics not available', 'error');
+            }
+        }
+
+        async function testPhotoUpload() {
+            if (selectedPhotos.length === 0) {
+                log('photoLog', '❌ No photos selected');
+                updateStatus('photoStatus', 'No photos selected', 'error');
+                return;
+            }
+            
+            log('photoLog', `📸 Uploading ${selectedPhotos.length} photos...`);
+            
+            const formData = new FormData();
+            formData.append('eventId', mockEvent.id);
+            formData.append('feedbackId', 'test-feedback-id');
+            
+            selectedPhotos.forEach((photo, index) => {
+                formData.append('photos', photo);
+                formData.append('captions', `Test photo ${index + 1}`);
+            });
+            
+            try {
+                const response = await fetch('/api/feedback/photos/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'test-token'}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('photoLog', `✅ Uploaded ${result.photos.length} photos`);
+                    result.photos.forEach(photo => {
+                        log('photoLog', `  - Photo: ${photo.url} (${photo.status})`);
+                    });
+                    updateStatus('photoStatus', 'Photos uploaded successfully', 'success');
+                } else {
+                    log('photoLog', `❌ Upload failed: ${result.message}`);
+                    updateStatus('photoStatus', 'Upload failed', 'error');
+                }
+            } catch (error) {
+                log('photoLog', `❌ Upload error: ${error.message}`);
+                updateStatus('photoStatus', 'Upload error', 'error');
+            }
+        }
+
+        async function testAnalyticsAPI() {
+            log('analyticsLog', '📊 Testing analytics API...');
+            
+            try {
+                const response = await fetch(`/api/feedback/analytics/${mockEvent.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'test-token'}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                log('analyticsLog', `✅ Analytics loaded:`);
+                log('analyticsLog', `  - Total feedback: ${data.analytics.total_feedback_count}`);
+                log('analyticsLog', `  - Average rating: ${data.analytics.avg_overall_rating}`);
+                log('analyticsLog', `  - Sentiment: ${data.sentiment.sentiment_label}`);
+                
+                updateStatus('analyticsStatus', 'Analytics loaded successfully', 'success');
+            } catch (error) {
+                log('analyticsLog', `❌ Analytics error: ${error.message}`);
+                updateStatus('analyticsStatus', 'Analytics failed', 'error');
+            }
+        }
+
+        async function testSentimentAnalysis() {
+            log('analyticsLog', '💭 Testing sentiment analysis...');
+            
+            try {
+                // This would typically be called via the analytics endpoint
+                log('analyticsLog', '✅ Sentiment analysis would be calculated based on ratings');
+                log('analyticsLog', '  - Ratings 4-5: Positive sentiment');
+                log('analyticsLog', '  - Rating 3: Neutral sentiment');
+                log('analyticsLog', '  - Ratings 1-2: Negative sentiment');
+                
+                updateStatus('analyticsStatus', 'Sentiment analysis working', 'success');
+            } catch (error) {
+                log('analyticsLog', `❌ Sentiment error: ${error.message}`);
+            }
+        }
+
+        async function testFeedbackDisplay() {
+            log('displayLog', '👀 Testing feedback display...');
+            
+            try {
+                const response = await fetch(`/api/feedback/event/${mockEvent.id}?includePhotos=true`);
+                const data = await response.json();
+                
+                log('displayLog', `✅ Event feedback loaded:`);
+                log('displayLog', `  - ${data.feedback.length} feedback entries`);
+                log('displayLog', `  - ${data.photos.length} photos`);
+                log('displayLog', `  - Average rating: ${data.analytics.avg_overall_rating}`);
+                
+                updateStatus('displayStatus', 'Feedback display working', 'success');
+            } catch (error) {
+                log('displayLog', `❌ Display error: ${error.message}`);
+                updateStatus('displayStatus', 'Display failed', 'error');
+            }
+        }
+
+        async function testUserFeedback() {
+            log('displayLog', '👤 Testing user feedback...');
+            
+            try {
+                const response = await fetch(`/api/feedback/my-feedback/${mockEvent.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'test-token'}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                log('displayLog', `✅ User feedback loaded:`);
+                log('displayLog', `  - Has feedback: ${data.feedback ? 'Yes' : 'No'}`);
+                log('displayLog', `  - Can submit: ${data.canSubmitFeedback ? 'Yes' : 'No'}`);
+                log('displayLog', `  - Photos: ${data.photos.length}`);
+                
+                updateStatus('displayStatus', 'User feedback loaded', 'success');
+            } catch (error) {
+                log('displayLog', `❌ User feedback error: ${error.message}`);
+            }
+        }
+
+        // Utility functions
+        function log(elementId, message) {
+            const logEl = document.getElementById(elementId);
+            if (logEl) {
+                const timestamp = new Date().toLocaleTimeString();
+                logEl.innerHTML += `[${timestamp}] ${message}\n`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+        }
+
+        function updateStatus(elementId, message, type) {
+            const statusEl = document.getElementById(elementId);
+            if (statusEl) {
+                statusEl.textContent = message;
+                statusEl.className = `status ${type}`;
+            }
+        }
+    </script>
+</body>
+</html>

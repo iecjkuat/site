@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources & Documentation - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Access learning resources, documentation, and tools for JKUAT Innovation Club members.">
+    <meta name="keywords" content="JKUAT, resources, documentation, learning, tools, guides">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container" style="text-align: center;">
+            
+            <!-- Badge -->
+            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.05em;">
+                <span class="pulse" style="width: 8px; height: 8px; background: #8b5cf6; border-radius: 50%; margin-right: 0.75rem;"></span>
+                LEARNING RESOURCES
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 style="font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;" class="gradient-text">
+                Resources &<br>
+                <span class="gradient-text accent">Documentation</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p style="font-size: clamp(1.125rem, 3vw, 1.5rem); line-height: 1.6; color: rgba(255, 255, 255, 0.9); max-width: 50rem; margin: 0 auto 3rem auto; font-weight: 400;">
+                Access essential <strong>documents, templates, guides</strong>, and resources to support your innovation journey at JKUAT.
+            </p>
+            
+            <!-- Stats Preview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 40rem; margin: 0 auto;">
+                <div style="text-align: center;">
+                    <div id="totalResourcesCount" style="font-size: 2.5rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.25rem;">25</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Total Resources</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="categoriesCount" style="font-size: 2.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">8</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Categories</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="downloadsCount" style="font-size: 2.5rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.25rem;">1.2K</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Downloads</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resource Categories -->
+    <section style="padding: 2rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: white; margin-bottom: 1rem;">Filter by Category</h2>
+            </div>
+            <div id="categoryFilters" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                <button class="category-btn btn-glass active" data-category="all">
+                    <i class="fas fa-th-large"></i>All Resources
+                </button>
+                <button class="category-btn btn-glass" data-category="Constitution">
+                    <i class="fas fa-gavel"></i>Constitution
+                </button>
+                <button class="category-btn btn-glass" data-category="Handbook">
+                    <i class="fas fa-book"></i>Handbook
+                </button>
+                <button class="category-btn btn-glass" data-category="Templates">
+                    <i class="fas fa-file-alt"></i>Templates
+                </button>
+                <button class="category-btn btn-glass" data-category="Guidelines">
+                    <i class="fas fa-list-ul"></i>Guidelines
+                </button>
+                <button class="category-btn btn-glass" data-category="Innovation">
+                    <i class="fas fa-lightbulb"></i>Innovation
+                </button>
+                <button class="category-btn btn-glass" data-category="Technical">
+                    <i class="fas fa-code"></i>Technical
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <div style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    AVAILABLE RESOURCES
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Access <span class="gradient-text accent">Learning</span> Materials
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    Download essential documents, templates, and guides to support your innovation journey.
+                </p>
+            </div>
+            
+            <!-- Resources Grid -->
+            <div id="resourcesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+                
+                <!-- Sample Resource Cards -->
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(139, 92, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-gavel" style="font-size: 1.5rem; color: #8b5cf6;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Constitution</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Club Constitution 2024</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Official constitution document outlining the club's structure, governance, and operational guidelines.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 234 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-book" style="font-size: 1.5rem; color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Handbook</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Member Handbook</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Comprehensive guide for new members covering club activities, expectations, and opportunities.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 189 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #f59e0b, #d97706);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-alt" style="font-size: 1.5rem; color: #f59e0b;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Templates</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Project Proposal Template</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Standard template for submitting innovation project proposals to the club for review and funding.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-word"></i> DOCX</span>
+                            <span><i class="fas fa-download"></i> 156 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-lightbulb" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Innovation</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Innovation Toolkit</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Comprehensive guide to innovation methodologies, design thinking, and problem-solving frameworks.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 298 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #ec4899, #be185d);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(236, 72, 153, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-code" style="font-size: 1.5rem; color: #ec4899;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(236, 72, 153, 0.2); color: #ec4899; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Technical</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Development Guidelines</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Best practices and coding standards for technical projects within the innovation club.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 127 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #06b6d4, #0891b2);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(6, 182, 212, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-list-ul" style="font-size: 1.5rem; color: #06b6d4;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Guidelines</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Event Planning Guide</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Step-by-step guide for organizing successful innovation events, workshops, and hackathons.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 203 downloads</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-download"></i>Download
+                        </button>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Load More Button -->
+            <div style="text-align: center; margin-top: 3rem;">
+                <button id="loadMoreResourcesBtn" class="btn btn-glass btn-lg">
+                    <i class="fas fa-plus"></i>Load More Resources
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section style="padding: 4rem 0; position: relative; z-index: 10;">
+        <div class="container" style="max-width: 60rem; text-align: center;">
+            <div class="glass-card" style="padding: 3rem;">
+                <div style="width: 80px; height: 80px; background: rgba(139, 92, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);">
+                    <i class="fas fa-upload" style="font-size: 2rem; color: #8b5cf6;"></i>
+                </div>
+                <h2 style="font-size: 2rem; font-weight: 800; color: white; margin-bottom: 1rem;">Have Resources to Share?</h2>
+                <p style="font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); margin-bottom: 2rem; line-height: 1.6;">
+                    Help grow our knowledge base by contributing valuable resources for the community.
+                </p>
+                <div class="btn-group">
+                    <button id="uploadResourceBtn" class="btn btn-primary btn-lg">
+                        <i class="fas fa-upload"></i>Upload Resource
+                    </button>
+                    <button onclick="window.location.href='/dashboard'" class="btn btn-outline btn-lg">
+                        <i class="fas fa-tachometer-alt"></i>View Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="glass-footer">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 3rem; margin-bottom: 2rem;">
+                
+                <!-- Club Info -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">JKUAT Innovation Club</h3>
+                    <p style="color: #94a3b8; line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Empowering the next generation of innovators and entrepreneurs at Jomo Kenyatta University of Agriculture and Technology.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Quick Links</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Home</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/events" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Events</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/dashboard" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Dashboard</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/resources" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Resources</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Contact</h3>
+                    <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📧</span> innovation@jkuat.ac.ke
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📱</span> +254 700 000 000
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📍</span> JKUAT Main Campus<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Juja, Kenya
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Copyright -->
+            <div style="border-top: 1px solid #334155; padding-top: 1.5rem; text-align: center;">
+                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/components/navigation.js"></script>
+    
+    <script>
+        // Load navigation template
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/templates/components/resources-navigation.html');
+                const navigationHTML = await response.text();
+                document.getElementById('navigation-placeholder').innerHTML = navigationHTML;
+                
+                // Initialize navigation after loading
+                if (window.Navigation) {
+                    window.navigation = new Navigation();
+                }
+            } catch (error) {
+                console.error('Failed to load navigation template:', error);
+            }
+            
+            // Initialize resources page functionality
+            initializeResourcesPage();
+        });
+
+        function initializeResourcesPage() {
+            // Category filter functionality
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            categoryButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    categoryButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    const category = button.dataset.category;
+                    filterResources(category);
+                });
+            });
+
+            // Load more resources functionality
+            document.getElementById('loadMoreResourcesBtn')?.addEventListener('click', () => {
+                // Implement load more functionality
+                console.log('Loading more resources...');
+            });
+
+            // Upload resource functionality
+            document.getElementById('uploadResourceBtn')?.addEventListener('click', () => {
+                // Implement upload functionality
+                console.log('Opening upload modal...');
+            });
+        }
+
+        function filterResources(category) {
+            const resourceCards = document.querySelectorAll('.resource-card');
+            
+            resourceCards.forEach(card => {
+                if (category === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    const cardCategory = card.querySelector('span').textContent.trim();
+                    if (cardCategory.toLowerCase().includes(category.toLowerCase())) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function resetResourceFilters() {
+            const allButton = document.querySelector('[data-category="all"]');
+            if (allButton) {
+                allButton.click();
+            }
+        }
+    </script>
+</body>
+</html>

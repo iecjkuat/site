@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Your personal dashboard for JKUAT Innovation Club activities, events, and progress tracking.">
+    <meta name="keywords" content="JKUAT, dashboard, profile, events, activities">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Dashboard Content -->
+    <section style="padding: 6rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            
+            <!-- Welcome Section with Enhanced Stats -->
+            <div style="margin-bottom: 3rem;">
+                <div class="glass-card" style="padding: 2.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h1 style="color: white; font-weight: 800; font-size: 2rem; margin-bottom: 0.5rem;">
+                                Welcome back, <span id="userName" class="gradient-text accent">Member</span>!
+                            </h1>
+                            <p style="color: rgba(255, 255, 255, 0.8); font-size: 1.125rem;">
+                                Ready to continue your innovation journey?
+                            </p>
+                            <!-- Achievement Level -->
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                        <span id="userLevel" style="color: white; font-weight: 700; font-size: 0.875rem;">5</span>
+                                    </div>
+                                    <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Level <span id="userLevelText">5</span> Innovator</span>
+                                </div>
+                                <div style="flex: 1; max-width: 200px;">
+                                    <div style="background: rgba(255, 255, 255, 0.1); border-radius: 50px; height: 6px; overflow: hidden;">
+                                        <div id="levelProgress" style="background: linear-gradient(135deg, #f59e0b, #d97706); height: 100%; width: 65%; transition: width 1s ease; border-radius: 50px;"></div>
+                                    </div>
+                                    <span style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">650/1000 XP</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="joinEventBtn" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus"></i>Join Event
+                            </button>
+                            <button id="createProjectBtn" class="btn btn-outline">
+                                <i class="fas fa-plus"></i>New Project
+                            </button>
+                            <button id="viewProfileBtn" class="btn btn-outline">
+                                <i class="fas fa-user"></i>Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simple Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                
+                <!-- Events Attended -->
+                <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
+                        <i class="fas fa-calendar-check" style="font-size: 1.25rem; color: #3b82f6;"></i>
+                    </div>
+                    <div id="eventsAttended" style="font-size: 1.75rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">5</div>
+                    <div style="color: rgba(255, 255, 255, 0.8); font-weight: 500; font-size: 0.875rem;">Events Attended</div>
+                </div>
+
+                <!-- Projects -->
+                <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-project-diagram" style="font-size: 1.25rem; color: #10b981;"></i>
+                    </div>
+                    <div id="myProjects" style="font-size: 1.75rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">2</div>
+                    <div style="color: rgba(255, 255, 255, 0.8); font-weight: 500; font-size: 0.875rem;">My Projects</div>
+                </div>
+
+                <!-- Membership Status -->
+                <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);">
+                        <i class="fas fa-user-check" style="font-size: 1.25rem; color: #f59e0b;"></i>
+                    </div>
+                    <div class="membership-status" style="font-size: 1.25rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.25rem;">Loading...</div>
+                    <div style="color: rgba(255, 255, 255, 0.8); font-weight: 500; font-size: 0.875rem;">Membership</div>
+                    <button id="payMembershipBtn" class="btn btn-primary btn-sm" style="margin-top: 0.5rem; display: none;">
+                        <i class="fas fa-credit-card"></i>Pay Fee
+                    </button>
+                    <button id="generateCardBtn" class="btn btn-outline btn-sm" style="margin-top: 0.5rem; display: none;">
+                        <i class="fas fa-id-card"></i>Get Card
+                    </button>
+                </div>
+
+                <!-- Account Balance -->
+                <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="width: 50px; height: 50px; background: rgba(34, 197, 94, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);">
+                        <i class="fas fa-wallet" style="font-size: 1.25rem; color: #22c55e;"></i>
+                    </div>
+                    <div id="accountBalance" style="font-size: 1.75rem; font-weight: 800; color: #22c55e; margin-bottom: 0.25rem;">KSh 2,500</div>
+                    <div style="color: rgba(255, 255, 255, 0.8); font-weight: 500; font-size: 0.875rem;">Balance</div>
+                </div>
+            </div>
+
+            <!-- Enhanced Main Content Grid -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                
+                <!-- Left Column - Main Content -->
+                <div>
+                    <!-- Upcoming Events -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 style="color: white; font-weight: 700; font-size: 1.5rem;">Upcoming Events</h2>
+                            <a href="/events" class="btn btn-outline btn-sm">
+                                <i class="fas fa-calendar"></i>View All
+                            </a>
+                        </div>
+                        
+                        <div id="upcomingEventsGrid" style="display: grid; gap: 1rem;">
+                            <!-- Events will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- My Projects -->
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 style="color: white; font-weight: 700; font-size: 1.5rem;">My Projects</h2>
+                            <button id="createProjectBtn" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>New Project
+                            </button>
+                        </div>
+                        
+                        <div id="myProjectsGrid" style="display: grid; gap: 1rem;">
+                            <!-- Projects will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div>
+                        <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin-bottom: 1.5rem;">Recent Activity</h2>
+                        
+                        <div id="recentActivity" class="glass-card" style="padding: 2rem;">
+                            <!-- Activity will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Sidebar -->
+                <div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.25rem;">Quick Actions</h3>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <a href="/events" class="btn btn-primary btn-full">
+                                <i class="fas fa-calendar-plus"></i>Join Event
+                            </a>
+                            <a href="/opportunities" class="btn btn-outline btn-full">
+                                <i class="fas fa-briefcase"></i>Opportunities
+                            </a>
+                            <a href="/payment" class="btn btn-outline btn-full">
+                                <i class="fas fa-credit-card"></i>Pay Dues
+                            </a>
+                            <a href="/support" class="btn btn-outline btn-full">
+                                <i class="fas fa-life-ring"></i>Get Support
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Mini Calendar -->
+                    <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.25rem;">
+                            <i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: #10b981;"></i>Calendar
+                        </h3>
+                        
+                        <!-- Simple Calendar View -->
+                        <div id="miniCalendar" style="text-align: center;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <button id="prevMonth" class="btn-glass btn-icon" style="width: 32px; height: 32px;">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <h4 id="currentMonth" style="color: white; font-weight: 600; margin: 0;">December 2024</h4>
+                                <button id="nextMonth" class="btn-glass btn-icon" style="width: 32px; height: 32px;">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Calendar Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 1rem;">
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">S</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">M</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">T</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">W</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">T</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">F</div>
+                                <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; font-weight: 600; padding: 0.5rem; text-align: center;">S</div>
+                            </div>
+                            
+                            <div id="calendarDays" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
+                                <!-- Calendar days will be generated here -->
+                            </div>
+                        </div>
+                        
+                        <a href="/events" class="btn btn-outline btn-sm btn-full" style="margin-top: 1rem;">
+                            <i class="fas fa-calendar-plus"></i>View Events
+                        </a>
+                    </div>
+
+                    <!-- Profile Summary -->
+                    <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+                        <h3 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.25rem;">Profile</h3>
+                        
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                                <i class="fas fa-user" style="font-size: 2rem; color: #10b981;"></i>
+                            </div>
+                            <h4 id="userName2" style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Loading...</h4>
+                            <p id="userRole" style="color: #10b981; font-weight: 500; font-size: 0.875rem;">Member</p>
+                        </div>
+
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Email:</span>
+                                <span id="userEmail" style="color: white; font-size: 0.875rem;">-</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Member Since:</span>
+                                <span id="memberSince" style="color: white; font-size: 0.875rem;">-</span>
+                            </div>
+                        </div>
+
+                        <a href="/settings" class="btn btn-outline btn-full" style="margin-top: 1rem;">
+                            <i class="fas fa-edit"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="glass-footer">
+        <div class="container">
+            <div style="text-align: center; padding: 2rem 0;">
+                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/components/navigation.js"></script>
+    <script src="/js/components/membership-manager.js"></script>
+    <script src="/js/pages/dashboard.js"></script>
+    
+    <script>
+        // Load navigation template
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/templates/components/dashboard-navigation.html');
+                const navigationHTML = await response.text();
+                document.getElementById('navigation-placeholder').innerHTML = navigationHTML;
+                
+                // Initialize navigation after loading
+                if (window.Navigation) {
+                    window.navigation = new Navigation();
+                }
+            } catch (error) {
+                console.error('Failed to load navigation template:', error);
+            }
+            
+            // Initialize dashboard page
+            window.dashboardPageInstance = new DashboardPage();
+            initializeCalendar();
+            loadMockData();
+        });
+
+        // Calendar functionality
+        function initializeCalendar() {
+            const currentDate = new Date();
+            let currentMonth = currentDate.getMonth();
+            let currentYear = currentDate.getFullYear();
+
+            function generateCalendar(month, year) {
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const today = new Date();
+                
+                const monthNames = ["January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"];
+                
+                document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+                
+                const calendarDays = document.getElementById('calendarDays');
+                calendarDays.innerHTML = '';
+                
+                // Add empty cells for days before the first day of the month
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.style.cssText = 'padding: 0.5rem; text-align: center;';
+                    calendarDays.appendChild(emptyDay);
+                }
+                
+                // Add days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.textContent = day;
+                    dayElement.style.cssText = `
+                        padding: 0.5rem; 
+                        text-align: center; 
+                        color: rgba(255, 255, 255, 0.8); 
+                        font-size: 0.875rem; 
+                        cursor: pointer; 
+                        border-radius: 6px; 
+                        transition: all 0.3s ease;
+                    `;
+                    
+                    // Highlight today
+                    if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                        dayElement.style.background = 'rgba(16, 185, 129, 0.3)';
+                        dayElement.style.color = 'white';
+                        dayElement.style.fontWeight = '600';
+                    }
+                    
+                    // Add hover effect
+                    dayElement.addEventListener('mouseenter', () => {
+                        if (dayElement.style.background !== 'rgba(16, 185, 129, 0.3)') {
+                            dayElement.style.background = 'rgba(255, 255, 255, 0.1)';
+                        }
+                    });
+                    
+                    dayElement.addEventListener('mouseleave', () => {
+                        if (year !== today.getFullYear() || month !== today.getMonth() || day !== today.getDate()) {
+                            dayElement.style.background = 'transparent';
+                        }
+                    });
+                    
+                    calendarDays.appendChild(dayElement);
+                }
+            }
+            
+            // Navigation buttons
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                generateCalendar(currentMonth, currentYear);
+            });
+            
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                generateCalendar(currentMonth, currentYear);
+            });
+            
+            // Generate initial calendar
+            generateCalendar(currentMonth, currentYear);
+        }
+
+        // Enhanced search functionality
+        document.addEventListener('click', (e) => {
+            // Close search results when clicking outside
+            if (!e.target.closest('.search-container')) {
+                const searchResults = document.getElementById('searchResults');
+                if (searchResults) {
+                    searchResults.style.display = 'none';
+                }
+            }
+            
+            // Close notifications when clicking outside
+            if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationPanel')) {
+                const notificationPanel = document.getElementById('notificationPanel');
+                if (notificationPanel) {
+                    notificationPanel.style.display = 'none';
+                }
+            }
+        });
+
+        // Search input focus effect
+        document.getElementById('globalSearch')?.addEventListener('focus', function() {
+            this.style.width = '300px';
+            this.style.background = 'rgba(255, 255, 255, 0.15)';
+        });
+
+        document.getElementById('globalSearch')?.addEventListener('blur', function() {
+            if (!this.value) {
+                this.style.width = '250px';
+                this.style.background = 'rgba(255, 255, 255, 0.1)';
+            }
+        });
+
+        // Find Mentor functionality
+        document.getElementById('findMentorBtn')?.addEventListener('click', function() {
+            window.jkuatApp.showToast('Mentor matching feature coming soon!', 'info');
+        });
+
+        // Sync user name in multiple places
+        const observer = new MutationObserver(() => {
+            const userName = document.getElementById('userName')?.textContent;
+            const userName2 = document.getElementById('userName2');
+            if (userName && userName2 && userName !== 'Member') {
+                userName2.textContent = userName.replace('!', '');
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // Load simple mock data for club dashboard
+        function loadMockData() {
+            // Load upcoming events
+            const upcomingEvents = [
+                {
+                    id: 1,
+                    title: 'AI Workshop',
+                    date: '2024-01-25',
+                    time: '2:00 PM',
+                    location: 'Lab 1',
+                    description: 'Introduction to Artificial Intelligence and Machine Learning'
+                },
+                {
+                    id: 2,
+                    title: 'Startup Pitch Competition',
+                    date: '2024-01-30',
+                    time: '10:00 AM',
+                    location: 'Main Hall',
+                    description: 'Present your startup ideas to industry experts'
+                }
+            ];
+
+            const eventsContainer = document.getElementById('upcomingEventsGrid');
+            if (eventsContainer) {
+                eventsContainer.innerHTML = upcomingEvents.map(event => `
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <h4 style="color: white; font-weight: 600; margin: 0;">${event.title}</h4>
+                            <span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Upcoming</span>
+                        </div>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-bottom: 1rem;">${event.description}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; color: rgba(255, 255, 255, 0.7); font-size: 0.75rem; margin-bottom: 1rem;">
+                            <span><i class="fas fa-calendar"></i> ${event.date}</span>
+                            <span><i class="fas fa-clock"></i> ${event.time}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${event.location}</span>
+                        </div>
+                        <a href="/events" class="btn btn-primary btn-sm btn-full">Register</a>
+                    </div>
+                `).join('');
+            }
+
+            // Load my projects
+            const myProjects = [
+                {
+                    id: 1,
+                    title: 'Campus Food Delivery App',
+                    description: 'Mobile app for ordering food within campus',
+                    status: 'In Progress',
+                    progress: 65
+                },
+                {
+                    id: 2,
+                    title: 'Study Group Finder',
+                    description: 'Platform to connect students for study groups',
+                    status: 'Planning',
+                    progress: 25
+                }
+            ];
+
+            const projectsContainer = document.getElementById('myProjectsGrid');
+            if (projectsContainer) {
+                projectsContainer.innerHTML = myProjects.map(project => `
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <h4 style="color: white; font-weight: 600; margin: 0;">${project.title}</h4>
+                            <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">${project.status}</span>
+                        </div>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-bottom: 1rem;">${project.description}</p>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Progress</span>
+                                <span style="color: white; font-weight: 600; font-size: 0.875rem;">${project.progress}%</span>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.1); border-radius: 50px; height: 6px; overflow: hidden;">
+                                <div style="background: linear-gradient(135deg, #10b981, #059669); height: 100%; width: ${project.progress}%; border-radius: 50px;"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm btn-full">View Details</button>
+                    </div>
+                `).join('');
+            }
+
+            // Load recent activity
+            const activities = [
+                'Registered for AI Workshop',
+                'Joined Campus Food Delivery project',
+                'Completed JavaScript fundamentals course',
+                'Attended Startup Pitch event',
+                'Updated profile information'
+            ];
+
+            const activityContainer = document.getElementById('recentActivity');
+            if (activityContainer) {
+                activityContainer.innerHTML = `
+                    <h4 style="color: white; font-weight: 600; margin-bottom: 1rem;">Recent Activities</h4>
+                    ${activities.map(activity => `
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${activity}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+        }
+    </script>
+
+    <!-- Responsive Styles -->
+    <style>
+        @media (max-width: 768px) {
+            .container > div[style*="grid-template-columns: 2fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .glass-card div[style*="display: flex; justify-content: space-between"] {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+        }
+
+        /* Enhanced Animations */
+        .glass-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .task-card:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px);
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .notification-item:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        .notification-item.unread {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Pulse Animation for Stats */
+        .stat-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Progress Bar Animation */
+        .progress-bar {
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Button Hover Effects */
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Calendar Day Hover */
+        .calendar-day:hover {
+            background: rgba(16, 185, 129, 0.2) !important;
+            transform: scale(1.1);
+        }
+
+        /* Achievement Badge Hover */
+        .achievement-badge:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        /* Project Card Hover */
+        .project-card:hover .project-actions {
+            opacity: 1;
+        }
+
+        .project-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Notification Badge Pulse */
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</body>
+</html>

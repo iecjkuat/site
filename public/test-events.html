@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Events System - JKUAT Innovation Club</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a, #3730a3, #7c3aed);
+            color: white;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-weight: 600;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+        .event-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .status.info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        #results {
+            white-space: pre-wrap;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-flask"></i> Events System Test Suite</h1>
+        <p>Testing the refactored events management system with modular components.</p>
+
+        <!-- Component Tests -->
+        <div class="test-section">
+            <h2><i class="fas fa-puzzle-piece"></i> Component Tests</h2>
+            <button class="btn" onclick="testEventsService()">
+                <i class="fas fa-cog"></i> Test Events Service
+            </button>
+            <button class="btn" onclick="testEventCalendar()">
+                <i class="fas fa-calendar"></i> Test Event Calendar
+            </button>
+            <button class="btn" onclick="testEventCards()">
+                <i class="fas fa-th-large"></i> Test Event Cards
+            </button>
+            <button class="btn" onclick="testEventModal()">
+                <i class="fas fa-window-maximize"></i> Test Event Modal
+            </button>
+            <button class="btn" onclick="testNotifications()">
+                <i class="fas fa-bell"></i> Test Notifications
+            </button>
+        </div>
+
+        <!-- Mock Data Tests -->
+        <div class="test-section">
+            <h2><i class="fas fa-database"></i> Mock Data Tests</h2>
+            <button class="btn" onclick="testMockData()">
+                <i class="fas fa-data"></i> Test Mock Data Loading
+            </button>
+            <button class="btn" onclick="testEventFiltering()">
+                <i class="fas fa-filter"></i> Test Event Filtering
+            </button>
+            <button class="btn" onclick="testEventRegistration()">
+                <i class="fas fa-user-plus"></i> Test Event Registration
+            </button>
+        </div>
+
+        <!-- Integration Tests -->
+        <div class="test-section">
+            <h2><i class="fas fa-link"></i> Integration Tests</h2>
+            <button class="btn" onclick="testFullWorkflow()">
+                <i class="fas fa-play"></i> Test Full Workflow
+            </button>
+            <button class="btn" onclick="clearResults()">
+                <i class="fas fa-trash"></i> Clear Results
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div class="test-section">
+            <h2><i class="fas fa-chart-line"></i> Test Results</h2>
+            <div id="results">Ready to run tests...\n</div>
+        </div>
+
+        <!-- Sample Events Display -->
+        <div class="test-section">
+            <h2><i class="fas fa-calendar-alt"></i> Sample Events</h2>
+            <div id="eventsDisplay"></div>
+        </div>
+    </div>
+
+    <!-- Load Components -->
+    <script src="/js/services/events-service.js"></script>
+    <script src="/js/data/events-mock-data.js"></script>
+    <script src="/js/components/event-calendar.js"></script>
+    <script src="/js/components/event-modal.js"></script>
+    <script src="/js/components/event-notifications.js"></script>
+    <script src="/js/components/event-cards.js"></script>
+
+    <script>
+        let testResults = '';
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            testResults += `[${timestamp}] ${message}\n`;
+            document.getElementById('results').innerHTML = testResults;
+            document.getElementById('results').scrollTop = document.getElementById('results').scrollHeight;
+        }
+
+        function clearResults() {
+            testResults = '';
+            document.getElementById('results').innerHTML = 'Results cleared...\n';
+        }
+
+        async function testEventsService() {
+            log('🔧 Testing Events Service...', 'info');
+            
+            try {
+                const service = new EventsService();
+                log(`✓ EventsService created, mock mode: ${service.isMockDataMode()}`, 'success');
+                
+                const events = await service.getEvents();
+                log(`✓ Events loaded: ${events.events.length} events`, 'success');
+                
+                const categories = await service.getCategories();
+                log(`✓ Categories loaded: ${categories.categories.length} categories`, 'success');
+                
+                if (events.events.length > 0) {
+                    const firstEvent = await service.getEvent(events.events[0].id);
+                    log(`✓ Single event loaded: ${firstEvent.title}`, 'success');
+                }
+                
+                log('✅ Events Service test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Events Service test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEventCalendar() {
+            log('📅 Testing Event Calendar...', 'info');
+            
+            try {
+                const mockEvents = EventsMockData.getEvents();
+                const calendar = new EventCalendar(mockEvents);
+                log(`✓ EventCalendar created with ${mockEvents.length} events`, 'success');
+                
+                calendar.setDateSelectCallback((date, events) => {
+                    log(`✓ Date selected: ${date}, events: ${events.length}`, 'success');
+                });
+                
+                log('✅ Event Calendar test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Calendar test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEventCards() {
+            log('🎴 Testing Event Cards...', 'info');
+            
+            try {
+                const service = new EventsService();
+                const cards = new EventCards(service);
+                const mockEvents = EventsMockData.getEvents().slice(0, 3);
+                
+                log(`✓ EventCards created`, 'success');
+                
+                const cardHTML = cards.createEventCard(mockEvents[0]);
+                log(`✓ Event card HTML generated (${cardHTML.length} chars)`, 'success');
+                
+                const compactHTML = cards.createCompactEventCard(mockEvents[0]);
+                log(`✓ Compact event card HTML generated (${compactHTML.length} chars)`, 'success');
+                
+                log('✅ Event Cards test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Cards test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEventModal() {
+            log('🪟 Testing Event Modal...', 'info');
+            
+            try {
+                const service = new EventsService();
+                const modal = new EventModal(service);
+                log(`✓ EventModal created`, 'success');
+                
+                modal.setRegisterCallback((eventData) => {
+                    log(`✓ Registration callback triggered for event: ${eventData.target.dataset.eventId}`, 'success');
+                });
+                
+                log('✅ Event Modal test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Modal test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testNotifications() {
+            log('🔔 Testing Event Notifications...', 'info');
+            
+            try {
+                const notifications = new EventNotifications();
+                log(`✓ EventNotifications created`, 'success');
+                
+                notifications.showToast('Test Notification', 'This is a test message', 'success');
+                log(`✓ Test notification displayed`, 'success');
+                
+                log('✅ Event Notifications test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Notifications test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMockData() {
+            log('📊 Testing Mock Data...', 'info');
+            
+            try {
+                const events = EventsMockData.getEvents();
+                log(`✓ Mock events loaded: ${events.length} events`, 'success');
+                
+                const categories = EventsMockData.getCategories();
+                log(`✓ Mock categories loaded: ${categories.length} categories`, 'success');
+                
+                const upcomingEvents = EventsMockData.getUpcomingEvents();
+                log(`✓ Upcoming events filtered: ${upcomingEvents.length} events`, 'success');
+                
+                const completedEvents = EventsMockData.getCompletedEvents();
+                log(`✓ Completed events filtered: ${completedEvents.length} events`, 'success');
+                
+                const stats = EventsMockData.getEventStats();
+                log(`✓ Event stats calculated: ${JSON.stringify(stats)}`, 'success');
+                
+                log('✅ Mock Data test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Mock Data test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEventFiltering() {
+            log('🔍 Testing Event Filtering...', 'info');
+            
+            try {
+                const allEvents = EventsMockData.getEvents();
+                log(`✓ All events: ${allEvents.length}`, 'success');
+                
+                const workshopEvents = EventsMockData.getEventsByCategory('workshop');
+                log(`✓ Workshop events: ${workshopEvents.length}`, 'success');
+                
+                const seminarEvents = EventsMockData.getEventsByCategory('seminar');
+                log(`✓ Seminar events: ${seminarEvents.length}`, 'success');
+                
+                log('✅ Event Filtering test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Filtering test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEventRegistration() {
+            log('📝 Testing Event Registration...', 'info');
+            
+            try {
+                const service = new EventsService();
+                const mockEvents = EventsMockData.getEvents();
+                
+                if (mockEvents.length > 0) {
+                    const result = await service.registerForEvent(mockEvents[0].id, 'test-user-id');
+                    log(`✓ Registration simulation: ${result.message}`, 'success');
+                }
+                
+                log('✅ Event Registration test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Event Registration test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFullWorkflow() {
+            log('🚀 Testing Full Workflow...', 'info');
+            
+            try {
+                // Initialize all components
+                const service = new EventsService();
+                const calendar = new EventCalendar();
+                const cards = new EventCards(service);
+                const modal = new EventModal(service);
+                const notifications = new EventNotifications();
+                
+                log('✓ All components initialized', 'success');
+                
+                // Load events
+                const eventsData = await service.getEvents();
+                log(`✓ Events loaded: ${eventsData.events.length}`, 'success');
+                
+                // Set up calendar
+                calendar.setEvents(eventsData.events);
+                log('✓ Calendar populated with events', 'success');
+                
+                // Display sample events
+                displaySampleEvents(eventsData.events.slice(0, 3), cards);
+                log('✓ Sample events displayed', 'success');
+                
+                log('✅ Full Workflow test completed successfully!', 'success');
+            } catch (error) {
+                log(`❌ Full Workflow test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function displaySampleEvents(events, cards) {
+            const container = document.getElementById('eventsDisplay');
+            container.innerHTML = events.map(event => cards.createEventCard(event)).join('');
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🎯 Events System Test Suite Loaded', 'info');
+            log('Click buttons above to run specific tests', 'info');
+        });
+    </script>
+</body>
+</html>

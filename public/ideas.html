@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ideas Hub - JKUAT Innovation Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Share your innovative ideas, collaborate with fellow innovators, and turn concepts into reality at JKUAT Innovation Club.">
+    <meta name="keywords" content="JKUAT, ideas, innovation, collaboration, entrepreneurship, technology, creativity">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container" style="text-align: center;">
+            
+            <!-- Badge -->
+            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.05em;">
+                <span class="pulse" style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 0.75rem;"></span>
+                IDEAS & INNOVATION HUB
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 style="font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;" class="gradient-text">
+                Share Ideas.<br>
+                <span class="gradient-text accent">Build Future.</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p style="font-size: clamp(1.125rem, 3vw, 1.5rem); line-height: 1.6; color: rgba(255, 255, 255, 0.9); max-width: 50rem; margin: 0 auto 3rem auto; font-weight: 400;">
+                Transform your <strong>innovative concepts</strong> into reality through collaboration, feedback, and community support.
+            </p>
+            
+            <!-- Stats Preview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 40rem; margin: 0 auto;">
+                <div style="text-align: center;">
+                    <div id="totalIdeasCount" style="font-size: 2.5rem; font-weight: 800; color: #fbbf24; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Total Ideas</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="activeIdeasCount" style="font-size: 2.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Active Ideas</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="collaborationsCount" style="font-size: 2.5rem; font-weight: 800; color: #f472b6; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Collaborations</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Ideas Loading State -->
+    <div id="ideasLoading" style="display: none; text-align: center; padding: 4rem 0; position: relative; z-index: 10;">
+        <div class="glass-card" style="padding: 3rem; max-width: 400px; margin: 0 auto; text-align: center;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p style="color: white; font-size: 1.125rem; font-weight: 600;">Loading Ideas...</p>
+            <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-top: 0.5rem;">Please wait while we fetch the latest innovations</p>
+        </div>
+    </div>
+
+    <!-- Ideas Section -->
+    <section id="ideasSection" style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            
+            <!-- Filters Section -->
+            <div class="glass-card" style="padding: 2rem; margin-bottom: 3rem;">
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Search Ideas</label>
+                        <input type="text" id="searchInput" placeholder="🔍 Search innovative ideas..." 
+                               style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; transition: all 0.3s ease;"
+                               onfocus="this.style.borderColor='rgba(16, 185, 129, 0.5)'; this.style.background='rgba(255, 255, 255, 0.15)'"
+                               onblur="this.style.borderColor='rgba(255, 255, 255, 0.2)'; this.style.background='rgba(255, 255, 255, 0.1)'">
+                    </div>
+                    <div>
+                        <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Sort By</label>
+                        <select id="sortSelect" 
+                                style="padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; min-width: 150px;">
+                            <option value="newest">🕒 Newest First</option>
+                            <option value="popular">🔥 Most Popular</option>
+                            <option value="trending">📈 Trending</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 1rem; font-size: 0.875rem;">Filter by Category</label>
+                    <div id="categoryFilters" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                        <button class="filter-chip active" data-category="all" 
+                                style="background: rgba(16, 185, 129, 0.3); border: 1px solid rgba(16, 185, 129, 0.5); color: white; padding: 0.5rem 1rem; border-radius: 25px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-th-large"></i>
+                            All Categories
+                        </button>
+                        <!-- Categories will be loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ideas Grid -->
+            <div id="ideasGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                <!-- Ideas will be loaded dynamically -->
+            </div>
+            
+            <!-- Load More Button -->
+            <div style="text-align: center;">
+                <button id="loadMoreBtn" class="btn btn-primary" style="display: none;">
+                    <i class="fas fa-plus-circle"></i>Load More Ideas
+                </button>
+            </div>
+            
+            <!-- No Ideas Message -->
+            <div id="noIdeasMessage" style="display: none; text-align: center; padding: 4rem 0;">
+                <div class="glass-card" style="padding: 3rem; max-width: 500px; margin: 0 auto; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);">
+                        <i class="fas fa-lightbulb" style="font-size: 2rem; color: #f59e0b;"></i>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: white; margin-bottom: 1rem;">No Ideas Found</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; margin-bottom: 1.5rem;">No ideas match your current filter. Try selecting a different category or check back later for new innovations.</p>
+                    <button onclick="resetFilters()" class="btn btn-primary">
+                        <i class="fas fa-refresh"></i>Show All Ideas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Submit Idea Button -->
+    <button id="submitIdeaBtn" onclick="openSubmitModal()" 
+            style="position: fixed; bottom: 2rem; right: 2rem; width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); transition: all 0.3s ease; z-index: 1000; display: flex; align-items: center; justify-content: center;"
+            onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 15px 35px rgba(16, 185, 129, 0.6)'"
+            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 10px 25px rgba(16, 185, 129, 0.4)'">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Footer -->
+    <footer class="glass-footer">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 3rem; margin-bottom: 2rem;">
+                
+                <!-- Club Info -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">JKUAT Innovation Club</h3>
+                    <p style="color: #94a3b8; line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Empowering the next generation of innovators and entrepreneurs at Jomo Kenyatta University of Agriculture and Technology.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Quick Links</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Home</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/events" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Events</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/ideas" style="color: #10b981; text-decoration: none; font-size: 0.875rem; font-weight: 600;">Ideas Hub</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/dashboard" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Dashboard</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/resources" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Resources</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Contact</h3>
+                    <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📧</span> innovation@jkuat.ac.ke
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📱</span> +254 700 000 000
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📍</span> JKUAT Main Campus<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Juja, Kenya
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Copyright -->
+            <div style="border-top: 1px solid #334155; padding-top: 1.5rem; text-align: center;">
+                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+    <!-- Submit Idea Modal -->
+    <div id="submitModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Submit Your Idea</h2>
+                <button onclick="closeSubmitModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="submitIdeaForm">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Idea Title *</label>
+                    <input type="text" name="title" required maxlength="200" class="glass-input" placeholder="Enter your innovative idea title">
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Category *</label>
+                    <select name="category" required class="glass-input" id="ideaCategory">
+                        <option value="">Select a category</option>
+                        <!-- Categories will be loaded dynamically -->
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Description *</label>
+                    <textarea name="description" required class="glass-input" rows="4" placeholder="Describe your idea in detail..."></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Problem Statement</label>
+                    <textarea name="problemStatement" class="glass-input" rows="3" placeholder="What problem does this idea solve?"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Solution Overview</label>
+                    <textarea name="solutionOverview" class="glass-input" rows="3" placeholder="How does your idea solve the problem?"></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Development Stage</label>
+                        <select name="stage" class="glass-input">
+                            <option value="concept">Concept</option>
+                            <option value="prototype">Prototype</option>
+                            <option value="testing">Testing</option>
+                            <option value="implementation">Implementation</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Complexity Level</label>
+                        <select name="complexityLevel" class="glass-input">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Target Audience</label>
+                    <input type="text" name="targetAudience" class="glass-input" placeholder="Who is this idea for?">
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Estimated Timeline</label>
+                    <input type="text" name="estimatedTimeline" class="glass-input" placeholder="e.g., 3-6 months">
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Required Skills (comma-separated)</label>
+                    <input type="text" name="requiredSkills" class="glass-input" placeholder="e.g., JavaScript, Design, Marketing">
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Visibility</label>
+                    <select name="visibility" class="glass-input">
+                        <option value="public">Public - Anyone can see</option>
+                        <option value="members_only">Members Only</option>
+                        <option value="private">Private - Only you</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer;">
+                        <input type="checkbox" name="seekingCollaborators" style="width: 1rem; height: 1rem;">
+                        <span style="font-size: 0.875rem;">I'm looking for collaborators</span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeSubmitModal()" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Idea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Idea Details Modal -->
+    <div id="ideaModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Idea Details</h2>
+                <button onclick="closeIdeaModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="ideaModalContent">
+                <!-- Idea details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" style="position: fixed; top: 2rem; right: 2rem; z-index: 1001; display: none;">
+        <div class="glass-card" style="padding: 1rem 1.5rem; min-width: 300px; border-left: 4px solid #10b981;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i id="toastIcon" class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem;"></i>
+                <div>
+                    <div id="toastTitle" style="color: white; font-weight: 600; font-size: 0.875rem;"></div>
+                    <div id="toastMessage" style="color: rgba(255, 255, 255, 0.8); font-size: 0.75rem; margin-top: 0.25rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- JavaScript -->
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/pages/ideas.js"></script>
+    
+    <script>
+        // Ideas Hub JavaScript
+        let currentPage = 1;
+        let currentFilters = {
+            category: 'all',
+            search: '',
+            sort: 'newest'
+        };
+        let categories = [];
+        let ideas = [];
+        
+        // Load navigation and initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Load navigation
+                const navResponse = await fetch('/templates/components/navigation.html');
+                const navHTML = await navResponse.text();
+                document.getElementById('navigation-placeholder').innerHTML = navHTML;
+                
+                console.log('✅ Navigation loaded successfully');
+                
+                // Initialize Ideas Hub
+                await initializeIdeasHub();
+                
+            } catch (error) {
+                console.error('❌ Error loading templates:', error);
+            }
+        });
+        
+        async function initializeIdeasHub() {
+            console.log('🚀 Initializing Ideas Hub...');
+            
+            // Show loading state
+            document.getElementById('ideasLoading').style.display = 'block';
+            document.getElementById('ideasSection').style.display = 'none';
+            
+            try {
+                await loadCategories();
+                await loadIdeas();
+                setupEventListeners();
+                updateStats();
+                
+                // Hide loading, show content
+                document.getElementById('ideasLoading').style.display = 'none';
+                document.getElementById('ideasSection').style.display = 'block';
+                
+                console.log('✅ Ideas Hub initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Error initializing Ideas Hub:', error);
+                document.getElementById('ideasLoading').style.display = 'none';
+                showNotification('Failed to load Ideas Hub', 'error');
+            }
+        }
+        
+        // Load categories
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/ideas/categories');
+                if (response.ok) {
+                    categories = await response.json();
+                    renderCategoryFilters();
+                    renderCategoryOptions();
+                    console.log('✅ Categories loaded:', categories.length);
+                } else {
+                    console.error('❌ Failed to load categories');
+                }
+            } catch (error) {
+                console.error('❌ Error loading categories:', error);
+            }
+        }
+        
+        // Render category filters
+        function renderCategoryFilters() {
+            const container = document.getElementById('categoryFilters');
+            const allChip = container.querySelector('[data-category="all"]');
+            
+            categories.forEach(category => {
+                const chip = document.createElement('button');
+                chip.className = 'filter-chip';
+                chip.setAttribute('data-category', category.id);
+                chip.innerHTML = `<i class="${category.icon || 'fas fa-lightbulb'}"></i> ${category.name}`;
+                chip.style.cssText = `
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 25px;
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                `;
+                chip.onmouseover = () => {
+                    if (!chip.classList.contains('active')) {
+                        chip.style.background = 'rgba(255, 255, 255, 0.2)';
+                    }
+                };
+                chip.onmouseout = () => {
+                    if (!chip.classList.contains('active')) {
+                        chip.style.background = 'rgba(255, 255, 255, 0.1)';
+                    }
+                };
+                chip.onclick = () => filterByCategory(category.id);
+                container.appendChild(chip);
+            });
+        }
+        
+        // Render category options in form
+        function renderCategoryOptions() {
+            const select = document.getElementById('ideaCategory');
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                select.appendChild(option);
+            });
+        }
+        
+        // Load ideas
+        async function loadIdeas(append = false) {
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: 12,
+                    category: currentFilters.category !== 'all' ? currentFilters.category : '',
+                    search: currentFilters.search,
+                    sort: currentFilters.sort
+                });
+                
+                const response = await fetch(`/api/ideas?${params}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (append) {
+                        ideas = [...ideas, ...data.ideas];
+                    } else {
+                        ideas = data.ideas;
+                    }
+                    
+                    renderIdeas();
+                    
+                    // Show/hide load more button
+                    const loadMoreBtn = document.getElementById('loadMoreBtn');
+                    if (data.pagination && data.pagination.current < data.pagination.total) {
+                        loadMoreBtn.style.display = 'block';
+                    } else {
+                        loadMoreBtn.style.display = 'none';
+                    }
+                    
+                    console.log('✅ Ideas loaded:', ideas.length);
+                } else {
+                    throw new Error('Failed to fetch ideas');
+                }
+            } catch (error) {
+                console.error('❌ Error loading ideas:', error);
+                showNoIdeasMessage();
+            }
+        }
+        
+        // Render ideas
+        function renderIdeas() {
+            const container = document.getElementById('ideasGrid');
+            const noIdeasMessage = document.getElementById('noIdeasMessage');
+            
+            if (ideas.length === 0) {
+                container.innerHTML = '';
+                noIdeasMessage.style.display = 'block';
+                return;
+            }
+            
+            noIdeasMessage.style.display = 'none';
+            
+            const ideasHTML = ideas.map(idea => createIdeaCard(idea)).join('');
+            container.innerHTML = ideasHTML;
+            
+            // Add click handlers
+            addIdeaCardHandlers();
+        }
+        
+        // Create idea card
+        function createIdeaCard(idea) {
+            const categoryColors = {
+                'Technology': '#3b82f6',
+                'Agriculture': '#10b981',
+                'Healthcare': '#f59e0b',
+                'Education': '#8b5cf6',
+                'Environment': '#06b6d4',
+                'Business': '#f472b6',
+                'Social Impact': '#ef4444',
+                'Finance': '#84cc16'
+            };
+            
+            const categoryName = getCategoryName(idea.category_id);
+            const categoryColor = categoryColors[categoryName] || '#6b7280';
+            const createdDate = new Date(idea.created_at);
+            
+            return `
+                <div class="glass-card idea-card" style="padding: 2rem; cursor: pointer; position: relative;" data-idea-id="${idea.id}">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: ${categoryColor};"></div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span style="background: ${categoryColor}20; color: ${categoryColor}; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600;">
+                            ${categoryName}
+                        </span>
+                        <span style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">
+                            ${createdDate.toLocaleDateString()}
+                        </span>
+                    </div>
+                    
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: white; margin-bottom: 0.75rem; line-height: 1.3;">
+                        ${idea.title}
+                    </h3>
+                    
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">
+                        ${idea.description.length > 120 ? idea.description.substring(0, 120) + '...' : idea.description}
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                        <div style="display: flex; align-items: center; color: rgba(255, 255, 255, 0.8);">
+                            <i class="fas fa-heart" style="margin-right: 0.5rem; color: #f472b6; width: 16px;"></i>
+                            <span>${idea.likes_count || 0}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; color: rgba(255, 255, 255, 0.8);">
+                            <i class="fas fa-eye" style="margin-right: 0.5rem; color: #10b981; width: 16px;"></i>
+                            <span>${idea.views_count || 0}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; color: rgba(255, 255, 255, 0.8);">
+                            <i class="fas fa-comments" style="margin-right: 0.5rem; color: #3b82f6; width: 16px;"></i>
+                            <span>${idea.comments_count || 0}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="btn btn-outline btn-sm idea-details-btn" data-idea-id="${idea.id}">
+                            <i class="fas fa-info-circle"></i>Details
+                        </button>
+                        <button class="btn btn-glass btn-sm idea-like-btn" data-idea-id="${idea.id}">
+                            <i class="fas fa-heart"></i>Like
+                        </button>
+                        ${idea.is_seeking_collaborators ? `
+                        <button class="btn btn-primary btn-sm collaborate-btn" data-idea-id="${idea.id}">
+                            <i class="fas fa-handshake"></i>Collaborate
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Add idea card handlers
+        function addIdeaCardHandlers() {
+            // Details buttons
+            document.querySelectorAll('.idea-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const ideaId = btn.dataset.ideaId;
+                    openIdeaModal(ideaId);
+                });
+            });
+            
+            // Like buttons
+            document.querySelectorAll('.idea-like-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const ideaId = btn.dataset.ideaId;
+                    voteIdea(ideaId, 'like');
+                });
+            });
+            
+            // Collaborate buttons
+            document.querySelectorAll('.collaborate-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const ideaId = btn.dataset.ideaId;
+                    openCollaborationModal(ideaId);
+                });
+            });
+            
+            // Card click to open details
+            document.querySelectorAll('.idea-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const ideaId = card.dataset.ideaId;
+                    openIdeaModal(ideaId);
+                });
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search input
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', debounce((e) => {
+                currentFilters.search = e.target.value;
+                currentPage = 1;
+                loadIdeas();
+            }, 300));
+            
+            // Sort select
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                currentFilters.sort = e.target.value;
+                currentPage = 1;
+                loadIdeas();
+            });
+            
+            // Load more button
+            document.getElementById('loadMoreBtn').addEventListener('click', () => {
+                currentPage++;
+                loadIdeas(true);
+            });
+            
+            // Submit form
+            document.getElementById('submitIdeaForm').addEventListener('submit', submitIdea);
+        }
+        
+        // Filter by category
+        function filterByCategory(categoryId) {
+            currentFilters.category = categoryId;
+            currentPage = 1;
+            
+            // Update active filter chip
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+                chip.style.background = 'rgba(255, 255, 255, 0.1)';
+                chip.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            });
+            
+            const activeChip = document.querySelector(`[data-category="${categoryId}"]`);
+            activeChip.classList.add('active');
+            activeChip.style.background = 'rgba(16, 185, 129, 0.3)';
+            activeChip.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+            
+            loadIdeas();
+        }
+        
+        // Reset filters
+        function resetFilters() {
+            currentFilters = {
+                category: 'all',
+                search: '',
+                sort: 'newest'
+            };
+            currentPage = 1;
+            
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortSelect').value = 'newest';
+            
+            // Reset category filters
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+                chip.style.background = 'rgba(255, 255, 255, 0.1)';
+                chip.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            });
+            
+            const allChip = document.querySelector('[data-category="all"]');
+            allChip.classList.add('active');
+            allChip.style.background = 'rgba(16, 185, 129, 0.3)';
+            allChip.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+            
+            loadIdeas();
+        }
+        
+        // Update stats
+        function updateStats() {
+            // Mock stats for now
+            document.getElementById('totalIdeasCount').textContent = '50+';
+            document.getElementById('activeIdeasCount').textContent = '35';
+            document.getElementById('collaborationsCount').textContent = '12';
+        }
+        
+        // Show no ideas message
+        function showNoIdeasMessage() {
+            const container = document.getElementById('ideasGrid');
+            const noIdeasMessage = document.getElementById('noIdeasMessage');
+            
+            container.innerHTML = '';
+            noIdeasMessage.style.display = 'block';
+        }
+        
+        // Utility functions
+        function getCategoryName(categoryId) {
+            const category = categories.find(c => c.id === categoryId);
+            return category ? category.name : 'Other';
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Modal functions
+        function openSubmitModal() {
+            // Check authentication
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                showNotification('Please login to submit ideas', 'error');
+                return;
+            }
+            
+            document.getElementById('submitModal').style.display = 'flex';
+        }
+        
+        function closeSubmitModal() {
+            document.getElementById('submitModal').style.display = 'none';
+            document.getElementById('submitIdeaForm').reset();
+        }
+        
+        function openIdeaModal(ideaId) {
+            loadIdeaDetails(ideaId);
+            document.getElementById('ideaModal').style.display = 'flex';
+        }
+        
+        function closeIdeaModal() {
+            document.getElementById('ideaModal').style.display = 'none';
+        }
+        
+        async function loadIdeaDetails(ideaId) {
+            try {
+                const response = await fetch(`/api/ideas/${ideaId}`);
+                if (response.ok) {
+                    const idea = await response.json();
+                    renderIdeaDetails(idea);
+                } else {
+                    showNotification('Failed to load idea details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading idea details:', error);
+                showNotification('Failed to load idea details', 'error');
+            }
+        }
+        
+        function renderIdeaDetails(idea) {
+            const modalContent = document.getElementById('ideaModalContent');
+            const categoryName = getCategoryName(idea.category_id);
+            const createdDate = new Date(idea.created_at);
+            
+            modalContent.innerHTML = `
+                <div style="margin-bottom: 2rem;">
+                    <div style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; display: inline-block; margin-bottom: 1rem;">
+                        ${categoryName}
+                    </div>
+                    
+                    <h2 style="color: white; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700;">${idea.title}</h2>
+                    
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8);">
+                        <span><i class="fas fa-user"></i> ${idea.users?.name || 'Anonymous'}</span>
+                        <span><i class="fas fa-calendar"></i> ${createdDate.toLocaleDateString()}</span>
+                        <span><i class="fas fa-heart"></i> ${idea.likes_count || 0} likes</span>
+                        <span><i class="fas fa-eye"></i> ${idea.views_count || 0} views</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 600;">Description</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">${idea.description}</p>
+                    </div>
+                    
+                    ${idea.problem_statement ? `
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 600;">Problem Statement</h4>
+                            <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">${idea.problem_statement}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${idea.solution_overview ? `
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 600;">Solution Overview</h4>
+                            <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">${idea.solution_overview}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        ${idea.stage ? `
+                            <div>
+                                <h5 style="color: white; margin-bottom: 0.25rem; font-weight: 600;">Development Stage</h5>
+                                <span style="color: rgba(255, 255, 255, 0.8); text-transform: capitalize;">${idea.stage}</span>
+                            </div>
+                        ` : ''}
+                        
+                        ${idea.complexity_level ? `
+                            <div>
+                                <h5 style="color: white; margin-bottom: 0.25rem; font-weight: 600;">Complexity</h5>
+                                <span style="color: rgba(255, 255, 255, 0.8); text-transform: capitalize;">${idea.complexity_level}</span>
+                            </div>
+                        ` : ''}
+                        
+                        ${idea.estimated_timeline ? `
+                            <div>
+                                <h5 style="color: white; margin-bottom: 0.25rem; font-weight: 600;">Timeline</h5>
+                                <span style="color: rgba(255, 255, 255, 0.8);">${idea.estimated_timeline}</span>
+                            </div>
+                        ` : ''}
+                        
+                        ${idea.target_audience ? `
+                            <div>
+                                <h5 style="color: white; margin-bottom: 0.25rem; font-weight: 600;">Target Audience</h5>
+                                <span style="color: rgba(255, 255, 255, 0.8);">${idea.target_audience}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${idea.required_skills && idea.required_skills.length > 0 ? `
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 600;">Required Skills</h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${idea.required_skills.map(skill => `
+                                    <span style="background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.9); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                        ${skill}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="voteIdea('${idea.id}', 'like')">
+                            <i class="fas fa-thumbs-up"></i> Like (${idea.likes_count || 0})
+                        </button>
+                        
+                        ${idea.is_seeking_collaborators ? `
+                            <button class="btn btn-secondary" onclick="openCollaborationModal('${idea.id}')">
+                                <i class="fas fa-handshake"></i> Request Collaboration
+                            </button>
+                        ` : ''}
+                        
+                        <button class="btn btn-outline" onclick="shareIdea('${idea.id}')">
+                            <i class="fas fa-share"></i> Share
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Submit idea
+        async function submitIdea(e) {
+            e.preventDefault();
+            
+            // Check authentication
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                showNotification('Please login to submit ideas', 'error');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const requiredSkills = formData.get('requiredSkills').split(',').map(s => s.trim()).filter(s => s);
+            
+            const ideaData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                categoryId: formData.get('category'),
+                problemStatement: formData.get('problemStatement'),
+                solutionOverview: formData.get('solutionOverview'),
+                targetAudience: formData.get('targetAudience'),
+                stage: formData.get('stage'),
+                complexityLevel: formData.get('complexityLevel'),
+                estimatedTimeline: formData.get('estimatedTimeline'),
+                requiredSkills: requiredSkills,
+                visibility: formData.get('visibility'),
+                isSeekingCollaborators: formData.get('seekingCollaborators') === 'on'
+            };
+            
+            try {
+                const response = await fetch('/api/ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(ideaData)
+                });
+                
+                if (response.ok) {
+                    closeSubmitModal();
+                    showNotification('Idea submitted successfully!', 'success');
+                    loadIdeas(); // Reload ideas
+                } else {
+                    const error = await response.json();
+                    showNotification(error.message || 'Failed to submit idea', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting idea:', error);
+                showNotification('Failed to submit idea', 'error');
+            }
+        }
+        
+        // Vote on idea
+        async function voteIdea(ideaId, voteType) {
+            // Check authentication
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                showNotification('Please login to vote on ideas', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/ideas/${ideaId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ voteType })
+                });
+                
+                if (response.ok) {
+                    loadIdeas(); // Reload to update vote counts
+                    showNotification('Vote recorded successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showNotification(error.message || 'Failed to record vote', 'error');
+                }
+            } catch (error) {
+                console.error('Error voting:', error);
+                showNotification('Failed to record vote', 'error');
+            }
+        }
+        
+        // Collaboration modal functions
+        function openCollaborationModal(ideaId) {
+            // Check if user is authenticated
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            if (!user) {
+                showNotification('Please login to request collaboration', 'error');
+                return;
+            }
+            
+            showNotification('Collaboration feature coming soon!', 'info');
+        }
+        
+        // Share idea function
+        function shareIdea(ideaId) {
+            const url = `${window.location.origin}/ideas?id=${ideaId}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Check out this innovative idea!',
+                    url: url
+                });
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(url).then(() => {
+                    showNotification('Idea link copied to clipboard!', 'success');
+                }).catch(() => {
+                    showNotification('Failed to copy link', 'error');
+                });
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const toast = document.getElementById('notificationToast');
+            const icon = document.getElementById('toastIcon');
+            const title = document.getElementById('toastTitle');
+            const messageEl = document.getElementById('toastMessage');
+            
+            // Set icon and colors based on type
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle';
+                icon.style.color = '#10b981';
+                toast.querySelector('.glass-card').style.borderLeftColor = '#10b981';
+                title.textContent = 'Success';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-triangle';
+                icon.style.color = '#ef4444';
+                toast.querySelector('.glass-card').style.borderLeftColor = '#ef4444';
+                title.textContent = 'Error';
+            } else if (type === 'info') {
+                icon.className = 'fas fa-info-circle';
+                icon.style.color = '#3b82f6';
+                toast.querySelector('.glass-card').style.borderLeftColor = '#3b82f6';
+                title.textContent = 'Info';
+            }
+            
+            messageEl.textContent = message;
+            toast.style.display = 'block';
+            
+            // Auto hide after 4 seconds
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-backdrop')) {
+                e.target.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

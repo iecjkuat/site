@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events System Status - JKUAT Innovation Club</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a, #3730a3, #7c3aed);
+            color: white;
+            margin: 0;
+            padding: 2rem;
+        }
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .status-ok { border-left: 4px solid #10b981; }
+        .status-error { border-left: 4px solid #ef4444; }
+        .status-warning { border-left: 4px solid #f59e0b; }
+        .btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-weight: 600;
+        }
+        .btn:hover { background: #059669; }
+        pre { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Events System Status Check</h1>
+    <p>This page checks if all components of the refactored events system are working correctly.</p>
+
+    <div id="statusContainer">
+        <div class="status-card">
+            <h3>🔄 Running diagnostics...</h3>
+            <p>Please wait while we check all components.</p>
+        </div>
+    </div>
+
+    <div class="status-card">
+        <h3>🛠️ Manual Tests</h3>
+        <button class="btn" onclick="testEventsPage()">Test Events Page</button>
+        <button class="btn" onclick="testMockDataLoad()">Reload Mock Data</button>
+        <button class="btn" onclick="window.location.href='/events'">Go to Events Page</button>
+        <button class="btn" onclick="window.location.href='/debug-events.html'">Debug Page</button>
+    </div>
+
+    <!-- Load all components -->
+    <script src="/js/data/events-mock-data.js"></script>
+    <script src="/js/services/events-service.js"></script>
+    <script src="/js/components/event-calendar.js"></script>
+    <script src="/js/components/event-modal.js"></script>
+    <script src="/js/components/event-notifications.js"></script>
+    <script src="/js/components/event-cards.js"></script>
+    <script src="/js/pages/events.js"></script>
+
+    <script>
+        const statusContainer = document.getElementById('statusContainer');
+
+        function addStatus(title, message, type = 'ok', details = null) {
+            const card = document.createElement('div');
+            card.className = `status-card status-${type}`;
+            card.innerHTML = `
+                <h3>${title}</h3>
+                <p>${message}</p>
+                ${details ? `<pre>${details}</pre>` : ''}
+            `;
+            statusContainer.appendChild(card);
+        }
+
+        function clearStatus() {
+            statusContainer.innerHTML = '';
+        }
+
+        async function runDiagnostics() {
+            clearStatus();
+            
+            // Test 1: Mock Data
+            try {
+                if (typeof EventsMockData !== 'undefined') {
+                    const events = EventsMockData.getEvents();
+                    const categories = EventsMockData.getCategories();
+                    const stats = EventsMockData.getEventStats();
+                    
+                    addStatus(
+                        '✅ Mock Data System', 
+                        'EventsMockData loaded successfully',
+                        'ok',
+                        `Events: ${events.length}\nCategories: ${categories.length}\nStats: ${JSON.stringify(stats, null, 2)}`
+                    );
+                } else {
+                    addStatus('❌ Mock Data System', 'EventsMockData not loaded', 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Mock Data System', `Error: ${error.message}`, 'error');
+            }
+
+            // Test 2: Events Service
+            try {
+                const service = new EventsService();
+                const result = await service.getEvents();
+                
+                addStatus(
+                    '✅ Events Service', 
+                    `Service working correctly (Mock mode: ${service.isMockDataMode()})`,
+                    'ok',
+                    `Returned ${result.events.length} events\nPagination: ${JSON.stringify(result.pagination)}`
+                );
+            } catch (error) {
+                addStatus('❌ Events Service', `Error: ${error.message}`, 'error');
+            }
+
+            // Test 3: Components
+            const components = [
+                { name: 'EventCalendar', class: EventCalendar },
+                { name: 'EventCards', class: EventCards },
+                { name: 'EventModal', class: EventModal },
+                { name: 'EventNotifications', class: EventNotifications },
+                { name: 'EventsPage', class: EventsPage }
+            ];
+
+            components.forEach(comp => {
+                try {
+                    if (typeof comp.class !== 'undefined') {
+                        addStatus(`✅ ${comp.name}`, 'Component loaded successfully', 'ok');
+                    } else {
+                        addStatus(`❌ ${comp.name}`, 'Component not loaded', 'error');
+                    }
+                } catch (error) {
+                    addStatus(`❌ ${comp.name}`, `Error: ${error.message}`, 'error');
+                }
+            });
+
+            // Test 4: DOM Elements (for events page)
+            const requiredElements = [
+                'eventsGrid', 'eventsSection', 'categoryFilters', 
+                'eventsLoading', 'calendarSection'
+            ];
+
+            let missingElements = [];
+            requiredElements.forEach(id => {
+                if (!document.getElementById(id)) {
+                    missingElements.push(id);
+                }
+            });
+
+            if (missingElements.length === 0) {
+                addStatus('✅ DOM Elements', 'All required elements would be available on events page', 'ok');
+            } else {
+                addStatus(
+                    '⚠️ DOM Elements', 
+                    'Some elements missing (normal for this status page)', 
+                    'warning',
+                    `Missing: ${missingElements.join(', ')}\n(These should exist on the actual events page)`
+                );
+            }
+
+            // Test 5: Sample Event Rendering
+            try {
+                const service = new EventsService();
+                const cards = new EventCards(service);
+                const mockEvents = EventsMockData.getEvents();
+                
+                if (mockEvents.length > 0) {
+                    const sampleHTML = cards.createEventCard(mockEvents[0]);
+                    addStatus(
+                        '✅ Event Rendering', 
+                        'Event cards can be generated successfully',
+                        'ok',
+                        `Sample HTML length: ${sampleHTML.length} characters\nFirst event: ${mockEvents[0].title}`
+                    );
+                } else {
+                    addStatus('❌ Event Rendering', 'No mock events available for testing', 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Event Rendering', `Error: ${error.message}`, 'error');
+            }
+
+            addStatus('🎉 Diagnostics Complete', 'All tests finished. Check results above.', 'ok');
+        }
+
+        function testEventsPage() {
+            addStatus('🔄 Testing Events Page', 'Opening events page in new tab...', 'ok');
+            window.open('/events', '_blank');
+        }
+
+        function testMockDataLoad() {
+            addStatus('🔄 Reloading Mock Data', 'Testing mock data reload...', 'ok');
+            setTimeout(() => {
+                try {
+                    const events = EventsMockData.getEvents();
+                    addStatus('✅ Mock Data Reload', `Successfully reloaded ${events.length} events`, 'ok');
+                } catch (error) {
+                    addStatus('❌ Mock Data Reload', `Error: ${error.message}`, 'error');
+                }
+            }, 500);
+        }
+
+        // Run diagnostics when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runDiagnostics, 500);
+        });
+    </script>
+</body>
+</html>

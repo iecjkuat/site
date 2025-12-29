@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - JKUAT Innovation Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body class="bg-pattern">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+        <div class="glass-card" style="max-width: 500px; width: 100%; padding: 3rem; text-align: center;">
+            
+            <!-- Status Icon -->
+            <div id="statusIcon" style="width: 80px; height: 80px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);">
+                <div class="spinner" style="width: 2rem; height: 2rem;"></div>
+            </div>
+            
+            <!-- Status Message -->
+            <div id="statusMessage">
+                <h1 style="font-size: 2rem; font-weight: 700; color: white; margin-bottom: 1rem;">Verifying Email...</h1>
+                <p style="color: rgba(255, 255, 255, 0.8); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+                    Please wait while we verify your email address.
+                </p>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div id="actionButtons" class="hidden" style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="goToLoginBtn" class="glass-button primary" style="width: 100%; justify-content: center;">
+                    <i class="fas fa-sign-in-alt"></i>Go to Login
+                </button>
+                
+                <button id="goToHomeBtn" class="glass-button" style="width: 100%; justify-content: center;">
+                    <i class="fas fa-home"></i>Back to Home
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        class EmailVerification {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                // Get token and email from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+                const email = urlParams.get('email');
+                
+                if (!token || !email) {
+                    this.showError('Invalid verification link. Please check your email and try again.');
+                    return;
+                }
+
+                // Verify the email
+                await this.verifyEmail(token, email);
+                
+                // Bind events
+                this.bindEvents();
+            }
+
+            async verifyEmail(token, email) {
+                try {
+                    const response = await fetch('/api/auth/verify-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ token, email })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.showSuccess(data.message);
+                    } else {
+                        this.showError(data.message || 'Email verification failed');
+                    }
+                } catch (error) {
+                    console.error('Verification error:', error);
+                    this.showError('Network error. Please check your connection and try again.');
+                }
+            }
+
+            showSuccess(message) {
+                const statusIcon = document.getElementById('statusIcon');
+                const statusMessage = document.getElementById('statusMessage');
+                const actionButtons = document.getElementById('actionButtons');
+
+                // Update icon
+                statusIcon.style.background = 'rgba(16, 185, 129, 0.2)';
+                statusIcon.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                statusIcon.style.boxShadow = '0 10px 25px rgba(16, 185, 129, 0.3)';
+                statusIcon.innerHTML = '<i class="fas fa-check" style="font-size: 2rem; color: #10b981;"></i>';
+
+                // Update message
+                statusMessage.innerHTML = `
+                    <h1 style="font-size: 2rem; font-weight: 700; color: white; margin-bottom: 1rem;">Email Verified!</h1>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+                        ${message} You can now access all club features.
+                    </p>
+                `;
+
+                // Update action buttons for profile completion
+                actionButtons.innerHTML = `
+                    <button id="completeProfileBtn" class="glass-button primary" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-user-edit"></i>Complete Your Profile
+                    </button>
+                    
+                    <button id="goToLoginBtn" class="glass-button" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-sign-in-alt"></i>Go to Login
+                    </button>
+                `;
+
+                // Show action buttons
+                actionButtons.classList.remove('hidden');
+            }
+
+            showError(message) {
+                const statusIcon = document.getElementById('statusIcon');
+                const statusMessage = document.getElementById('statusMessage');
+                const actionButtons = document.getElementById('actionButtons');
+
+                // Update icon
+                statusIcon.style.background = 'rgba(239, 68, 68, 0.2)';
+                statusIcon.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                statusIcon.style.boxShadow = '0 10px 25px rgba(239, 68, 68, 0.3)';
+                statusIcon.innerHTML = '<i class="fas fa-times" style="font-size: 2rem; color: #ef4444;"></i>';
+
+                // Update message
+                statusMessage.innerHTML = `
+                    <h1 style="font-size: 2rem; font-weight: 700; color: white; margin-bottom: 1rem;">Verification Failed</h1>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+                        ${message}
+                    </p>
+                `;
+
+                // Show action buttons
+                actionButtons.classList.remove('hidden');
+            }
+
+            bindEvents() {
+                document.addEventListener('click', (e) => {
+                    if (e.target.id === 'completeProfileBtn') {
+                        window.location.href = '/complete-profile';
+                    } else if (e.target.id === 'goToLoginBtn') {
+                        window.location.href = '/#login';
+                    } else if (e.target.id === 'goToHomeBtn') {
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new EmailVerification();
+        });
+    </script>
+</body>
+</html>

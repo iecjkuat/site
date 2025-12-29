@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Events - JKUAT Innovation Club</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1e3a8a;
+            color: white;
+            padding: 2rem;
+        }
+        .debug-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.25rem;
+        }
+        #output {
+            background: #000;
+            color: #0f0;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .event-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐛 Events System Debug</h1>
+    
+    <div class="debug-section">
+        <h2>Step 1: Test Mock Data</h2>
+        <button class="btn" onclick="testMockData()">Test Mock Data</button>
+        <button class="btn" onclick="testEventsService()">Test Events Service</button>
+        <button class="btn" onclick="testComponents()">Test Components</button>
+        <button class="btn" onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>Step 2: Load Events</h2>
+        <button class="btn" onclick="loadAndDisplayEvents()">Load & Display Events</button>
+        <div id="eventsContainer"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>Debug Output</h2>
+        <div id="output">Ready for debugging...\n</div>
+    </div>
+
+    <!-- Load all required scripts -->
+    <script src="/js/data/events-mock-data.js"></script>
+    <script src="/js/services/events-service.js"></script>
+    <script src="/js/components/event-calendar.js"></script>
+    <script src="/js/components/event-modal.js"></script>
+    <script src="/js/components/event-notifications.js"></script>
+    <script src="/js/components/event-cards.js"></script>
+
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Output cleared...\n';
+        }
+
+        function testMockData() {
+            log('🧪 Testing Mock Data...');
+            
+            try {
+                if (typeof EventsMockData === 'undefined') {
+                    log('❌ EventsMockData not loaded!');
+                    return;
+                }
+                
+                const events = EventsMockData.getEvents();
+                log(`✅ Mock events loaded: ${events.length} events`);
+                
+                events.slice(0, 3).forEach((event, index) => {
+                    log(`   ${index + 1}. ${event.title} (${event.event_type}) - ${event.status}`);
+                });
+                
+                const categories = EventsMockData.getCategories();
+                log(`✅ Mock categories loaded: ${categories.length} categories`);
+                
+                const stats = EventsMockData.getEventStats();
+                log(`✅ Mock stats: ${JSON.stringify(stats)}`);
+                
+            } catch (error) {
+                log(`❌ Mock data test failed: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function testEventsService() {
+            log('🔧 Testing Events Service...');
+            
+            try {
+                if (typeof EventsService === 'undefined') {
+                    log('❌ EventsService not loaded!');
+                    return;
+                }
+                
+                const service = new EventsService();
+                log(`✅ EventsService created, mock mode: ${service.isMockDataMode()}`);
+                
+                service.getEvents().then(result => {
+                    log(`✅ Events service returned: ${result.events.length} events`);
+                    log(`   Pagination: page ${result.pagination.current} of ${result.pagination.total}`);
+                }).catch(error => {
+                    log(`❌ Events service failed: ${error.message}`);
+                });
+                
+            } catch (error) {
+                log(`❌ Events service test failed: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        function testComponents() {
+            log('🧩 Testing Components...');
+            
+            try {
+                // Test EventCalendar
+                if (typeof EventCalendar !== 'undefined') {
+                    const calendar = new EventCalendar();
+                    log('✅ EventCalendar created');
+                } else {
+                    log('❌ EventCalendar not loaded');
+                }
+                
+                // Test EventCards
+                if (typeof EventCards !== 'undefined') {
+                    const service = new EventsService();
+                    const cards = new EventCards(service);
+                    log('✅ EventCards created');
+                } else {
+                    log('❌ EventCards not loaded');
+                }
+                
+                // Test EventModal
+                if (typeof EventModal !== 'undefined') {
+                    const service = new EventsService();
+                    const modal = new EventModal(service);
+                    log('✅ EventModal created');
+                } else {
+                    log('❌ EventModal not loaded');
+                }
+                
+                // Test EventNotifications
+                if (typeof EventNotifications !== 'undefined') {
+                    const notifications = new EventNotifications();
+                    log('✅ EventNotifications created');
+                } else {
+                    log('❌ EventNotifications not loaded');
+                }
+                
+            } catch (error) {
+                log(`❌ Component test failed: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        async function loadAndDisplayEvents() {
+            log('📊 Loading and displaying events...');
+            
+            try {
+                const service = new EventsService();
+                const cards = new EventCards(service);
+                
+                const result = await service.getEvents();
+                log(`✅ Loaded ${result.events.length} events`);
+                
+                const container = document.getElementById('eventsContainer');
+                container.innerHTML = '<h3>Sample Events:</h3>';
+                
+                result.events.slice(0, 3).forEach(event => {
+                    const eventDiv = document.createElement('div');
+                    eventDiv.className = 'event-card';
+                    eventDiv.innerHTML = `
+                        <h4>${event.title}</h4>
+                        <p><strong>Type:</strong> ${event.event_type}</p>
+                        <p><strong>Date:</strong> ${new Date(event.start_date).toLocaleDateString()}</p>
+                        <p><strong>Location:</strong> ${event.location}</p>
+                        <p><strong>Attendees:</strong> ${event.stats?.totalAttendees || 0}</p>
+                        <p><strong>Status:</strong> ${event.status}</p>
+                    `;
+                    container.appendChild(eventDiv);
+                });
+                
+                log('✅ Events displayed successfully');
+                
+            } catch (error) {
+                log(`❌ Failed to load/display events: ${error.message}`);
+                console.error(error);
+            }
+        }
+
+        // Auto-run basic tests
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Debug page loaded');
+            setTimeout(() => {
+                testMockData();
+                testEventsService();
+                testComponents();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

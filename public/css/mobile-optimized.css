@@ -1,0 +1,306 @@
+/* JKUAT Innovation Club - Mobile-First Optimizations */
+
+/* Base Mobile-First Styles */
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Mobile-First Typography */
+body {
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure proper stacking context */
+body.bg-pattern {
+    position: relative;
+    z-index: 0;
+}
+
+/* Mobile Navigation Improvements */
+.glass-nav {
+    padding: 0.75rem 0 !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    position: relative;
+    z-index: 100;
+}
+
+@media (max-width: 767px) {
+    .logo-text {
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+    }
+    
+    .glass-nav .container {
+        padding: 0 1rem !important;
+    }
+    
+    #mobileNav {
+        gap: 0.5rem !important;
+    }
+    
+    .btn-glass.btn-sm {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        min-width: auto !important;
+    }
+}
+
+/* Mobile Hero Section - MAJOR IMPROVEMENTS */
+@media (max-width: 767px) {
+    .mobile-hero {
+        min-height: 100vh !important;
+        padding: 5rem 0 2rem 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .mobile-hero-container {
+        padding: 0 1.5rem !important;
+        max-width: 100% !important;
+        position: relative;
+        z-index: 10;
+    }
+    
+    /* Hero Badge - Mobile Optimized */
+    .hero-badge {
+        padding: 0.6rem 1.2rem !important;
+        font-size: 0.8rem !important;
+        margin-bottom: 1.5rem !important;
+        border-radius: 25px !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        background: rgba(255, 255, 255, 0.18) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    }
+    
+    /* Hero Title - Mobile Optimized */
+    .hero-title {
+        font-size: 2.8rem !important;
+        line-height: 1.1 !important;
+        margin-bottom: 1.2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Hero Subtitle - Mobile Optimized */
+    .hero-subtitle {
+        font-size: 1.15rem !important;
+        line-height: 1.5 !important;
+        margin-bottom: 2.5rem !important;
+        padding: 0 0.5rem !important;
+        font-weight: 400 !important;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Mobile CTA Buttons - MUCH BETTER */
+    .mobile-btn-group {
+        flex-direction: column !important;
+        gap: 1.2rem !important;
+        align-items: center !important;
+        margin-bottom: 3rem !important;
+        width: 100% !important;
+    }
+    
+    .mobile-cta-btn {
+        width: 100% !important;
+        max-width: 300px !important;
+        padding: 1.2rem 2rem !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        justify-content: center !important;
+        border-radius: 15px !important;
+        min-height: 56px !important;
+        display: flex !important;
+        align-items: center !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+    }
+    
+    .mobile-cta-btn:active {
+        transform: scale(0.98) !important;
+    }
+    
+    /* Mobile Stats Grid - IMPROVED */
+    .mobile-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.5rem !important;
+        margin-top: 2rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    .stat-item {
+        background: rgba(255, 255, 255, 0.08) !important;
+        padding: 1.5rem 1rem !important;
+        border-radius: 16px !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .stat-item .counter {
+        font-size: 2.2rem !important;
+        font-weight: 800 !important;
+        margin-bottom: 0.5rem !important;
+        display: block !important;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        font-weight: 500 !important;
+        opacity: 0.9 !important;
+    }
+    
+    /* Hide scroll indicator on mobile */
+    .scroll-indicator {
+        display: none !important;
+    }
+}
+
+/* Mobile Section Improvements */
+@media (max-width: 767px) {
+    section {
+        padding: 3rem 0 !important;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .container {
+        padding: 0 1.5rem !important;
+    }
+    
+    /* Section Headers */
+    section h2 {
+        font-size: 2.2rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 1rem !important;
+        text-align: center !important;
+        font-weight: 800 !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    section p {
+        font-size: 1.05rem !important;
+        line-height: 1.5 !important;
+        text-align: center !important;
+        margin-bottom: 2rem !important;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Section Badges */
+    section .container > div:first-child > div:first-child {
+        padding: 0.5rem 1.2rem !important;
+        font-size: 0.8rem !important;
+        margin-bottom: 1.2rem !important;
+        border-radius: 25px !important;
+        background: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+    }
+}
+
+/* Mobile Cards - ENHANCED */
+@media (max-width: 767px) {
+    .glass-card {
+        padding: 2rem 1.5rem !important;
+        border-radius: 20px !important;
+        margin-bottom: 1.5rem !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    /* Grid Layouts */
+    section > .container > div:last-child {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+    }
+    
+    /* Testimonial Cards */
+    .glass-card h4 {
+        font-size: 1.15rem !important;
+        margin-bottom: 0.5rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .glass-card p {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+        text-align: left !important;
+    }
+    
+    /* Profile Images in Testimonials */
+    .glass-card > div:first-child > div:first-child {
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 1.2rem !important;
+    }
+}
+
+/* Very Small Screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .container, .mobile-hero-container {
+        padding: 0 1.2rem !important;
+    }
+    
+    .hero-title {
+        font-size: 2.4rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.05rem !important;
+        padding: 0 !important;
+    }
+    
+    .mobile-cta-btn {
+        max-width: 280px !important;
+        font-size: 1rem !important;
+        padding: 1.1rem 1.8rem !important;
+    }
+    
+    .glass-card {
+        padding: 1.5rem 1.2rem !important;
+    }
+    
+    .mobile-stats {
+        padding: 0 0.5rem !important;
+    }
+}
+
+/* Extra Large Mobile Screens */
+@media (min-width: 414px) and (max-width: 767px) {
+    .hero-title {
+        font-size: 3.2rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem !important;
+    }
+    
+    .mobile-cta-btn {
+        max-width: 320px !important;
+        font-size: 1.15rem !important;
+    }
+}
+
+/* Hide social share buttons completely */
+#social-share-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meetings & Governance - JKUAT Innovation Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Participate in club governance, attend meetings, vote in elections, and access constitutional documents at JKUAT Innovation Club.">
+    <meta name="keywords" content="JKUAT, governance, meetings, elections, voting, constitution, AGM, SGM">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container" style="text-align: center;">
+            
+            <!-- Badge -->
+            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.05em;">
+                <span class="pulse" style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; margin-right: 0.75rem;"></span>
+                MEETINGS & GOVERNANCE
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 style="font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;" class="gradient-text">
+                Democratic.<br>
+                <span class="gradient-text accent">Transparent.</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p style="font-size: clamp(1.125rem, 3vw, 1.5rem); line-height: 1.6; color: rgba(255, 255, 255, 0.9); max-width: 50rem; margin: 0 auto 3rem auto; font-weight: 400;">
+                Participate in <strong>club governance</strong>, attend meetings, vote in elections, and shape the future of innovation at JKUAT.
+            </p>
+            
+            <!-- Quick Actions -->
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem;">
+                <button data-section="meetings" class="btn btn-primary section-btn">
+                    <i class="fas fa-calendar-alt"></i>View Meetings
+                </button>
+                <button data-section="elections" class="btn btn-secondary section-btn">
+                    <i class="fas fa-vote-yea"></i>Elections
+                </button>
+                <button data-section="documents" class="btn btn-outline section-btn">
+                    <i class="fas fa-file-contract"></i>Constitution
+                </button>
+            </div>
+            
+            <!-- Stats Preview -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 40rem; margin: 0 auto;">
+                <div style="text-align: center;">
+                    <div id="upcomingMeetingsCount" style="font-size: 2.5rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Upcoming Meetings</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="activeElectionsCount" style="font-size: 2.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Active Elections</div>
+                </div>
+                <div style="text-align: center;">
+                    <div id="activeProposalsCount" style="font-size: 2.5rem; font-weight: 800; color: #f472b6; margin-bottom: 0.25rem;">-</div>
+                    <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Active Proposals</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Sections -->
+    <div id="mainContent" style="position: relative; z-index: 10;">
+        
+        <!-- Meetings Section -->
+        <section id="meetingsSection" class="content-section" style="padding: 2rem 0 4rem 0;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                    <h2 style="font-size: 2.5rem; font-weight: 700; color: white;">Meetings</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="meetingTypeFilter" class="glass-input" style="min-width: 200px;">
+                            <option value="">All Meeting Types</option>
+                        </select>
+                        <select id="meetingStatusFilter" class="glass-input" style="min-width: 150px;">
+                            <option value="scheduled">Upcoming</option>
+                            <option value="completed">Completed</option>
+                            <option value="all">All Status</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Meetings Grid -->
+                <div id="meetingsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                    <!-- Meetings will be loaded here -->
+                </div>
+                
+                <!-- Load More Button -->
+                <div style="text-align: center;">
+                    <button id="loadMoreMeetings" class="btn btn-outline" style="display: none;">
+                        <i class="fas fa-plus-circle"></i>Load More Meetings
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Elections Section -->
+        <section id="electionsSection" class="content-section" style="padding: 2rem 0 4rem 0; display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                    <h2 style="font-size: 2.5rem; font-weight: 700; color: white;">Elections</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="electionStatusFilter" class="glass-input" style="min-width: 200px;">
+                            <option value="all">All Elections</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="nomination_open">Nominations Open</option>
+                            <option value="voting_open">Voting Open</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Elections Grid -->
+                <div id="electionsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                    <!-- Elections will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Proposals Section -->
+        <section id="proposalsSection" class="content-section" style="padding: 2rem 0 4rem 0; display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                    <h2 style="font-size: 2.5rem; font-weight: 700; color: white;">Governance Proposals</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="proposalTypeFilter" class="glass-input" style="min-width: 200px;">
+                            <option value="">All Types</option>
+                            <option value="constitutional_amendment">Constitutional Amendment</option>
+                            <option value="policy_change">Policy Change</option>
+                            <option value="budget_approval">Budget Approval</option>
+                            <option value="special_resolution">Special Resolution</option>
+                        </select>
+                        <select id="proposalStatusFilter" class="glass-input" style="min-width: 150px;">
+                            <option value="all">All Status</option>
+                            <option value="voting">Voting Open</option>
+                            <option value="under_review">Under Review</option>
+                            <option value="passed">Passed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Proposals Grid -->
+                <div id="proposalsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                    <!-- Proposals will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documentsSection" class="content-section" style="padding: 2rem 0 4rem 0; display: none;">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                    <h2 style="font-size: 2.5rem; font-weight: 700; color: white;">Constitutional Documents</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="documentTypeFilter" class="glass-input" style="min-width: 200px;">
+                            <option value="">All Document Types</option>
+                            <option value="constitution">Constitution</option>
+                            <option value="bylaws">Bylaws</option>
+                            <option value="policy">Policies</option>
+                            <option value="procedure">Procedures</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Documents Grid -->
+                <div id="documentsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                    <!-- Documents will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-footer">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 3rem; margin-bottom: 2rem;">
+                
+                <!-- Club Info -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #3b82f6;">JKUAT Innovation Club</h3>
+                    <p style="color: #94a3b8; line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Empowering the next generation of innovators and entrepreneurs through democratic governance and transparent leadership.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #3b82f6;">Governance</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="#" onclick="showSection('meetings')" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#94a3b8'">Meetings</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="#" onclick="showSection('elections')" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#94a3b8'">Elections</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="#" onclick="showSection('proposals')" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#94a3b8'">Proposals</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="#" onclick="showSection('documents')" style="color: #3b82f6; text-decoration: none; font-size: 0.875rem; font-weight: 600;">Constitution</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #3b82f6;">Contact</h3>
+                    <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #3b82f6;">📧</span> governance@jkuat.ac.ke
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #3b82f6;">📱</span> +254 700 000 000
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #3b82f6;">📍</span> JKUAT Main Campus<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Juja, Kenya
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Copyright -->
+            <div style="border-top: 1px solid #334155; padding-top: 1.5rem; text-align: center;">
+                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Meeting Details Modal -->
+    <div id="meetingModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Meeting Details</h2>
+                <button onclick="closeMeetingModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="meetingModalContent">
+                <!-- Meeting details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Election Details Modal -->
+    <div id="electionModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Election Details</h2>
+                <button onclick="closeElectionModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="electionModalContent">
+                <!-- Election details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Proposal Details Modal -->
+    <div id="proposalModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Proposal Details</h2>
+                <button onclick="closeProposalModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="proposalModalContent">
+                <!-- Proposal details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Viewer Modal -->
+    <div id="documentModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: white; font-weight: 700; font-size: 1.5rem; margin: 0;">Document Viewer</h2>
+                <button onclick="closeDocumentModal()" style="background: none; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0.5rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="documentModalContent">
+                <!-- Document content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" style="position: fixed; top: 2rem; right: 2rem; z-index: 1001; display: none;">
+        <div class="glass-card" style="padding: 1rem 1.5rem; min-width: 300px; border-left: 4px solid #3b82f6;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i id="toastIcon" class="fas fa-info-circle" style="color: #3b82f6; font-size: 1.25rem;"></i>
+                <div>
+                    <div id="toastTitle" style="color: white; font-weight: 600; font-size: 0.875rem;"></div>
+                    <div id="toastMessage" style="color: rgba(255, 255, 255, 0.8); font-size: 0.75rem; margin-top: 0.25rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/pages/governance.js"></script>
+</body>
+</html>

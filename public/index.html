@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- IMMEDIATE CSS TO HIDE SOCIAL BUTTONS -->
+    <style>
+        /* Hide social share buttons immediately */
+        #social-share-container,
+        div[style*="position: fixed"][style*="right: 20px"],
+        div[style*="position: fixed"][style*="right:20px"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: -9999 !important;
+        }
+        
+        /* Hide any floating buttons on the right side */
+        div[style*="position: fixed"][style*="right"] {
+            display: none !important;
+        }
+        
+        /* Hide any popup notifications */
+        div[style*="position: fixed"][style*="bottom: 20px"],
+        div[style*="position: fixed"][style*="bottom:20px"],
+        div[style*="position: fixed"][style*="left: 20px"],
+        div[style*="position: fixed"][style*="left:20px"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+    </style>
+    
+    <!-- IMMEDIATE JAVASCRIPT TO REMOVE SOCIAL BUTTONS AND POPUPS -->
+    <script>
+        (function() {
+            function removeUnwantedElements() {
+                // Remove social share container
+                const container = document.getElementById('social-share-container');
+                if (container) {
+                    container.remove();
+                    console.log('Removed social buttons');
+                }
+                
+                // Remove any fixed positioned elements on the right or bottom
+                document.querySelectorAll('div').forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    if (style.position === 'fixed') {
+                        const right = style.right;
+                        const bottom = style.bottom;
+                        const left = style.left;
+                        
+                        // Remove right-side floating elements (social buttons)
+                        if (right && right.includes('20px')) {
+                            el.remove();
+                            console.log('Removed fixed right element');
+                        }
+                        
+                        // Remove bottom-left popup notifications
+                        if ((bottom && bottom.includes('20px')) && (left && left.includes('20px'))) {
+                            el.remove();
+                            console.log('Removed popup notification');
+                        }
+                    }
+                });
+                
+                // Remove any elements with social proof text patterns
+                document.querySelectorAll('div').forEach(el => {
+                    const text = el.textContent;
+                    if (text && (
+                        text.includes('just joined') || 
+                        text.includes('launched his startup') ||
+                        text.includes('won the hackathon') ||
+                        text.includes('raised ₹') ||
+                        text.includes('new startups launched')
+                    )) {
+                        el.remove();
+                        console.log('Removed social proof popup');
+                    }
+                });
+            }
+            
+            // Run immediately and repeatedly
+            removeUnwantedElements();
+            setInterval(removeUnwantedElements, 1000);
+            
+            // Run when DOM loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', removeUnwantedElements);
+            }
+            
+            // Prevent any intervals or timeouts that might create popups
+            const originalSetInterval = window.setInterval;
+            const originalSetTimeout = window.setTimeout;
+            
+            window.setInterval = function(callback, delay) {
+                // Block intervals that might be creating popups (15 seconds = 15000ms)
+                if (delay === 15000) {
+                    console.log('Blocked popup interval');
+                    return null;
+                }
+                return originalSetInterval.apply(this, arguments);
+            };
+            
+            window.setTimeout = function(callback, delay) {
+                // Block timeouts that might be creating popups (5 seconds = 5000ms)
+                if (delay === 5000 || delay === 3000) {
+                    console.log('Blocked popup timeout');
+                    return null;
+                }
+                return originalSetTimeout.apply(this, arguments);
+            };
+        })();
+    </script>
+    
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/main.css?v=2024122901" rel="stylesheet">
+    <link href="/css/mobile-optimized.css?v=2024122901" rel="stylesheet">
+    
+    <!-- Enhanced Meta Tags for SEO -->
+    <meta name="description" content="Join JKUAT's premier innovation and entrepreneurship community. Empowering students to transform ideas into reality through technology, mentorship, and collaboration.">
+    <meta name="keywords" content="JKUAT, innovation, entrepreneurship, technology, students, club, startup, incubation, Jomo Kenyatta University, Kenya innovation, student entrepreneurship">
+    <meta name="author" content="JKUAT Innovation and Entrepreneurship Club">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="JKUAT Innovation and Entrepreneurship Club">
+    <meta property="og:description" content="Join JKUAT's premier innovation community where ideas become reality and students shape the future through technology and entrepreneurship.">
+    <meta property="og:image" content="http://localhost:3000/assets/images/logo.svg">
+    <meta property="og:url" content="http://localhost:3000">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="JKUAT Innovation Club">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JKUAT Innovation and Entrepreneurship Club">
+    <meta name="twitter:description" content="Join JKUAT's premier innovation community where ideas become reality.">
+    <meta name="twitter:image" content="http://localhost:3000/assets/images/logo.svg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+    <link rel="alternate icon" href="/favicon.ico">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JKUAT Innovation">
+    <link rel="apple-touch-icon" href="/assets/images/logo.svg">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/css/main.css?v=2024122901" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
+    
+    <!-- Performance Optimization -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "JKUAT Innovation and Entrepreneurship Club",
+        "description": "Premier innovation and entrepreneurship community at Jomo Kenyatta University of Agriculture and Technology",
+        "url": "http://localhost:3000",
+        "logo": "http://localhost:3000/assets/images/logo.svg",
+        "foundingDate": "2020",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Juja",
+            "addressCountry": "Kenya"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "innovation@jkuat.ac.ke",
+            "contactType": "General Inquiry"
+        },
+        "sameAs": [
+            "https://www.facebook.com/jkuatinnovation",
+            "https://twitter.com/jkuatinnovation",
+            "https://www.linkedin.com/company/jkuat-innovation"
+        ]
+    }
+    </script>
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section id="home" class="mobile-hero" style="min-height: 100vh; position: relative; display: flex; align-items: center; overflow: hidden;">
+        
+        <!-- Main Content -->
+        <div class="container mobile-hero-container" style="text-align: center; position: relative; z-index: 10; color: white;">
+            
+            <!-- Badge -->
+            <div class="hero-badge" style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.05em;">
+                <span class="pulse" style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 0.75rem;"></span>
+                JKUAT's Premier Innovation Hub
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 class="hero-title" style="font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;" class="gradient-text">
+                Innovate. Create.<br>
+                <span class="gradient-text accent">Transform.</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="hero-subtitle" style="font-size: clamp(1.125rem, 3vw, 1.5rem); line-height: 1.6; color: rgba(255, 255, 255, 0.9); max-width: 50rem; margin: 0 auto 3rem auto; font-weight: 400;">
+                Join JKUAT's premier innovation community where <strong>ideas become reality</strong> and students shape the future through technology and entrepreneurship.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="btn-group mobile-btn-group" style="margin-bottom: 4rem;">
+                <button id="heroRegisterBtn" class="btn btn-primary btn-xl mobile-cta-btn">
+                    <i class="fas fa-rocket" style="margin-right: 0.5rem;"></i>Become a Member
+                </button>
+                <button id="heroLearnMoreBtn" class="btn btn-outline btn-xl mobile-cta-btn">
+                    <i class="fas fa-book-open" style="margin-right: 0.5rem;"></i>Learn More
+                </button>
+            </div>
+            
+            <!-- Stats Preview -->
+            <div class="stats-grid mobile-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 40rem; margin: 0 auto;">
+                <div class="stat-item" style="text-align: center;" class="animate-on-scroll">
+                    <div class="counter" data-target="500" style="font-size: 2.5rem; font-weight: 800; color: #fbbf24; margin-bottom: 0.25rem;">0</div>
+                    <div class="stat-label" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Active Members</div>
+                </div>
+                <div class="stat-item" style="text-align: center;" class="animate-on-scroll">
+                    <div class="counter" data-target="50" style="font-size: 2.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">0</div>
+                    <div class="stat-label" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Projects Launched</div>
+                </div>
+                <div class="stat-item" style="text-align: center;" class="animate-on-scroll">
+                    <div class="counter" data-target="25" style="font-size: 2.5rem; font-weight: 800; color: #f472b6; margin-bottom: 0.25rem;">0</div>
+                    <div class="stat-label" style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); font-weight: 500;">Industry Partners</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator" style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 10;">
+            <div style="width: 2px; height: 30px; background: rgba(255, 255, 255, 0.5); margin: 0 auto 0.5rem; animation: scroll-indicator 2s infinite;"></div>
+            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.75rem; font-weight: 500;">Scroll to explore</div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" style="padding: 4rem 0; position: relative; overflow: hidden;">
+        
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 2.5rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    ABOUT US
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    JKUAT Innovation and<br>
+                    <span class="gradient-text accent">Entrepreneurship Club</span>
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    We are a <strong style="color: white;">student-led organization</strong> dedicated to fostering innovation, entrepreneurship, and technological advancement among JKUAT students.
+                </p>
+            </div>
+            
+            <!-- Vision, Mission, Values Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                
+                <!-- Vision Card -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                    <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.5rem;">🎯</span>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Our Vision</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 1rem;">To be the leading student innovation hub in East Africa, nurturing the next generation of tech entrepreneurs and innovators.</p>
+                </div>
+                
+                <!-- Mission Card -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.5rem;">🚀</span>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Our Mission</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 1rem;">To empower JKUAT students with the skills, resources, and network needed to transform innovative ideas into impactful solutions.</p>
+                </div>
+                
+                <!-- Values Card -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #f59e0b, #d97706);"></div>
+                    <div style="width: 60px; height: 60px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                        <span style="font-size: 1.5rem;">⭐</span>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Our Values</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 1rem;">Innovation, Collaboration, Excellence, Integrity, and Sustainable Development - guiding principles in everything we do.</p>
+                </div>
+                
+            </div>
+            
+            <!-- Key Highlights -->
+            <div class="glass-card animate-on-scroll" style="padding: 3rem;">
+                <div style="text-align: center; margin-bottom: 2.5rem;">
+                    <h3 style="font-size: 2rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Why Join Us?</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 1.125rem;">Discover what makes our community special</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
+                            <span style="font-size: 2rem;">🤝</span>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-bottom: 0.5rem;">Networking</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Connect with like-minded innovators and industry professionals</p>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                            <span style="font-size: 2rem;">📚</span>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-bottom: 0.5rem;">Learning</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Access workshops, mentorship, and skill development programs</p>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);">
+                            <span style="font-size: 2rem;">💡</span>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-bottom: 0.5rem;">Innovation</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Turn your ideas into reality with our support and resources</p>
+                    </div>
+                    
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(139, 92, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);">
+                            <span style="font-size: 2rem;">🏆</span>
+                        </div>
+                        <h4 style="font-size: 1.25rem; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin-bottom: 0.5rem;">Growth</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Develop leadership skills and entrepreneurial mindset</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- Upcoming Events Preview Section -->
+    <section id="upcoming-events" style="padding: 4rem 0; position: relative; overflow: hidden;">
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 3rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    UPCOMING EVENTS
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Don't Miss Out on<br>
+                    <span class="gradient-text accent">Exciting Opportunities</span>
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    Join our upcoming events and connect with fellow innovators, learn from industry experts, and showcase your ideas.
+                </p>
+            </div>
+            
+            <!-- Events Grid -->
+            <div id="upcomingEventsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <!-- Events will be loaded dynamically -->
+                <div style="text-align: center; padding: 3rem; grid-column: 1 / -1;">
+                    <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                    <p style="color: rgba(255, 255, 255, 0.8);">Loading upcoming events...</p>
+                </div>
+            </div>
+            
+            <!-- View All Events Button -->
+            <div style="text-align: center;" class="animate-on-scroll">
+                <a href="/events" class="btn btn-primary btn-xl">
+                    <i class="fas fa-calendar-alt"></i>View All Events
+                </a>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- Partners Section -->
+    <section id="partners" style="padding: 4rem 0; position: relative; overflow: hidden;">
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 3rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    OUR PARTNERS
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Trusted by Leading<br>
+                    <span class="gradient-text accent">Organizations</span>
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    We collaborate with industry leaders to provide our members with real-world opportunities and mentorship.
+                </p>
+            </div>
+            
+            <!-- Partners Grid -->
+            <div class="glass-card animate-on-scroll" style="padding: 3rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; align-items: center;">
+                    
+                    <!-- JKUAT -->
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                            <span style="font-size: 2rem;">🏛️</span>
+                        </div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.5rem;">JKUAT</h4>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Official University Partner</p>
+                    </div>
+                    
+                    <!-- Tech Company -->
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
+                            <span style="font-size: 2rem;">💻</span>
+                        </div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.5rem;">TechCorp Kenya</h4>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Technology Partner</p>
+                    </div>
+                    
+                    <!-- Startup Incubator -->
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);">
+                            <span style="font-size: 2rem;">🚀</span>
+                        </div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.5rem;">Innovation Hub</h4>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Incubation Partner</p>
+                    </div>
+                    
+                    <!-- Financial Partner -->
+                    <div style="text-align: center; padding: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: rgba(139, 92, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);">
+                            <span style="font-size: 2rem;">🏦</span>
+                        </div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.5rem;">FinanceBank</h4>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Financial Partner</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" style="padding: 4rem 0; position: relative; overflow: hidden;">
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 3rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    FAQ
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Frequently Asked<br>
+                    <span class="gradient-text accent">Questions</span>
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    Got questions? We've got answers. Here are the most common questions about joining our community.
+                </p>
+            </div>
+            
+            <!-- FAQ Items -->
+            <div style="max-width: 800px; margin: 0 auto;">
+                
+                <!-- FAQ Item 1 -->
+                <div class="faq-item glass-card animate-on-scroll" style="margin-bottom: 1rem; overflow: hidden;">
+                    <button class="faq-question" style="width: 100%; padding: 1.5rem; background: none; border: none; color: white; font-size: 1.125rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>How do I join the JKUAT Innovation Club?</span>
+                        <i class="fas fa-chevron-down faq-icon" style="transition: transform 0.3s ease;"></i>
+                    </button>
+                    <div class="faq-answer" style="padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: all 0.3s ease;">
+                        <div style="padding-bottom: 1.5rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                            Joining is simple! Click the "Join Us" button, create your account, and complete your profile. Membership is free for all JKUAT students. You'll get access to events, resources, and our community platform immediately.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 2 -->
+                <div class="faq-item glass-card animate-on-scroll" style="margin-bottom: 1rem; overflow: hidden;">
+                    <button class="faq-question" style="width: 100%; padding: 1.5rem; background: none; border: none; color: white; font-size: 1.125rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>What kind of events do you organize?</span>
+                        <i class="fas fa-chevron-down faq-icon" style="transition: transform 0.3s ease;"></i>
+                    </button>
+                    <div class="faq-answer" style="padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: all 0.3s ease;">
+                        <div style="padding-bottom: 1.5rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                            We organize weekly workshops, monthly hackathons, quarterly innovation summits, networking events with industry professionals, startup pitch competitions, and skill development sessions covering technology, entrepreneurship, and leadership.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 3 -->
+                <div class="faq-item glass-card animate-on-scroll" style="margin-bottom: 1rem; overflow: hidden;">
+                    <button class="faq-question" style="width: 100%; padding: 1.5rem; background: none; border: none; color: white; font-size: 1.125rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Do I need technical skills to join?</span>
+                        <i class="fas fa-chevron-down faq-icon" style="transition: transform 0.3s ease;"></i>
+                    </button>
+                    <div class="faq-answer" style="padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: all 0.3s ease;">
+                        <div style="padding-bottom: 1.5rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                            Not at all! We welcome students from all backgrounds and skill levels. Whether you're a beginner or experienced, we have programs designed to help you grow. Our community includes business students, engineers, designers, and more.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 4 -->
+                <div class="faq-item glass-card animate-on-scroll" style="margin-bottom: 1rem; overflow: hidden;">
+                    <button class="faq-question" style="width: 100%; padding: 1.5rem; background: none; border: none; color: white; font-size: 1.125rem; font-weight: 600; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <span>What support do you provide for startups?</span>
+                        <i class="fas fa-chevron-down faq-icon" style="transition: transform 0.3s ease;"></i>
+                    </button>
+                    <div class="faq-answer" style="padding: 0 1.5rem; max-height: 0; overflow: hidden; transition: all 0.3s ease;">
+                        <div style="padding-bottom: 1.5rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                            We offer mentorship from industry experts, access to funding opportunities, business development workshops, networking with investors, incubation support, and connections to our partner organizations for resources and guidance.
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+    <section style="padding: 4rem 0; position: relative; overflow: hidden;">
+        
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 3rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    JOIN US TODAY
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Ready to Start Your<br>
+                    <span class="gradient-text accent">Innovation Journey?</span>
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    Join <strong style="color: white;">500+ students</strong> who are already transforming their ideas into reality at JKUAT's premier innovation hub.
+                </p>
+            </div>
+            
+            <!-- CTA Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                
+                <!-- Membership Card -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; text-align: center; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    <div style="width: 80px; height: 80px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                        <span style="font-size: 2rem;">🚀</span>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Become a Member</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 1rem; margin-bottom: 1.5rem;">Join our community of innovators and get access to exclusive workshops, mentorship, and networking opportunities.</p>
+                    <button id="joinMembershipBtn" class="btn btn-primary btn-full">
+                        Join Now - Free
+                    </button>
+                </div>
+                
+                <!-- Events Card -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; text-align: center; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                    <div style="width: 80px; height: 80px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
+                        <span style="font-size: 2rem;">📅</span>
+                    </div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Attend Events</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 1rem; margin-bottom: 1.5rem;">Participate in our weekly workshops, monthly hackathons, and quarterly innovation summits with industry experts.</p>
+                    <button id="viewEventsBtn" class="btn btn-outline btn-full">
+                        View Events
+                    </button>
+                </div>
+                
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- Success Stories Section -->
+    <section style="padding: 4rem 0; position: relative; overflow: hidden;">
+        <div class="container" style="position: relative; z-index: 10;">
+            
+            <!-- Section Header -->
+            <div style="text-align: center; margin-bottom: 3rem;" class="animate-on-scroll">
+                <div style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    SUCCESS STORIES
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    What Our Members Say
+                </h2>
+                <p style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: rgba(255, 255, 255, 0.9); line-height: 1.6; font-weight: 400;">
+                    Hear from students who have transformed their ideas into reality through our community
+                </p>
+            </div>
+            
+            <!-- Testimonials Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                
+                <!-- Testimonial 1 -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem;">
+                            MK
+                        </div>
+                        <div>
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Mary Kamau</h4>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Computer Science, 4th Year</p>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-style: italic; margin-bottom: 1rem;">
+                        "The Innovation Club helped me turn my mobile app idea into reality. Through their mentorship program, I connected with industry experts who guided me through the development process."
+                    </p>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <span style="color: #fbbf24; font-size: 1rem;">★★★★★</span>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 2 -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem;">
+                            JO
+                        </div>
+                        <div>
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 0.25rem;">John Ochieng</h4>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Mechanical Engineering, 3rd Year</p>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-style: italic; margin-bottom: 1rem;">
+                        "I joined as a shy first-year student. Now I'm leading a team of 8 developers on an IoT project that's getting attention from tech companies. The growth has been incredible!"
+                    </p>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <span style="color: #fbbf24; font-size: 1rem;">★★★★★</span>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="glass-card animate-on-scroll" style="padding: 2.5rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #f59e0b, #d97706);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem;">
+                            AM
+                        </div>
+                        <div>
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Alice Mwangi</h4>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Business IT, 2nd Year</p>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-style: italic; margin-bottom: 1rem;">
+                        "The networking opportunities are amazing! I've connected with alumni who are now my business partners. We're launching our fintech startup next month."
+                    </p>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <span style="color: #fbbf24; font-size: 1rem;">★★★★★</span>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Achievement Stats -->
+            <div class="glass-card animate-on-scroll" style="padding: 2.5rem; text-align: center;">
+                <h3 style="color: white; font-weight: 700; font-size: 1.5rem; margin-bottom: 2rem;">Our Impact</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem;">
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: #10b981; margin-bottom: 0.5rem;">15+</div>
+                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Startups Launched</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.5rem;">₹2M+</div>
+                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Funding Raised</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.5rem;">95%</div>
+                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Job Placement Rate</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.5rem;">200+</div>
+                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Industry Connections</div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="glass-footer">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 3rem; margin-bottom: 2rem;">
+                
+                <!-- Club Info -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">JKUAT Innovation Club</h3>
+                    <p style="color: #94a3b8; line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Empowering the next generation of innovators and entrepreneurs at Jomo Kenyatta University of Agriculture and Technology.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" style="color: #64748b; font-size: 1.25rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Quick Links</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Home</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/events" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Events</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/dashboard" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Dashboard</a>
+                        </li>
+                        <li style="margin-bottom: 0.75rem;">
+                            <a href="/resources" style="color: #94a3b8; text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#94a3b8'">Resources</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #10b981;">Contact</h3>
+                    <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📧</span> innovation@jkuat.ac.ke
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📱</span> +254 700 000 000
+                        </p>
+                        <p style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #10b981;">📍</span> JKUAT Main Campus<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Juja, Kenya
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Copyright -->
+            <div style="border-top: 1px solid #334155; padding-top: 1.5rem; text-align: center;">
+                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/js/remove-social-buttons.js"></script>
+    <script src="/js/core/app.js"></script>
+    <script src="/js/components/auth.js"></script>
+    <script src="/js/components/navigation.js"></script>
+    <script src="/js/components/dynamic-content.js"></script>
+    <script src="/js/components/upcoming-events.js"></script>
+    <script src="/js/components/analytics.js"></script>
+    <script src="/js/components/performance.js"></script>
+    <script src="/js/pages/home.js"></script>
+    
+    <script>
+        // Load navigation template
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🏠 Homepage: DOM Content Loaded');
+            
+            try {
+                console.log('📡 Loading navigation template...');
+                const response = await fetch('/templates/components/navigation.html');
+                const navigationHTML = await response.text();
+                document.getElementById('navigation-placeholder').innerHTML = navigationHTML;
+                console.log('✅ Navigation template loaded successfully');
+                
+                // Initialize navigation after loading
+                if (window.Navigation) {
+                    window.navigation = new Navigation();
+                    console.log('✅ Navigation component initialized');
+                }
+                
+                // Initialize auth manager AFTER navigation is loaded with multiple attempts
+                let authInitAttempts = 0;
+                const maxAttempts = 5;
+                
+                const initAuth = () => {
+                    authInitAttempts++;
+                    console.log(`🔐 Auth initialization attempt ${authInitAttempts}/${maxAttempts}`);
+                    
+                    if (typeof AuthManager !== 'undefined') {
+                        if (!window.authManager) {
+                            window.authManager = new AuthManager();
+                            console.log('✅ Auth manager initialized successfully');
+                        }
+                        
+                        // Force button binding
+                        setTimeout(() => {
+                            if (window.authManager) {
+                                window.authManager.bindDirectEvents();
+                            }
+                        }, 500);
+                        
+                    } else {
+                        console.error('❌ AuthManager class not found');
+                        if (authInitAttempts < maxAttempts) {
+                            setTimeout(initAuth, 1000);
+                        }
+                    }
+                };
+                
+                // Start auth initialization
+                setTimeout(initAuth, 300);
+                
+                // Add manual test buttons for debugging
+                setTimeout(() => {
+                    const debugDiv = document.createElement('div');
+                    debugDiv.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 10000; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; display: none;';
+                    debugDiv.innerHTML = `
+                        <button onclick="testLogin()" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; margin: 2px; border-radius: 4px; cursor: pointer;">Test Login</button>
+                        <button onclick="testRegister()" style="background: #10b981; color: white; border: none; padding: 5px 10px; margin: 2px; border-radius: 4px; cursor: pointer;">Test Register</button>
+                        <button onclick="this.parentElement.style.display='none'" style="background: #ef4444; color: white; border: none; padding: 5px 10px; margin: 2px; border-radius: 4px; cursor: pointer;">Hide</button>
+                    `;
+                    document.body.appendChild(debugDiv);
+                    
+                    // Show debug panel on Ctrl+Shift+D
+                    document.addEventListener('keydown', (e) => {
+                        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                            debugDiv.style.display = debugDiv.style.display === 'none' ? 'block' : 'none';
+                        }
+                    });
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Failed to load navigation template:', error);
+            }
+        });
+    </script>
+    
+    <!-- Add scroll indicator animation -->
+    <style>
+        @keyframes scroll-indicator {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(10px); }
+        }
+        
+        /* Enhanced button styles */
+        .btn-xl {
+            padding: 1rem 2rem !important;
+            font-size: 1.125rem !important;
+            font-weight: 600 !important;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* Newsletter form responsive */
+        @media (max-width: 640px) {
+            #newsletterForm {
+                flex-direction: column !important;
+            }
+            
+            #newsletterForm input {
+                min-width: 100% !important;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-xl {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+        
+        /* Testimonial cards hover effect */
+        .glass-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        /* Newsletter input focus styles */
+        #newsletterEmail:focus {
+            border-color: rgba(16, 185, 129, 0.5) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        }
+        
+        #newsletterEmail::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        /* Loading animation for upcoming events */
+        .event-loading {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        .glass-card, .btn, .glass-button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        
+        /* Enhanced stats section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+    </style>
+</body>
+</html>

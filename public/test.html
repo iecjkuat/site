@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login Functions</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { background: white; margin: 50px auto; padding: 20px; width: 300px; border-radius: 5px; }
+        .close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Test Login Functions</h1>
+    
+    <button onclick="testShowLoginModal()">Test Login Modal</button>
+    <button onclick="testShowRegisterModal()">Test Register Modal</button>
+    <button onclick="checkFunctions()">Check Functions</button>
+    
+    <div id="results"></div>
+    
+    <!-- Simple Test Modal -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideTestModal()">&times;</span>
+            <h2>Test Modal</h2>
+            <p>This modal is working!</p>
+        </div>
+    </div>
+    
+    <!-- Login Modal (copied from main page) -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideLoginModal()">&times;</span>
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div>
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div>
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Register Modal (simplified) -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideRegisterModal()">&times;</span>
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div>
+                    <label>Name:</label>
+                    <input type="text" id="registerName" required>
+                </div>
+                <div>
+                    <label>Email:</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <button type="submit">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        function testShowLoginModal() {
+            console.log('testShowLoginModal called');
+            if (typeof showLoginModal === 'function') {
+                showLoginModal();
+                document.getElementById('results').innerHTML += '<p>✅ showLoginModal() called successfully</p>';
+            } else {
+                document.getElementById('results').innerHTML += '<p>❌ showLoginModal is not a function</p>';
+            }
+        }
+        
+        function testShowRegisterModal() {
+            console.log('testShowRegisterModal called');
+            if (typeof showRegisterModal === 'function') {
+                showRegisterModal();
+                document.getElementById('results').innerHTML += '<p>✅ showRegisterModal() called successfully</p>';
+            } else {
+                document.getElementById('results').innerHTML += '<p>❌ showRegisterModal is not a function</p>';
+            }
+        }
+        
+        function checkFunctions() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Function Check Results:</h3>';
+            
+            const functions = ['showLoginModal', 'hideLoginModal', 'showRegisterModal', 'hideRegisterModal', 'toggleMobileMenu'];
+            
+            functions.forEach(func => {
+                if (typeof window[func] === 'function') {
+                    results.innerHTML += `<p>✅ ${func} is available</p>`;
+                } else {
+                    results.innerHTML += `<p>❌ ${func} is NOT available</p>`;
+                }
+            });
+        }
+        
+        function showTestModal() {
+            document.getElementById('testModal').style.display = 'block';
+        }
+        
+        function hideTestModal() {
+            document.getElementById('testModal').style.display = 'none';
+        }
+        
+        // Test basic modal functionality
+        setTimeout(() => {
+            checkFunctions();
+        }, 1000);
+    </script>
+</body>
+</html>

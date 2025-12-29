@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Modal Functions</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Debug Modal Functions</h1>
+    
+    <div class="space-y-4">
+        <button onclick="testFunction('showLoginModal')" class="bg-blue-500 text-white px-4 py-2 rounded">
+            Test showLoginModal()
+        </button>
+        
+        <button onclick="testFunction('showRegisterModal')" class="bg-green-500 text-white px-4 py-2 rounded">
+            Test showRegisterModal()
+        </button>
+        
+        <button onclick="testDirectModal()" class="bg-purple-500 text-white px-4 py-2 rounded">
+            Test Direct Modal Show
+        </button>
+        
+        <button onclick="checkElements()" class="bg-gray-500 text-white px-4 py-2 rounded">
+            Check Elements
+        </button>
+    </div>
+    
+    <div id="results" class="mt-4 p-4 bg-gray-100 rounded"></div>
+    
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Login</h2>
+                <button onclick="hideLoginModal()" class="text-gray-500 hover:text-gray-700">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+            <p>Login modal is working!</p>
+        </div>
+    </div>
+    
+    <!-- Register Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Register</h2>
+                <button onclick="hideRegisterModal()" class="text-gray-500 hover:text-gray-700">
+                    <span class="text-xl">&times;</span>
+                </button>
+            </div>
+            <p>Register modal is working!</p>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        function log(message) {
+            const results = document.getElementById('results');
+            results.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+        
+        function testFunction(funcName) {
+            log('Testing ' + funcName + '...');
+            
+            if (typeof window[funcName] === 'function') {
+                try {
+                    window[funcName]();
+                    log('✅ ' + funcName + ' executed successfully');
+                } catch (error) {
+                    log('❌ Error executing ' + funcName + ': ' + error.message);
+                }
+            } else {
+                log('❌ ' + funcName + ' is not a function (type: ' + typeof window[funcName] + ')');
+            }
+        }
+        
+        function testDirectModal() {
+            log('Testing direct modal manipulation...');
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                log('Modal element found');
+                log('Current classes: ' + modal.className);
+                
+                modal.classList.remove('hidden');
+                log('Removed hidden class');
+                log('New classes: ' + modal.className);
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    log('Added hidden class back');
+                }, 2000);
+            } else {
+                log('❌ Modal element not found');
+            }
+        }
+        
+        function checkElements() {
+            log('Checking elements...');
+            
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            
+            log('loginModal exists: ' + !!loginModal);
+            log('registerModal exists: ' + !!registerModal);
+            
+            if (loginModal) {
+                log('loginModal classes: ' + loginModal.className);
+            }
+            
+            if (registerModal) {
+                log('registerModal classes: ' + registerModal.className);
+            }
+            
+            // Check if functions exist
+            const functions = ['showLoginModal', 'hideLoginModal', 'showRegisterModal', 'hideRegisterModal'];
+            functions.forEach(func => {
+                log(func + ' exists: ' + (typeof window[func] === 'function'));
+            });
+        }
+        
+        // Auto-check on load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkElements, 1000);
+        });
+    </script>
+</body>
+</html>

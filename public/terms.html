@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms and Conditions - JKUAT Innovation Club</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 text-white">
+    <div id="navigation-placeholder"></div>
+
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <h1 class="text-4xl font-bold mb-8 gradient-text">Terms and Conditions</h1>
+
+        <div class="glass-card p-8 space-y-6">
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">1. Acceptance of Terms</h2>
+                <p class="text-gray-300">By accessing and using this platform, you accept and agree to be bound by the
+                    terms and provision of this agreement.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">2. Membership Rules</h2>
+                <p class="text-gray-300">Membership is open to all JKUAT students. You agree to provide accurate and
+                    complete information when registering. You are responsible for maintaining the confidentiality of
+                    your account credentials.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">3. Code of Conduct</h2>
+                <p class="text-gray-300">Members are expected to behave professionally and respectfully. Harassment,
+                    hate speech, or inappropriate behavior will result in immediate account suspension.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">4. Intellectual Property</h2>
+                <p class="text-gray-300">Content published on this platform (ideas, projects, resources) remains the
+                    property of the respective creators, subject to JKUAT IP policies.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">5. Modifications</h2>
+                <p class="text-gray-300">We reserve the right to modify these terms at any time. Continued use of the
+                    platform constitutes acceptance of updated terms.</p>
+            </section>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="/" class="btn btn-primary">Back to Home</a>
+        </div>
+    </div>
+
+    <script src="/js/components/navigation.js"></script>
+    <script>
+        // Simple navigation loader
+        fetch('/templates/components/public-navigation.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('navigation-placeholder').innerHTML = html)
+            .catch(e => console.error(e));
+    </script>
+</body>
+
+</html>
