@@ -19,7 +19,7 @@ class EventsService {
             const queryParams = new URLSearchParams({
                 page: 1,
                 limit: 12,
-                upcoming: true,
+                status: 'upcoming', // Use status instead of date-based upcoming
                 ...params
             });
 

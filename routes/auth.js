@@ -468,6 +468,22 @@ router.post('/register', [
   }
 });
 
+// Test endpoint to generate password hash
+router.get('/test-hash/:password', async (req, res) => {
+  try {
+    const { password } = req.params;
+    const hash = await bcrypt.hash(password, 12);
+    
+    res.json({
+      password: password,
+      hash: hash,
+      message: 'Use this hash in your database'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Test endpoint to fix sample user passwords
 router.get('/fix-passwords', async (req, res) => {
   try {
@@ -506,7 +522,7 @@ router.get('/test-users', async (req, res) => {
   try {
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, name, email, role, membership_status')
+      .select('id, name, email, role, membership_status, email_verified')
       .in('email', [
         'admin@jkuatinnovation.ac.ke',
         'executive@jkuatinnovation.ac.ke',
@@ -524,20 +540,24 @@ router.get('/test-users', async (req, res) => {
 
       const { data: updatedUsers, error: updateError } = await supabase
         .from('users')
-        .update({ password_hash: correctHash })
+        .update({ 
+          password_hash: correctHash,
+          email_verified: true,
+          membership_status: 'active'
+        })
         .in('email', [
           'admin@jkuatinnovation.ac.ke',
           'executive@jkuatinnovation.ac.ke',
           'member@jkuatinnovation.ac.ke'
         ])
-        .select('email, name');
+        .select('email, name, email_verified, membership_status');
 
       if (updateError) {
         return res.status(500).json({ error: updateError.message });
       }
 
       return res.json({
-        message: 'Passwords fixed! All sample users now have password: admin123',
+        message: 'Test users fixed! All sample users now have password: admin123, verified emails, and active membership',
         users: users || [],
         updatedUsers: updatedUsers,
         count: users ? users.length : 0
@@ -548,7 +568,7 @@ router.get('/test-users', async (req, res) => {
       message: 'Sample users check',
       users: users || [],
       count: users ? users.length : 0,
-      fixPasswordsUrl: 'Add ?fix=true to this URL to fix passwords'
+      fixPasswordsUrl: 'Add ?fix=true to this URL to fix passwords and email verification'
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -617,7 +637,7 @@ router.post('/login', [
         .from('users')
         .select(`
           id, name, email, role, membership_status, password_hash, email_verified,
-          registration_number, profile_completed
+          registration_number
         `)
         .eq(column, identifier)
         .single();
@@ -685,7 +705,7 @@ router.post('/login', [
         email: user.email,
         role: user.role,
         membershipStatus: user.membership_status,
-        profileCompleted: user.profile_completed || false
+        profileCompleted: false // Default for now since column might not exist
       }
     });
 
@@ -712,7 +732,7 @@ router.get('/verify', async (req, res) => {
     const { data: user, error } = await supabase
       .from('users')
       .select(`
-        id, name, email, role, membership_status, profile_completed
+        id, name, email, role, membership_status
       `)
       .eq('id', decoded.userId)
       .single();
@@ -728,7 +748,7 @@ router.get('/verify', async (req, res) => {
         email: user.email,
         role: user.role,
         membershipStatus: user.membership_status,
-        profileCompleted: user.profile_completed || false
+        profileCompleted: false // Default for now since column might not exist
       }
     });
 

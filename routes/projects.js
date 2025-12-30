@@ -171,6 +171,47 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
+ * GET /api/projects/submissions
+ * Get all project submissions (for admin review)
+ */
+router.get('/submissions', async (req, res) => {
+  try {
+    const { status, limit = 50, offset = 0 } = req.query;
+    
+    let query = supabase
+      .from('project_submissions')
+      .select(`
+        *,
+        submitter:users!project_submissions_submitter_id_fkey(id, name, email)
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (status) {
+      query = query.eq('submission_status', status);
+    }
+
+    const { data: submissions, error } = await query;
+
+    if (error) {
+      console.error('Error fetching submissions:', error);
+      return res.status(500).json({ 
+        message: 'Failed to fetch submissions',
+        error: error.message 
+      });
+    }
+
+    res.json({
+      submissions: submissions || [],
+      count: submissions ? submissions.length : 0
+    });
+  } catch (error) {
+    console.error('Error in GET /submissions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/projects/:id
  * Get a specific project by ID
  */
@@ -222,18 +263,20 @@ router.post('/submit', async (req, res) => {
       });
     }
 
-    // For now, we'll create a project submission record
-    // In a real app, you'd get the user ID from authentication
+    // Use a default anonymous user ID for submissions without authentication
+    // In a real app, you'd either require authentication or modify the table schema
+    const anonymousUserId = 'cb8ec53d-7117-4957-9b40-148edf811452'; // Using admin user as default
+
     const submissionData = {
+      submitter_id: anonymousUserId, // Use default user for anonymous submissions
       title,
       description,
       category,
       expected_duration,
-      budget_estimate,
-      technologies,
-      objectives,
-      submission_status: 'Pending',
-      submitter_id: null // Would be set from authenticated user
+      budget_estimate: budget_estimate || 0,
+      technologies: technologies || [],
+      objectives: objectives || [],
+      submission_status: 'Pending'
     };
 
     const { data: submission, error } = await supabase
@@ -244,15 +287,28 @@ router.post('/submit', async (req, res) => {
 
     if (error) {
       console.error('Error creating project submission:', error);
-      return res.status(500).json({ message: 'Failed to submit project' });
+      return res.status(500).json({ 
+        message: 'Failed to submit project',
+        error: error.message 
+      });
     }
 
     res.status(201).json({
-      message: 'Project submitted successfully',
-      submission
+      message: 'Project submitted successfully! Our team will review it and get back to you.',
+      submission: {
+        id: submission.id,
+        title: submission.title,
+        status: submission.submission_status,
+        created_at: submission.created_at
+      }
     });
   } catch (error) {
     console.error('Error in POST /projects/submit:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
     res.status(500).json({ message: 'Internal server error' });
   }
 });

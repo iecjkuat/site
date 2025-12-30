@@ -36,6 +36,8 @@ const governanceRoutes = require('./routes/governance');
 const financialRoutes = require('./routes/financial');
 const communicationRoutes = require('./routes/communication');
 const analyticsRoutes = require('./routes/analytics');
+const statsRoutes = require('./routes/stats');
+const testimonialsRoutes = require('./routes/testimonials');
 
 const app = express();
 const server = http.createServer(app);
@@ -128,6 +130,8 @@ app.use('/api/governance', governanceRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/testimonials', testimonialsRoutes);
 
 // Serve HTML pages
 app.get('/', (req, res) => {

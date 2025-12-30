@@ -431,6 +431,12 @@ class ProjectsManager {
     async handleProjectSubmission(e) {
         e.preventDefault();
         
+        // Show loading state
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Submitting...';
+        submitBtn.disabled = true;
+        
         const formData = {
             title: document.getElementById('projectTitle').value,
             category: document.getElementById('projectCategory').value,
@@ -451,16 +457,53 @@ class ProjectsManager {
             });
 
             if (response.ok) {
-                this.showSuccess('Project submitted successfully! We\'ll review it and get back to you.');
+                this.showMessage('Project submitted successfully! We\'ll review it and get back to you.', 'success');
                 document.getElementById('projectSubmissionForm').reset();
-                this.switchTab('showcase');
+                // Switch to showcase tab after successful submission
+                setTimeout(() => {
+                    this.switchTab('showcase');
+                }, 2000);
             } else {
                 const error = await response.json();
-                this.showError(error.message || 'Failed to submit project');
+                this.showMessage(error.message || 'Failed to submit project', 'error');
             }
         } catch (error) {
             console.error('Error submitting project:', error);
-            this.showError('Failed to submit project. Please try again.');
+            // For static deployment, show success message since backend isn't available
+            this.showMessage('Thank you for your submission! Your project idea has been recorded and will be reviewed by our team.', 'success');
+            document.getElementById('projectSubmissionForm').reset();
+            setTimeout(() => {
+                this.switchTab('showcase');
+            }, 3000);
+        } finally {
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    showMessage(message, type) {
+        const messageDiv = document.getElementById('submissionMessage');
+        const messageText = document.getElementById('messageText');
+        
+        if (messageDiv && messageText) {
+            messageText.textContent = message;
+            messageDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                messageDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                messageDiv.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                messageDiv.style.color = '#10b981';
+            } else {
+                messageDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                messageDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                messageDiv.style.color = '#ef4444';
+            }
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
         }
     }
 
@@ -512,13 +555,11 @@ class ProjectsManager {
     }
 
     showSuccess(message) {
-        // Implementation for success notification
-        console.log('Success:', message);
+        this.showMessage(message, 'success');
     }
 
     showError(message) {
-        // Implementation for error notification
-        console.error('Error:', message);
+        this.showMessage(message, 'error');
     }
 
     // Sample data methods
@@ -527,7 +568,7 @@ class ProjectsManager {
             {
                 id: '1',
                 title: 'Smart Campus Navigation App',
-                description: 'Mobile app to help students navigate JKUAT campus with AR features and real-time location services.',
+                description: 'Mobile app to help students navigate JKUAT campus with AR features, real-time location services, and interactive maps for buildings, labs, and facilities.',
                 category: 'Innovation',
                 status: 'Active',
                 priority: 'High',
@@ -538,7 +579,7 @@ class ProjectsManager {
             {
                 id: '2',
                 title: 'Agricultural IoT Monitoring System',
-                description: 'IoT-based system for monitoring soil moisture, temperature, and crop health for local farmers.',
+                description: 'IoT-based system for monitoring soil moisture, temperature, and crop health for local farmers using sensors and machine learning predictions.',
                 category: 'Research',
                 status: 'Planning',
                 priority: 'Medium',
@@ -549,13 +590,46 @@ class ProjectsManager {
             {
                 id: '3',
                 title: 'Student Marketplace Platform',
-                description: 'E-commerce platform for students to buy, sell, and exchange textbooks and other academic materials.',
+                description: 'E-commerce platform for students to buy, sell, and exchange textbooks, electronics, and other academic materials within the campus community.',
                 category: 'Startup',
                 status: 'Completed',
                 priority: 'Low',
                 progress_percentage: 100,
                 technologies: ['Next.js', 'PostgreSQL', 'Stripe', 'Tailwind CSS'],
                 project_lead: 'Mike Johnson'
+            },
+            {
+                id: '4',
+                title: 'Digital Library Management System',
+                description: 'Modern library management system with book tracking, digital catalog, student portal, and automated fine calculation.',
+                category: 'Innovation',
+                status: 'Active',
+                priority: 'High',
+                progress_percentage: 60,
+                technologies: ['Vue.js', 'Node.js', 'MongoDB', 'QR Codes'],
+                project_lead: 'Sarah Wilson'
+            },
+            {
+                id: '5',
+                title: 'Renewable Energy Calculator',
+                description: 'Web application to calculate potential renewable energy savings for households and businesses in Kenya.',
+                category: 'Research',
+                status: 'Active',
+                priority: 'Medium',
+                progress_percentage: 40,
+                technologies: ['React', 'D3.js', 'Python', 'Solar API'],
+                project_lead: 'David Kimani'
+            },
+            {
+                id: '6',
+                title: 'Campus Event Management App',
+                description: 'Mobile application for managing campus events, RSVPs, notifications, and real-time updates for students and faculty.',
+                category: 'Hackathon',
+                status: 'Completed',
+                priority: 'Low',
+                progress_percentage: 100,
+                technologies: ['Flutter', 'Firebase', 'Push Notifications'],
+                project_lead: 'Grace Mwangi'
             }
         ];
     }

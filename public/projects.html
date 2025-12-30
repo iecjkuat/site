@@ -129,20 +129,25 @@
                         <h2 style="color: white; font-weight: 700; font-size: 2rem; margin-bottom: 1rem; text-align: center;">Submit Your Project Idea</h2>
                         <p style="color: rgba(255, 255, 255, 0.8); text-align: center; margin-bottom: 2rem;">Share your innovative project idea with the community and find collaborators to bring it to life.</p>
                         
+                        <!-- Success/Error Messages -->
+                        <div id="submissionMessage" style="display: none; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center;">
+                            <span id="messageText"></span>
+                        </div>
+                        
                         <form id="projectSubmissionForm">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                                 <div>
                                     <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Project Title *</label>
-                                    <input type="text" id="projectTitle" required style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;">
+                                    <input type="text" id="projectTitle" required style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;" placeholder="Enter your project title">
                                 </div>
                                 <div>
                                     <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Category *</label>
                                     <select id="projectCategory" required style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;">
-                                        <option value="">Select Category</option>
-                                        <option value="Innovation">Innovation</option>
-                                        <option value="Research">Research</option>
-                                        <option value="Startup">Startup</option>
-                                        <option value="Hackathon">Hackathon Project</option>
+                                        <option value="" style="background: #1f2937; color: white;">Select Category</option>
+                                        <option value="Innovation" style="background: #1f2937; color: white;">Innovation</option>
+                                        <option value="Research" style="background: #1f2937; color: white;">Research</option>
+                                        <option value="Startup" style="background: #1f2937; color: white;">Startup</option>
+                                        <option value="Hackathon" style="background: #1f2937; color: white;">Hackathon Project</option>
                                     </select>
                                 </div>
                             </div>

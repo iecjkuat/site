@@ -78,6 +78,79 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     transition: all 0.3s ease;
 }
 
+/* Navigation Club Name Header */
+.nav-club-header {
+    text-align: center;
+    padding: 0.75rem 0 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-club-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.nav-club-title {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: white !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    margin: 0 !important;
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+.nav-club-logo {
+    height: 2rem !important;
+    width: 2rem !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Navigation Links Layout */
+.nav-links-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.nav-spacer {
+    flex: 1;
+}
+
+.nav-center {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    flex: 1;
+}
+
+.nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+    .nav-club-title {
+        font-size: 1rem !important;
+    }
+    
+    .nav-club-logo {
+        height: 1.5rem !important;
+        width: 1.5rem !important;
+    }
+}
+
 .glass-button {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);

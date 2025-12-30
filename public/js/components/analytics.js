@@ -204,7 +204,9 @@ class Analytics {
         // Try to get from auth manager or localStorage
         const authManager = window.authManager;
         if (authManager && authManager.isLoggedIn()) {
-            return authManager.getCurrentUser()?.id || 'anonymous';
+            // Get user data from authManager's user property or localStorage
+            const userData = authManager.user || JSON.parse(localStorage.getItem('user') || '{}');
+            return userData?.id || 'anonymous';
         }
         
         // Generate anonymous user ID
