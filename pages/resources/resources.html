@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources & Documentation - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/shared/components/notifications.css" rel="stylesheet">
+    <link href="resources.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Access learning resources, documentation, and tools for JKUAT Innovation Club members.">
+    <meta name="keywords" content="JKUAT, resources, documentation, learning, tools, guides">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            
+            <!-- Badge -->
+            <div class="hero-badge">
+                <span class="badge-indicator"></span>
+                LEARNING RESOURCES
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 class="hero-title">
+                Resources &<br>
+                <span class="accent-text">Documentation</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="hero-subtitle">
+                Access essential <strong>documents, templates, guides</strong>, and resources to support your innovation journey at JKUAT.
+            </p>
+        </div>
+    </section>
+
+    <!-- Resource Categories -->
+    <section style="padding: 2rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            <div id="categoryFilters" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                <button class="category-btn btn-glass active" data-category="all">
+                    <i class="fas fa-th-large"></i>All Resources
+                </button>
+                <button class="category-btn btn-glass" data-category="Constitution">
+                    <i class="fas fa-gavel"></i>Constitution
+                </button>
+                <button class="category-btn btn-glass" data-category="Handbook">
+                    <i class="fas fa-book"></i>Handbook
+                </button>
+                <button class="category-btn btn-glass" data-category="Templates">
+                    <i class="fas fa-file-alt"></i>Templates
+                </button>
+                <button class="category-btn btn-glass" data-category="Guidelines">
+                    <i class="fas fa-list-ul"></i>Guidelines
+                </button>
+                <button class="category-btn btn-glass" data-category="Innovation">
+                    <i class="fas fa-lightbulb"></i>Innovation
+                </button>
+                <button class="category-btn btn-glass" data-category="Technical">
+                    <i class="fas fa-code"></i>Technical
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 3rem;">
+                <div style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: 0.05em;">
+                    AVAILABLE RESOURCES
+                </div>
+                <h2 style="font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; color: white; margin-bottom: 1rem; line-height: 1.2;">
+                    Access <span class="accent-text">Learning</span> Materials
+                </h2>
+                <p class="section-subtitle" style="max-width: 50rem; margin: 0 auto; font-size: 1.125rem; color: white; line-height: 1.6; font-weight: 400; opacity: 0.9;">
+                    Download essential documents, templates, and guides to support your innovation journey.
+                </p>
+            </div>
+            
+            <!-- Resources Grid -->
+            <div id="resourcesGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+                
+                <!-- Sample Resource Cards -->
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(139, 92, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-gavel" style="font-size: 1.5rem; color: #8b5cf6;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Constitution</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Club Constitution 2024</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Official constitution document outlining the club's structure, governance, and operational guidelines.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 234 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="1">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="1">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #10b981, #059669);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-book" style="font-size: 1.5rem; color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Handbook</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Member Handbook</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Comprehensive guide for new members covering club activities, expectations, and opportunities.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 189 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="2">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="2">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #f59e0b, #d97706);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-alt" style="font-size: 1.5rem; color: #f59e0b;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Templates</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Project Proposal Template</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Standard template for submitting innovation project proposals to the club for review and funding.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-word"></i> DOCX</span>
+                            <span><i class="fas fa-download"></i> 156 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="3">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="3">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #3b82f6, #1d4ed8);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-lightbulb" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Innovation</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Innovation Toolkit</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Comprehensive guide to innovation methodologies, design thinking, and problem-solving frameworks.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 298 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="4">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="4">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #ec4899, #be185d);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(236, 72, 153, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-code" style="font-size: 1.5rem; color: #ec4899;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(236, 72, 153, 0.2); color: #ec4899; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Technical</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Development Guidelines</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Best practices and coding standards for technical projects within the innovation club.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 127 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="5">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="5">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card resource-card" style="padding: 2rem; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(135deg, #06b6d4, #0891b2);"></div>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 60px; height: 60px; background: rgba(6, 182, 212, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-list-ul" style="font-size: 1.5rem; color: #06b6d4;"></i>
+                        </div>
+                        <div>
+                            <span style="background: rgba(6, 182, 212, 0.2); color: #06b6d4; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600;">Guidelines</span>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">Event Planning Guide</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; font-size: 0.875rem; margin-bottom: 1.5rem;">Step-by-step guide for organizing successful innovation events, workshops, and hackathons.</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">
+                            <span><i class="fas fa-file-pdf"></i> PDF</span>
+                            <span><i class="fas fa-download"></i> 203 downloads</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" data-action="download" data-resource-id="6">
+                                <i class="fas fa-download"></i>Download
+                            </button>
+                            <button class="btn btn-outline btn-sm" data-action="preview" data-resource-id="6">
+                                <i class="fas fa-eye"></i>Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Load More Button -->
+            <div style="text-align: center; margin-top: 3rem;">
+                <button id="loadMoreResourcesBtn" class="btn btn-glass btn-lg">
+                    <i class="fas fa-plus"></i>Load More Resources
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- JavaScript -->
+    <script src="/shared/core/app.js"></script>
+    <script src="/shared/components/auth.js"></script>
+    <script src="/shared/components/navigation.js"></script>
+    <script src="/shared/components/notifications.js"></script>
+    <script src="resources.js"></script>
+    
+    <script>
+        // Load navigation and initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM loaded, initializing resources page...');
+            
+            // Initialize navigation
+            if (window.Navigation) {
+                window.navigation = new Navigation();
+                console.log('Navigation initialized');
+            }
+
+            // Resources page will be initialized by resources.js
+            console.log('Resources page will be initialized by resources.js');
+        });
+    </script>
+</body>
+</html>

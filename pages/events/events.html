@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="events.css?v=2025010201" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Discover upcoming innovation events, workshops, hackathons, and networking opportunities at JKUAT Innovation Club.">
+    <meta name="keywords" content="JKUAT, events, workshops, hackathons, innovation, entrepreneurship, technology">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container hero-container">
+            
+            <!-- Badge -->
+            <div class="hero-badge">
+                <span class="pulse"></span>
+                INNOVATION EVENTS
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 class="hero-title gradient-text">
+                Transform Ideas into<br>
+                <span class="gradient-text accent">Reality</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="hero-subtitle">
+                Join our exciting lineup of <strong>workshops, hackathons, seminars</strong>, and networking events designed to accelerate your innovation journey.
+            </p>
+            
+            <!-- Stats Preview -->
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div id="totalEventsCount" class="stat-number total">17</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+                <div class="stat-item">
+                    <div id="upcomingEventsCount" class="stat-number upcoming">8</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                <div class="stat-item">
+                    <div id="totalAttendeesCount" class="stat-number attendees">150+</div>
+                    <div class="stat-label">Attendees</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section class="events-section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge">
+                    UPCOMING EVENTS
+                </div>
+                <h2 class="section-title">
+                    Join Our <span class="gradient-text accent">Innovation</span> Community
+                </h2>
+                <p class="section-description">
+                    Discover opportunities to learn, network, and grow with fellow innovators and industry experts.
+                </p>
+                
+                <!-- Admin Actions -->
+                <div id="adminActions" class="admin-actions">
+                    <button id="createEventBtn" class="admin-btn">
+                        <i class="fas fa-plus"></i>Create New Event
+                    </button>
+                    <button id="manageEventsBtn" class="admin-btn secondary">
+                        <i class="fas fa-cog"></i>Manage Events
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Event Filters -->
+            <div class="filters-container">
+                <button class="filter-btn active" data-filter="all">
+                    All Events
+                </button>
+                <button class="filter-btn" data-filter="workshop">
+                    Workshops
+                </button>
+                <button class="filter-btn" data-filter="seminar">
+                    Seminars
+                </button>
+                <button class="filter-btn" data-filter="competition">
+                    Competitions
+                </button>
+                <button class="filter-btn" data-filter="social">
+                    Social Events
+                </button>
+            </div>
+            
+            <!-- Events Grid -->
+            <div id="eventsGrid" class="events-grid">
+                <!-- Events will be loaded here -->
+            </div>
+            
+            <!-- Loading State -->
+            <div id="eventsLoading" class="loading-container">
+                <div class="glass-card loading-card">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading Events...</p>
+                </div>
+            </div>
+            
+            <!-- No Events Message -->
+            <div id="noEventsMessage" class="no-events-container">
+                <div class="glass-card no-events-card">
+                    <div class="no-events-icon">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <h3 class="no-events-title">No Events Found</h3>
+                    <p class="no-events-text">No events match your current filter. Try selecting a different category or check back later for new events.</p>
+                    <button onclick="resetFilters()" class="reset-btn">
+                        <i class="fas fa-refresh"></i>
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Event Details Modal -->
+    <div id="eventModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="eventModalTitle">Event Details</h2>
+                <button class="modal-close" onclick="closeEventModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="eventModalContent">
+                <!-- Event details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Event Modal -->
+    <div id="createEventModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Create New Event</h2>
+                <button class="modal-close" onclick="closeCreateEventModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createEventForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Event Title *</label>
+                            <input type="text" name="title" class="glass-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Event Type *</label>
+                            <select name="type" class="glass-input" required>
+                                <option value="">Select Type</option>
+                                <option value="workshop">Workshop</option>
+                                <option value="seminar">Seminar</option>
+                                <option value="competition">Competition</option>
+                                <option value="social">Social Event</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea name="description" class="glass-input" rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Start Date & Time *</label>
+                            <input type="datetime-local" name="startDateTime" class="glass-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date & Time *</label>
+                            <input type="datetime-local" name="endDateTime" class="glass-input" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Location *</label>
+                            <input type="text" name="location" class="glass-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max Attendees</label>
+                            <input type="number" name="maxAttendees" class="glass-input" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="closeCreateEventModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="mock-data.js"></script>
+    <script src="auth.js"></script>
+    <script src="navigation.js"></script>
+    <script src="footer.js"></script>
+    <script src="events.js"></script>
+</body>
+</html>

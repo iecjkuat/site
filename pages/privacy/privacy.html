@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - JKUAT Innovation Club</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="../shared/assets/css/main.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 text-white">
+    <div id="navigation-placeholder"></div>
+
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <h1 class="text-4xl font-bold mb-8 gradient-text">Privacy Policy</h1>
+
+        <div class="glass-card p-8 space-y-6">
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">1. Information Collection</h2>
+                <p class="text-gray-300">We collect information you provide directly to us, such as when you create an
+                    account, register for events, or contact support. This includes your name, email, student
+                    registration number, and course details.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">2. Use of Information</h2>
+                <p class="text-gray-300">We use your information to operate and improve our platform, send you
+                    notifications about club activities, and facilitate event management.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">3. Data Sharing</h2>
+                <p class="text-gray-300">We do not sell your personal data. We may share data with club leadership for
+                    administrative purposes or with the University if required by policy/law.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">4. Data Security</h2>
+                <p class="text-gray-300">We implement appropriate security measures to protect your personal information
+                    against unauthorized access, alteration, or disclosure.</p>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 text-secondary">5. Your Rights</h2>
+                <p class="text-gray-300">You have the right to access, correct, or delete your personal data. You can
+                    manage your preferences in the Settings page.</p>
+            </section>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="/" class="btn btn-primary">Back to Home</a>
+        </div>
+    </div>
+
+    <script src="../shared/components/navigation.js"></script>
+    <script>
+        fetch('../shared/templates/components/navigation.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('navigation-placeholder').innerHTML = html)
+            .catch(e => console.error(e));
+    </script>
+</body>
+
+</html>

@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
       .from('projects')
       .select(`
         *,
-        project_lead:users!projects_project_lead_id_fkey(id, full_name, email)
+        project_lead:users!projects_project_lead_id_fkey(id, name, email)
       `)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -64,7 +64,7 @@ router.get('/hackathons', async (req, res) => {
       .from('hackathons')
       .select(`
         *,
-        organizer:users!hackathons_organizer_id_fkey(id, full_name, email)
+        organizer:users!hackathons_organizer_id_fkey(id, name, email)
       `)
       .order('start_date', { ascending: true })
       .range(offset, offset + limit - 1);
@@ -99,7 +99,7 @@ router.get('/incubation', async (req, res) => {
       .from('projects')
       .select(`
         *,
-        project_lead:users!projects_project_lead_id_fkey(id, full_name, email)
+        project_lead:users!projects_project_lead_id_fkey(id, name, email)
       `)
       .eq('is_incubation', true)
       .order('created_at', { ascending: false })
@@ -223,7 +223,7 @@ router.get('/:id', async (req, res) => {
       .from('projects')
       .select(`
         *,
-        project_lead:users!projects_project_lead_id_fkey(id, full_name, email, profile_picture)
+        project_lead:users!projects_project_lead_id_fkey(id, name, email, profile_picture)
       `)
       .eq('id', id)
       .single();
@@ -314,23 +314,207 @@ router.post('/submit', async (req, res) => {
 });
 
 /**
- * POST /api/projects/:id/join
- * Join a project team
+ * POST /api/projects/:id/collaborate
+ * Submit a collaboration request for a project
  */
-router.post('/:id/join', async (req, res) => {
+router.post('/:id/collaborate', async (req, res) => {
   try {
     const { id } = req.params;
-    // const userId = req.user?.id; // Would come from authentication middleware
+    const {
+      role,
+      message,
+      skills,
+      timeCommitment,
+      email
+    } = req.body;
 
-    // For now, return a success message
-    // In a real app, you'd add the user to the project's team_members array
-    
-    res.json({
-      message: 'Successfully joined project team',
-      projectId: id
+    // Validate required fields
+    if (!role || !message || !email) {
+      return res.status(400).json({ 
+        message: 'Role, message, and email are required' 
+      });
+    }
+
+    // Use a default user ID for anonymous submissions
+    // In a real app, you'd get this from authentication middleware
+    const anonymousUserId = 'cb8ec53d-7117-4957-9b40-148edf811452';
+
+    // Check if project exists
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('id, title, project_lead_id')
+      .eq('id', id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Check if user already has a collaboration request for this project
+    const { data: existingRequest } = await supabase
+      .from('project_collaborations')
+      .select('id, status')
+      .eq('project_id', id)
+      .eq('user_id', anonymousUserId)
+      .single();
+
+    if (existingRequest) {
+      if (existingRequest.status === 'pending') {
+        return res.status(400).json({ 
+          message: 'You already have a pending collaboration request for this project' 
+        });
+      } else if (existingRequest.status === 'accepted') {
+        return res.status(400).json({ 
+          message: 'You are already a collaborator on this project' 
+        });
+      }
+    }
+
+    // Process skills array
+    const skillsArray = typeof skills === 'string' 
+      ? skills.split(',').map(s => s.trim()).filter(s => s)
+      : (Array.isArray(skills) ? skills : []);
+
+    const collaborationData = {
+      project_id: id,
+      user_id: anonymousUserId,
+      role,
+      message,
+      skills_offered: skillsArray,
+      time_commitment: timeCommitment,
+      contact_email: email,
+      status: 'pending'
+    };
+
+    const { data: collaboration, error } = await supabase
+      .from('project_collaborations')
+      .insert([collaborationData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating collaboration request:', error);
+      return res.status(500).json({ 
+        message: 'Failed to submit collaboration request',
+        error: error.message 
+      });
+    }
+
+    // TODO: Send notification to project lead
+    // This would typically send an email or in-app notification
+
+    res.status(201).json({
+      message: 'Collaboration request submitted successfully! The project lead will be notified.',
+      collaboration: {
+        id: collaboration.id,
+        project_title: project.title,
+        role: collaboration.role,
+        status: collaboration.status,
+        created_at: collaboration.created_at
+      }
     });
   } catch (error) {
-    console.error('Error in POST /projects/:id/join:', error);
+    console.error('Error in POST /projects/:id/collaborate:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/projects/:id/collaborations
+ * Get all collaboration requests for a project (for project leads)
+ */
+router.get('/:id/collaborations', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.query;
+
+    let query = supabase
+      .from('project_collaborations')
+      .select(`
+        *,
+        user:users!project_collaborations_user_id_fkey(id, name, email, profile_picture),
+        project:projects!project_collaborations_project_id_fkey(id, title, project_lead_id)
+      `)
+      .eq('project_id', id)
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data: collaborations, error } = await query;
+
+    if (error) {
+      console.error('Error fetching collaborations:', error);
+      return res.status(500).json({ 
+        message: 'Failed to fetch collaboration requests',
+        error: error.message 
+      });
+    }
+
+    res.json({
+      collaborations: collaborations || [],
+      count: collaborations ? collaborations.length : 0
+    });
+  } catch (error) {
+    console.error('Error in GET /projects/:id/collaborations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/projects/:projectId/collaborations/:collaborationId
+ * Update collaboration request status (accept/decline)
+ */
+router.put('/:projectId/collaborations/:collaborationId', async (req, res) => {
+  try {
+    const { projectId, collaborationId } = req.params;
+    const { status, responseMessage } = req.body;
+
+    if (!['accepted', 'declined'].includes(status)) {
+      return res.status(400).json({ 
+        message: 'Status must be either "accepted" or "declined"' 
+      });
+    }
+
+    // Use default user ID for project lead
+    const projectLeadId = 'cb8ec53d-7117-4957-9b40-148edf811452';
+
+    const updateData = {
+      status,
+      response_message: responseMessage,
+      responded_by: projectLeadId,
+      responded_at: new Date().toISOString()
+    };
+
+    const { data: collaboration, error } = await supabase
+      .from('project_collaborations')
+      .update(updateData)
+      .eq('id', collaborationId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating collaboration:', error);
+      return res.status(500).json({ 
+        message: 'Failed to update collaboration request',
+        error: error.message 
+      });
+    }
+
+    if (!collaboration) {
+      return res.status(404).json({ message: 'Collaboration request not found' });
+    }
+
+    // TODO: Send notification to requester about the decision
+
+    res.json({
+      message: `Collaboration request ${status} successfully`,
+      collaboration
+    });
+  } catch (error) {
+    console.error('Error in PUT /projects/:projectId/collaborations/:collaborationId:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -351,7 +535,7 @@ router.get('/hackathons/:id', async (req, res) => {
       .from('hackathons')
       .select(`
         *,
-        organizer:users!hackathons_organizer_id_fkey(id, full_name, email, profile_picture)
+        organizer:users!hackathons_organizer_id_fkey(id, name, email, profile_picture)
       `)
       .eq('id', id)
       .single();
@@ -521,7 +705,7 @@ function getSampleProjects() {
       priority: 'High',
       progress_percentage: 75,
       technologies: ['React Native', 'AR Core', 'Firebase', 'Google Maps API'],
-      project_lead: { full_name: 'John Doe', email: 'john@jkuat.ac.ke' },
+      project_lead: { name: 'John Doe', email: 'john@jkuat.ac.ke' },
       created_at: '2024-01-15T10:00:00Z'
     },
     {
@@ -533,7 +717,7 @@ function getSampleProjects() {
       priority: 'Medium',
       progress_percentage: 25,
       technologies: ['Arduino', 'LoRaWAN', 'Python', 'Machine Learning'],
-      project_lead: { full_name: 'Jane Smith', email: 'jane@jkuat.ac.ke' },
+      project_lead: { name: 'Jane Smith', email: 'jane@jkuat.ac.ke' },
       created_at: '2024-02-01T10:00:00Z'
     },
     {
@@ -545,7 +729,7 @@ function getSampleProjects() {
       priority: 'Low',
       progress_percentage: 100,
       technologies: ['Next.js', 'PostgreSQL', 'Stripe', 'Tailwind CSS'],
-      project_lead: { full_name: 'Mike Johnson', email: 'mike@jkuat.ac.ke' },
+      project_lead: { name: 'Mike Johnson', email: 'mike@jkuat.ac.ke' },
       created_at: '2023-11-10T10:00:00Z'
     },
     {
@@ -557,7 +741,7 @@ function getSampleProjects() {
       priority: 'High',
       progress_percentage: 60,
       technologies: ['Python', 'TensorFlow', 'IoT', 'Solar Panels'],
-      project_lead: { full_name: 'Sarah Wilson', email: 'sarah@jkuat.ac.ke' },
+      project_lead: { name: 'Sarah Wilson', email: 'sarah@jkuat.ac.ke' },
       created_at: '2024-01-20T10:00:00Z'
     },
     {
@@ -569,7 +753,7 @@ function getSampleProjects() {
       priority: 'Medium',
       progress_percentage: 40,
       technologies: ['Python', 'NLP', 'React', 'MongoDB'],
-      project_lead: { full_name: 'David Kimani', email: 'david@jkuat.ac.ke' },
+      project_lead: { name: 'David Kimani', email: 'david@jkuat.ac.ke' },
       created_at: '2024-02-15T10:00:00Z'
     },
     {
@@ -581,7 +765,7 @@ function getSampleProjects() {
       priority: 'Medium',
       progress_percentage: 15,
       technologies: ['Flutter', 'Firebase', 'Google Maps', 'Machine Learning'],
-      project_lead: { full_name: 'Grace Mwangi', email: 'grace@jkuat.ac.ke' },
+      project_lead: { name: 'Grace Mwangi', email: 'grace@jkuat.ac.ke' },
       created_at: '2024-03-01T10:00:00Z'
     }
   ];
@@ -602,7 +786,7 @@ function getSampleHackathons() {
       registration_fee: 500,
       venue: 'JKUAT Main Campus',
       status: 'Registration Open',
-      organizer: { full_name: 'Dr. Peter Waiganjo', email: 'organizer@jkuat.ac.ke' }
+      organizer: { name: 'Dr. Peter Waiganjo', email: 'organizer@jkuat.ac.ke' }
     },
     {
       id: '2',
@@ -617,7 +801,7 @@ function getSampleHackathons() {
       registration_fee: 1000,
       venue: 'Nairobi Innovation Hub',
       status: 'Registration Open',
-      organizer: { full_name: 'Innovation Club', email: 'events@jkuat.ac.ke' }
+      organizer: { name: 'Innovation Club', email: 'events@jkuat.ac.ke' }
     },
     {
       id: '3',
@@ -632,7 +816,7 @@ function getSampleHackathons() {
       registration_fee: 750,
       venue: 'JKUAT Agricultural Campus',
       status: 'Registration Open',
-      organizer: { full_name: 'AgriTech Society', email: 'agritech@jkuat.ac.ke' }
+      organizer: { name: 'AgriTech Society', email: 'agritech@jkuat.ac.ke' }
     }
   ];
 }
@@ -649,7 +833,7 @@ function getSampleIncubationProjects() {
       is_incubation: true,
       stage: 'Prototype Development',
       funding: '250000',
-      project_lead: { full_name: 'Sarah Wilson', email: 'sarah@jkuat.ac.ke' },
+      project_lead: { name: 'Sarah Wilson', email: 'sarah@jkuat.ac.ke' },
       created_at: '2024-01-10T10:00:00Z'
     },
     {
@@ -662,7 +846,7 @@ function getSampleIncubationProjects() {
       is_incubation: true,
       stage: 'Market Validation',
       funding: '500000',
-      project_lead: { full_name: 'David Kimani', email: 'david@jkuat.ac.ke' },
+      project_lead: { name: 'David Kimani', email: 'david@jkuat.ac.ke' },
       created_at: '2023-12-15T10:00:00Z'
     },
     {
@@ -675,7 +859,7 @@ function getSampleIncubationProjects() {
       is_incubation: true,
       stage: 'Pilot Testing',
       funding: '750000',
-      project_lead: { full_name: 'Grace Mwangi', email: 'grace@jkuat.ac.ke' },
+      project_lead: { name: 'Grace Mwangi', email: 'grace@jkuat.ac.ke' },
       created_at: '2024-02-01T10:00:00Z'
     }
   ];

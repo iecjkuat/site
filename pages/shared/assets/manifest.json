@@ -1,0 +1,16 @@
+{
+  "name": "JKUAT Innovation Club",
+  "short_name": "JKUAT Innovation",
+  "description": "JKUAT Innovation and Entrepreneurship Club Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#3730a3",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

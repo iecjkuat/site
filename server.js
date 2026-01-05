@@ -21,7 +21,6 @@ const membershipRoutes = require('./routes/membership');
 const leadershipRoutes = require('./routes/leadership');
 const projectsRoutes = require('./routes/projects');
 const ideasRoutes = require('./routes/ideas');
-const messagesRoutes = require('./routes/messages');
 const resourcesRoutes = require('./routes/resources');
 const opportunitiesRoutes = require('./routes/opportunities');
 const supportRoutes = require('./routes/support');
@@ -39,6 +38,9 @@ const analyticsRoutes = require('./routes/analytics');
 const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
 
+// Import validation middleware
+const { rateLimits, sanitizeInput } = require('./middleware/validation');
+
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
@@ -46,42 +48,80 @@ const PORT = process.env.PORT || 3000;
 // Initialize WebSocket service
 const wsService = new WebSocketService(server);
 
-// Security middleware
+// Security middleware - Apply before other middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"]
+      connectSrc: ["'self'", process.env.SUPABASE_URL || ""],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
     }
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding for development
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
   }
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/api/', limiter);
+// Input sanitization - Apply early
+app.use(sanitizeInput);
 
-// CORS configuration
+// Rate limiting - Different limits for different endpoints
+app.use('/api/auth', rateLimits.auth);
+app.use('/api/admin', rateLimits.admin);
+app.use('/api/', rateLimits.api);
+
+// CORS configuration with environment-specific origins
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
+  : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5000'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-domain.com'] 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400 // 24 hours
 }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files
-app.use(express.static('public'));
+// Static files - serve pages from new structure
+app.use('/shared', express.static('pages/shared'));
+app.use(express.static('pages'));
+
+// Serve essential files from shared assets
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'favicon.ico'));
+});
+
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'sw.js'));
+});
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -115,13 +155,12 @@ app.use('/api/membership', membershipRoutes);
 app.use('/api/leadership', leadershipRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/ideas', ideasRoutes);
-app.use('/api/messages', messagesRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/opportunities', opportunitiesRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/email', emailServiceRoutes);
-app.use('/api/payments', paymentServiceRoutes);
+app.use('/api/payment-service', paymentServiceRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/meetings', meetingsRoutes);
@@ -133,129 +172,90 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 
-// Serve HTML pages
+// Serve HTML pages from new structure
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'home', 'index.html'));
 });
 
 app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'dashboard', 'dashboard.html'));
 });
 
 app.get('/events', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'events.html'));
-});
-
-app.get('/leadership', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'leadership.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'events', 'events.html'));
 });
 
 app.get('/projects', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'projects.html'));
-});
-
-app.get('/clubs', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'clubs.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'projects', 'projects.html'));
 });
 
 app.get('/ideas', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ideas.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'ideas', 'ideas.html'));
 });
 
-app.get('/governance', (req, res) => {
-  console.log('📋 Governance route accessed');
-  console.log('📁 Serving file:', path.join(__dirname, 'public', 'governance.html'));
-  res.sendFile(path.join(__dirname, 'public', 'governance.html'));
-});
-
-app.get('/financial', (req, res) => {
-  console.log('💰 Financial route accessed');
-  console.log('📁 Serving file:', path.join(__dirname, 'public', 'financial.html'));
-  res.sendFile(path.join(__dirname, 'public', 'financial.html'));
-});
-
-app.get('/messages', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'messages.html'));
-});
 
 app.get('/payment', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'payment.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'payment', 'payment.html'));
 });
 
 app.get('/resources', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'resources.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'resources', 'resources.html'));
 });
 
 app.get('/opportunities', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'opportunities.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'opportunities', 'opportunities.html'));
 });
 
 app.get('/analytics', (req, res) => {
-  console.log('📊 Analytics route accessed');
-  console.log('📁 Serving file:', path.join(__dirname, 'public', 'analytics.html'));
-  res.sendFile(path.join(__dirname, 'public', 'analytics.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'analytics', 'analytics.html'));
 });
 
 app.get('/support', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'support.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'support', 'support.html'));
 });
 
 app.get('/settings', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'settings.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'settings', 'settings.html'));
 });
 
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'admin', 'admin.html'));
 });
 
-app.get('/database', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'database.html'));
-});
 
-app.get('/debug', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'debug.html'));
-});
-
-app.get('/test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'test.html'));
-});
-
-app.get('/test-routes', (req, res) => {
-  console.log('🧪 Test routes page accessed');
-  res.sendFile(path.join(__dirname, 'public', 'test-routes.html'));
-});
-
-app.get('/test-governance', (req, res) => {
-  console.log('🧪 Governance test page accessed');
-  res.sendFile(path.join(__dirname, 'public', 'test-governance.html'));
-});
 
 app.get('/verify-email', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'verify-email.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'verify-email', 'verify-email.html'));
 });
 
 app.get('/reset-password', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'reset-password', 'reset-password.html'));
 });
 
 app.get('/cms', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'cms.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'cms', 'cms.html'));
+});
+
+app.get('/financial', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'financial', 'financial.html'));
 });
 
 app.get('/complete-profile', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'complete-profile.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'complete-profile', 'complete-profile.html'));
 });
 
-app.get('/debug-modal', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'debug-modal.html'));
+app.get('/leadership', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'leadership', 'leadership.html'));
 });
 
-app.get('/simple-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'simple-test.html'));
+
+
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'terms', 'terms.html'));
 });
 
-app.get('/test-auth', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'test-auth.html'));
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'privacy', 'privacy.html'));
 });
 
 // WebSocket stats endpoint
@@ -322,12 +322,6 @@ app.get('/api', (req, res) => {
         'POST /api/ideas': 'Submit new idea',
         'POST /api/ideas/:id/vote': 'Vote on idea',
         'PUT /api/ideas/:id/status': 'Update idea status'
-      },
-      messages: {
-        'GET /api/messages/inbox/:userId': 'Get user inbox',
-        'GET /api/messages/sent/:userId': 'Get sent messages',
-        'POST /api/messages': 'Send new message',
-        'PUT /api/messages/:id/read': 'Mark message as read'
       },
       resources: {
         'GET /api/resources': 'Get all resources',
@@ -402,8 +396,12 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     res.status(404).json({ message: 'API endpoint not found' });
+  } else if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    // Don't redirect static assets, return 404
+    res.status(404).send('File not found');
   } else {
-    res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+    // Redirect to home page for unknown routes (HTML pages only)
+    res.redirect('/');
   }
 });
 
@@ -424,16 +422,16 @@ server.listen(PORT, () => {
   console.log(`🔌 WebSocket server enabled for real-time updates`);
   console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
   console.log(`🏛️ Clubs: http://localhost:${PORT}/clubs`);
+  console.log(`🏛️ Leadership: http://localhost:${PORT}/leadership`);
   console.log(`📅 Events: http://localhost:${PORT}/events`);
   console.log(`💡 Ideas Hub: http://localhost:${PORT}/dashboard#ideas`);
-  console.log(`💬 Messages: http://localhost:${PORT}/messages`);
   console.log(`💳 Payments: http://localhost:${PORT}/payment`);
   console.log(`📚 Resources: http://localhost:${PORT}/resources`);
   console.log(`🎯 Opportunities: http://localhost:${PORT}/opportunities`);
   console.log(`🎧 Support: http://localhost:${PORT}/support`);
   console.log(`⚙️ Settings: http://localhost:${PORT}/settings`);
   console.log(`🔧 Admin: http://localhost:${PORT}/admin`);
-  console.log(`🗄️ Database: http://localhost:${PORT}/database`);
+  console.log(`💰 Financial: http://localhost:${PORT}/financial`);
   console.log(`📖 API Docs: http://localhost:${PORT}/api`);
   console.log(`❤️ Health: http://localhost:${PORT}/health`);
   console.log(`\n🎯 Environment: ${process.env.NODE_ENV || 'development'}`);

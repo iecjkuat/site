@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opportunities - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="opportunities.css?v=2025010201" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Discover career opportunities, internships, scholarships, and competitions for JKUAT Innovation Club members.">
+    <meta name="keywords" content="JKUAT, opportunities, internships, scholarships, competitions, careers">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container hero-container">
+            
+            <!-- Badge -->
+            <div class="hero-badge">
+                <span class="pulse"></span>
+                PARTNERSHIPS & OPPORTUNITIES
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 class="hero-title">
+                Launch Your <span style="color: #f59e0b;">Career</span>
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="hero-subtitle">
+                Discover exclusive <strong>competitions, funding, internships, jobs</strong>, and networking opportunities curated for our innovation community.
+            </p>
+            
+            <!-- Stats Preview -->
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div id="totalOpportunitiesCount" class="stat-number">8</div>
+                    <div class="stat-label">Active Opportunities</div>
+                </div>
+                <div class="stat-item">
+                    <div id="partnerOrgsCount" class="stat-number">6</div>
+                    <div class="stat-label">Partner Organizations</div>
+                </div>
+                <div class="stat-item">
+                    <div id="applicationsCount" class="stat-number">156</div>
+                    <div class="stat-label">Applications Submitted</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opportunities Section -->
+    <section class="opportunities-section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge">
+                    CAREER OPPORTUNITIES
+                </div>
+                <h2 class="section-title">
+                    Find Your <span style="color: #10b981;">Next Opportunity</span>
+                </h2>
+                <p class="section-description">
+                    Browse through carefully curated opportunities from our partner organizations and industry leaders.
+                </p>
+            </div>
+            
+            <!-- Opportunity Filters -->
+            <div class="filters-container">
+                <button class="filter-btn active" data-filter="all">
+                    All Opportunities
+                </button>
+                <button class="filter-btn" data-filter="internship">
+                    Internships
+                </button>
+                <button class="filter-btn" data-filter="research">
+                    Research
+                </button>
+                <button class="filter-btn" data-filter="competition">
+                    Competitions
+                </button>
+                <button class="filter-btn" data-filter="training">
+                    Training
+                </button>
+                <button class="filter-btn" data-filter="accelerator">
+                    Accelerators
+                </button>
+            </div>
+            
+            <!-- Opportunities Grid -->
+            <div id="opportunitiesGrid" class="opportunities-grid">
+                <!-- Opportunities will be loaded here -->
+            </div>
+            
+            <!-- Loading State -->
+            <div id="opportunitiesLoading" class="loading-container">
+                <div class="glass-card loading-card">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading Opportunities...</p>
+                </div>
+            </div>
+            
+            <!-- No Opportunities Message -->
+            <div id="noOpportunitiesMessage" class="no-opportunities-container">
+                <div class="glass-card no-opportunities-card">
+                    <div class="no-opportunities-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h3 class="no-opportunities-title">No Opportunities Found</h3>
+                    <p class="no-opportunities-text">No opportunities match your current filter. Try selecting a different category or check back later for new opportunities.</p>
+                    <button onclick="resetFilters()" class="btn btn-primary">
+                        <i class="fas fa-refresh"></i>
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Opportunity Details Modal -->
+    <div id="opportunityModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeOpportunityModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="opportunityModalContent">
+                <!-- Opportunity details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="mock-data.js"></script>
+    <script src="auth.js"></script>
+    <script src="navigation.js"></script>
+    <script src="footer.js"></script>
+    <script src="opportunities.js"></script>
+    
+    <script>
+        // Simple modal management
+        function closeOpportunityModal() {
+            const modal = document.getElementById('opportunityModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Close modal when clicking backdrop
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-backdrop')) {
+                closeOpportunityModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeOpportunityModal();
+            }
+        });
+
+        function resetFilters() {
+            // Reset all filters to show all opportunities
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('[data-filter="all"]').classList.add('active');
+            
+            // Trigger filter update if opportunities manager exists
+            if (window.opportunitiesManager) {
+                window.opportunitiesManager.applyFilter('all');
+            }
+        }
+    </script>
+</body>
+</html>

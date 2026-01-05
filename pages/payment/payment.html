@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments & Billing - JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="payment.css" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Secure payments and billing portal for JKUAT Innovation Club memberships, events, and services.">
+    <meta name="keywords" content="JKUAT, payment, billing, membership, events, secure, mpesa">
+</head>
+<body class="bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-badge">
+                <span class="badge-indicator"></span>
+                SECURE PAYMENTS
+            </div>
+            
+            <h1 class="hero-title">
+                Payments &<br>
+                <span class="accent-text">Billing</span>
+            </h1>
+            
+            <p class="hero-subtitle">
+                Secure and convenient payment processing for all <strong>JKUAT Innovation Club services</strong> including memberships, events, and donations.
+            </p>
+        </div>
+    </section>
+
+    <!-- Service Selection Section -->
+    <section id="serviceSelection" class="payment-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>What would you like to pay for?</h2>
+                <p>Select the service you want to make a payment for</p>
+            </div>
+
+            <div class="services-grid">
+                <!-- Membership Fee -->
+                <div class="service-card" data-service="membership">
+                    <div class="service-icon membership">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <h3>Membership Fee</h3>
+                    <p>Annual or semester club membership registration</p>
+                    <div class="service-price">KSh 500 - 2,000</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+
+                <!-- Events -->
+                <div class="service-card" data-service="events">
+                    <div class="service-icon events">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3>Event Registration</h3>
+                    <p>Pay for workshops, hackathons, and club events</p>
+                    <div class="service-price">Varies by event</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+
+                <!-- Donations -->
+                <div class="service-card" data-service="donation">
+                    <div class="service-icon donation">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>Donation</h3>
+                    <p>Support club activities and initiatives</p>
+                    <div class="service-price">Any amount</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+
+                <!-- Merchandise -->
+                <div class="service-card" data-service="merchandise">
+                    <div class="service-icon merchandise">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <h3>Merchandise</h3>
+                    <p>Club t-shirts, hoodies, and branded items</p>
+                    <div class="service-price">KSh 800 - 3,000</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+
+                <!-- Custom/Other -->
+                <div class="service-card" data-service="custom">
+                    <div class="service-icon custom">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <h3>Other Services</h3>
+                    <p>Custom payments for special services or fees</p>
+                    <div class="service-price">Custom amount</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+
+                <!-- Projects -->
+                <div class="service-card" data-service="projects">
+                    <div class="service-icon projects">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Project Funding</h3>
+                    <p>Contribute to innovation projects and research</p>
+                    <div class="service-price">KSh 100+</div>
+                    <button class="btn btn-outline select-service-btn" type="button">
+                        <i class="fas fa-arrow-right"></i> Select
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Details Section -->
+    <section id="serviceDetails" class="payment-section" style="display: none;">
+        <div class="container">
+            <div class="back-button">
+                <button class="btn btn-ghost" id="backToServices" type="button">
+                    <i class="fas fa-arrow-left"></i> Back to Services
+                </button>
+            </div>
+
+            <div class="payment-container">
+                <!-- Service Info -->
+                <div class="service-info-card">
+                    <div class="selected-service-header">
+                        <div class="selected-service-icon" id="selectedServiceIcon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div>
+                            <h3 id="selectedServiceTitle">Membership Fee</h3>
+                            <p id="selectedServiceDescription">Annual club membership registration</p>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Service Options -->
+                    <div id="serviceOptions">
+                        <!-- Will be populated based on selected service -->
+                    </div>
+
+                    <!-- Amount Section -->
+                    <div class="amount-section">
+                        <label for="paymentAmount">Amount (KSh)</label>
+                        <input type="number" id="paymentAmount" name="amount" class="glass-input" 
+                               placeholder="Enter amount" min="1" max="1000000" required 
+                               autocomplete="off" inputmode="numeric">
+                        
+                        <div id="quickAmounts" class="quick-amounts">
+                            <!-- Will be populated based on service -->
+                        </div>
+                    </div>
+
+                    <!-- Payment Summary -->
+                    <div class="payment-summary">
+                        <div class="summary-row">
+                            <span>Service:</span>
+                            <span id="summaryService">-</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Item:</span>
+                            <span id="summaryItem">-</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="summaryTotal">KSh 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods -->
+                <div class="payment-methods-card">
+                    <h3>Payment Method</h3>
+                    
+                    <!-- Payment Method Selection -->
+                    <div class="payment-methods">
+                        <div class="payment-method active" data-method="mpesa">
+                            <div class="method-icon mpesa">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">M-Pesa</div>
+                                <div class="method-desc">Pay with M-Pesa mobile money</div>
+                            </div>
+                            <div class="method-badge recommended">Recommended</div>
+                        </div>
+                        
+                        <div class="payment-method" data-method="card">
+                            <div class="method-icon card">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">Credit/Debit Card</div>
+                                <div class="method-desc">Visa, Mastercard accepted</div>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-method" data-method="bank">
+                            <div class="method-icon bank">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            <div class="method-info">
+                                <div class="method-name">Bank Transfer</div>
+                                <div class="method-desc">Direct bank transfer</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Forms -->
+                    <!-- Progress Indicator -->
+                    <div class="payment-progress">
+                        <div class="progress-step completed" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Service Selected</div>
+                        </div>
+                        <div class="progress-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Choose Option</div>
+                        </div>
+                        <div class="progress-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Enter Amount</div>
+                        </div>
+                        <div class="progress-step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">Payment Details</div>
+                        </div>
+                        <div class="progress-step" data-step="5">
+                            <div class="step-number">5</div>
+                            <div class="step-label">Complete Payment</div>
+                        </div>
+                    </div>
+
+                    <form id="paymentForm" novalidate>
+                        <!-- CSRF Token (will be populated by JavaScript) -->
+                        <input type="hidden" id="csrfToken" name="csrfToken" value="">
+                        
+                        <!-- M-Pesa Form -->
+                        <div id="mpesaForm" class="payment-form">
+                            <div class="form-group">
+                                <label for="phoneNumber">M-Pesa Phone Number</label>
+                                <input type="tel" id="phoneNumber" name="phone" class="glass-input" 
+                                       placeholder="0XXXXXXXXX or 254XXXXXXXXX" required autocomplete="tel"
+                                       maxlength="15">
+                                <small>Enter your M-Pesa registered phone number (e.g., 0712345678 or 254712345678)</small>
+                            </div>
+                        </div>
+
+                        <!-- Card Form -->
+                        <div id="cardForm" class="payment-form" style="display: none;">
+                            <div class="form-group">
+                                <label for="cardNumber">Card Number</label>
+                                <input type="text" id="cardNumber" name="cardNumber" class="glass-input" 
+                                       placeholder="1234 5678 9012 3456" autocomplete="cc-number"
+                                       maxlength="19">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiryDate">Expiry Date</label>
+                                    <input type="text" id="expiryDate" name="expiry" class="glass-input" 
+                                           placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvv">CVV</label>
+                                    <input type="text" id="cvv" name="cvv" class="glass-input" 
+                                           placeholder="123" autocomplete="cc-csc" maxlength="4">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bank Form -->
+                        <div id="bankForm" class="payment-form" style="display: none;">
+                            <div class="bank-details">
+                                <h4>Bank Transfer Details</h4>
+                                <div class="bank-info">
+                                    <div class="info-row">
+                                        <strong>Account Name:</strong> JKUAT Innovation Club
+                                    </div>
+                                    <div class="info-row">
+                                        <strong>Bank:</strong> KCB Bank Kenya
+                                    </div>
+                                    <div class="info-row">
+                                        <strong>Account Number:</strong> 1234567890
+                                    </div>
+                                    <div class="info-row">
+                                        <strong>Reference:</strong> Your Name + Phone Number
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Button with Clear Instructions -->
+                        <div class="payment-button-section">
+                            <div id="paymentInstructions" class="payment-instructions">
+                                <div class="instruction-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="instruction-text">
+                                    <strong>Next Steps:</strong>
+                                    <ol id="instructionsList">
+                                        <li>Select a service option above</li>
+                                        <li>Enter the payment amount</li>
+                                        <li>Fill in your payment details</li>
+                                        <li>Click the payment button to proceed</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-full btn-lg" id="paymentSubmitBtn" disabled>
+                                <i class="fas fa-lock"></i> 
+                                <span class="btn-text">Complete Payment</span>
+                                <span class="btn-amount" id="btnAmount">KSh 0</span>
+                            </button>
+                            
+                            <div class="payment-security-note">
+                                <i class="fas fa-shield-alt"></i>
+                                Your payment is secured with 256-bit SSL encryption
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Processing Section -->
+    <section id="processingSection" class="payment-section" style="display: none;">
+        <div class="container">
+            <div class="processing-card">
+                <div class="processing-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h2>Check Your Phone</h2>
+                <p>An M-Pesa prompt has been sent to your phone. Please enter your PIN to complete the payment.</p>
+                
+                <div class="transaction-details">
+                    <div class="detail-row">
+                        <span>Transaction Ref:</span>
+                        <span id="transactionRef">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Amount:</span>
+                        <span id="processingAmount">-</span>
+                    </div>
+                </div>
+                
+                <div class="payment-status">
+                    <div class="status-indicator">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Waiting for payment confirmation...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Section -->
+    <section id="successSection" class="payment-section" style="display: none;">
+        <div class="container">
+            <div class="success-card">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>Payment Successful!</h2>
+                <p>Your payment has been processed successfully. Thank you!</p>
+                
+                <div class="success-details">
+                    <div class="detail-row">
+                        <span>Transaction ID:</span>
+                        <span id="successTransactionId">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Amount Paid:</span>
+                        <span id="successAmount">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Service:</span>
+                        <span id="successService">-</span>
+                    </div>
+                </div>
+                
+                <div class="success-actions">
+                    <a href="/dashboard" class="btn btn-primary">
+                        <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                    </a>
+                    <button class="btn btn-outline" onclick="window.print()" type="button">
+                        <i class="fas fa-print"></i> Print Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- JavaScript -->
+    <script src="/shared/core/app.js"></script>
+    <script src="/shared/components/auth.js"></script>
+    <script src="/shared/components/navigation.js"></script>
+    <script src="/shared/components/notifications.js"></script>
+    <script src="payment.js"></script>
+    
+    <script>
+        // Initialize page with security enhancements
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing Secure Payments & Billing page...');
+            
+            // Initialize navigation
+            if (window.Navigation) {
+                window.navigation = new Navigation();
+            }
+
+            // Initialize payment page
+            if (window.PaymentPage) {
+                window.paymentPage = new PaymentPage();
+            }
+        });
+    </script>
+</body>
+</html>

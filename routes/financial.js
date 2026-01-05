@@ -2,16 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../lib/supabase');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { handleValidationErrors, commonValidations, preventSQLInjection } = require('../middleware/validation');
+const { query } = require('express-validator');
 const PDFDocument = require('pdfkit');
 
 // =============================================
 // FINANCIAL REPORTS ROUTES
 // =============================================
 
-// Get financial dashboard summary
-router.get('/dashboard', async (req, res) => {
+// Get financial dashboard summary - Requires treasurer or admin role
+router.get('/dashboard', 
+  authenticateToken,
+  requireRole(['admin', 'treasurer']),
+  [
+    query('period').optional().isIn(['current_month', 'current_quarter', 'current_year']).withMessage('Invalid period')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
     try {
-        console.log('📊 Financial dashboard API called');
+        console.log('📊 Financial dashboard API called by user:', req.user.id);
         
         const { period = 'current_year' } = req.query;
         
@@ -37,13 +46,17 @@ router.get('/dashboard', async (req, res) => {
         
         console.log('📅 Date range:', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
         
+        // Validate and sanitize date inputs
+        const sanitizedStartDate = preventSQLInjection(startDate.toISOString().split('T')[0]);
+        const sanitizedEndDate = preventSQLInjection(endDate.toISOString().split('T')[0]);
+        
         // Try to get financial summary with error handling
         let summary = null;
         try {
             const { data: summaryData, error: summaryError } = await supabase
                 .rpc('get_financial_summary', {
-                    start_date: startDate.toISOString().split('T')[0],
-                    end_date: endDate.toISOString().split('T')[0]
+                    start_date: sanitizedStartDate,
+                    end_date: sanitizedEndDate
                 });
             
             if (summaryError) {

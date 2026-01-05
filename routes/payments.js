@@ -1,10 +1,22 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
+const { body, query, validationResult } = require('express-validator');
 const { supabase } = require('../lib/supabase');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { handleValidationErrors, commonValidations } = require('../middleware/validation');
 const router = express.Router();
 
-// Get all payments
-router.get('/', async (req, res) => {
+// Get all payments - Requires authentication and proper authorization
+router.get('/', 
+  authenticateToken,
+  requireRole(['admin', 'treasurer']),
+  [
+    ...commonValidations.pagination,
+    query('userId').optional().isUUID().withMessage('Invalid user ID'),
+    query('status').optional().isIn(['pending', 'completed', 'failed', 'cancelled']).withMessage('Invalid status'),
+    query('paymentType').optional().isIn(['membership', 'event', 'fine', 'donation']).withMessage('Invalid payment type')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
   try {
     const { userId, status, paymentType, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -20,8 +32,12 @@ router.get('/', async (req, res) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + parseInt(limit) - 1);
 
-    // Apply filters
+    // Apply filters with proper validation
     if (userId) {
+      // Ensure user can only view their own payments unless admin/treasurer
+      if (req.user.role !== 'admin' && req.user.role !== 'treasurer' && userId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied to other user payments' });
+      }
       query = query.eq('user_id', userId);
     }
     
@@ -36,7 +52,11 @@ router.get('/', async (req, res) => {
     const { data: payments, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching payments:', error);
+      console.error('Error fetching payments:', {
+        error: error.message,
+        userId: req.user.id,
+        filters: { userId, status, paymentType }
+      });
       return res.status(500).json({ message: 'Server error' });
     }
 
@@ -50,8 +70,8 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Payments route error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

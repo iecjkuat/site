@@ -12,14 +12,13 @@ const { logActivity } = require('../lib/audit');
 
 const router = express.Router();
 
-// M-Pesa configuration
-const MPESA_CONFIG = {
-    consumerKey: process.env.MPESA_CONSUMER_KEY,
-    consumerSecret: process.env.MPESA_CONSUMER_SECRET,
-    shortcode: process.env.MPESA_SHORTCODE || '174379',
-    passkey: process.env.MPESA_PASSKEY,
-    callbackUrl: process.env.MPESA_CALLBACK_URL || 'https://yourdomain.com/api/payments/mpesa/callback',
-    environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+// Lipana.dev M-Pesa configuration
+const LIPANA_CONFIG = {
+    publishableKey: process.env.LIPANA_PUBLISHABLE_KEY,
+    liveKey: process.env.LIPANA_LIVE_KEY,
+    baseUrl: process.env.LIPANA_BASE_URL || 'https://api.lipana.dev',
+    callbackUrl: process.env.LIPANA_CALLBACK_URL || 'https://yourdomain.com/api/payments/lipana/callback',
+    environment: process.env.NODE_ENV === 'production' ? 'live' : 'test'
 };
 
 // Get M-Pesa access token
@@ -43,12 +42,13 @@ async function getMpesaAccessToken() {
     }
 }
 
-// Initiate M-Pesa STK Push
-router.post('/mpesa/initiate', [
+// Initiate Lipana M-Pesa STK Push
+router.post('/lipana/initiate', [
     body('phoneNumber').matches(/^254[0-9]{9}$/).withMessage('Valid Kenyan phone number required (254XXXXXXXXX)'),
     body('amount').isFloat({ min: 1 }).withMessage('Valid amount required'),
-    body('eventId').isUUID().withMessage('Valid event ID required'),
-    body('userId').isUUID().withMessage('Valid user ID required')
+    body('eventId').optional().isUUID().withMessage('Valid event ID required if provided'),
+    body('userId').isUUID().withMessage('Valid user ID required'),
+    body('description').optional().isString().withMessage('Description must be a string')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -56,230 +56,434 @@ router.post('/mpesa/initiate', [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { phoneNumber, amount, eventId, userId } = req.body;
+        const { phoneNumber, amount, eventId, userId, description } = req.body;
 
-        // Get event details
-        const { data: event, error: eventError } = await supabase
-            .from('events')
-            .select('title, fee')
-            .eq('id', eventId)
+        // Validate user exists or create test user for development
+        let user;
+        const { data: existingUser, error: userError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('id', userId)
             .single();
 
-        if (eventError || !event) {
-            return res.status(404).json({ message: 'Event not found' });
+        if (userError || !existingUser) {
+            if (process.env.NODE_ENV === 'development' && userId === '550e8400-e29b-41d4-a716-446655440000') {
+                // Create test user for development
+                console.log('Creating test user for development...');
+                const { data: newUser, error: createError } = await supabase
+                    .from('users')
+                    .insert({
+                        id: userId,
+                        name: 'Test User',
+                        email: 'test@jkuat.ac.ke',
+                        password_hash: '$2b$10$test.hash.for.development.only',
+                        registration_number: 'TEST/001/2024',
+                        course: 'Computer Science',
+                        year_of_study: 3,
+                        phone: phoneNumber,
+                        membership_status: 'pending',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select('id, name, email')
+                    .single();
+
+                if (createError) {
+                    console.error('Failed to create test user:', createError);
+                    return res.status(400).json({ message: 'User not found and could not create test user' });
+                }
+                user = newUser;
+            } else {
+                return res.status(400).json({ message: 'User not found' });
+            }
+        } else {
+            user = existingUser;
         }
 
-        // Verify amount matches event fee
-        if (parseFloat(amount) !== parseFloat(event.fee)) {
-            return res.status(400).json({ message: 'Amount does not match event fee' });
+        // Validate event if provided
+        let event = null;
+        if (eventId) {
+            const { data: eventData, error: eventError } = await supabase
+                .from('events')
+                .select('title, fee')
+                .eq('id', eventId)
+                .single();
+
+            if (eventError || !eventData) {
+                return res.status(404).json({ message: 'Event not found' });
+            }
+            event = eventData;
+
+            // Verify amount matches event fee
+            if (parseFloat(amount) !== parseFloat(event.fee)) {
+                return res.status(400).json({ message: 'Amount does not match event fee' });
+            }
         }
 
         // Generate unique transaction reference
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-        const transactionRef = `JKUAT${eventId.slice(-6)}${timestamp}`;
+        const transactionRef = `JKUAT${eventId ? eventId.slice(-6) : 'PAY'}${timestamp}`;
 
         // Create payment record
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .insert({
                 user_id: userId,
-                event_id: eventId,
+                event_id: eventId || null,
                 amount: amount,
+                currency: 'KES',
                 payment_method: 'mpesa',
-                transaction_reference: transactionRef,
-                phone_number: phoneNumber,
-                status: 'pending'
+                payment_type: eventId ? 'event' : 'membership',
+                status: 'pending',
+                reference_number: transactionRef,
+                description: description || (event ? `Payment for ${event.title}` : 'General payment'),
+                metadata: {
+                    phoneNumber,
+                    initiatedAt: new Date().toISOString(),
+                    provider: 'lipana'
+                }
             })
             .select()
             .single();
 
         if (paymentError) {
+            console.error('Payment creation error:', paymentError);
             return res.status(500).json({ message: 'Failed to create payment record' });
         }
 
-        // For development/testing, simulate successful payment
-        if (MPESA_CONFIG.environment === 'sandbox' && !MPESA_CONFIG.consumerKey) {
-            // Log activity
-            logActivity(userId, 'PAYMENT_INITIATED', {
-                amount,
-                eventId,
-                method: 'mpesa_sandbox',
-                txRef: transactionRef
-            }, 'PAYMENT', payment.id).catch(console.error);
+        // Lipana API integration
+        try {
+            // Check if we're in development mode with mock Lipana
+            if (process.env.NODE_ENV === 'development' && (!LIPANA_CONFIG.liveKey || LIPANA_CONFIG.liveKey === 'your_lipana_live_key_here')) {
+                console.log('🧪 Using mock Lipana response for testing...');
+                
+                // Simulate successful Lipana response
+                const mockLipanaResponse = {
+                    success: true,
+                    checkout_request_id: `MOCK_CHECKOUT_${Date.now()}`,
+                    id: `MOCK_ID_${Date.now()}`,
+                    message: 'STK Push initiated successfully',
+                    status: 'pending'
+                };
 
-            // Simulate payment processing
-            setTimeout(async () => {
-                // Use atomic transaction via RPC
-                const { data: result, error: rpcError } = await supabase.rpc('process_payment_success', {
-                    p_payment_id: payment.id,
-                    p_event_id: eventId,
-                    p_user_id: userId,
-                    p_receipt_number: `MOCK${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+                // Update payment with mock response
+                await supabase
+                    .from('payments')
+                    .update({
+                        transaction_id: mockLipanaResponse.checkout_request_id,
+                        metadata: {
+                            ...payment.metadata,
+                            lipanaResponse: mockLipanaResponse,
+                            mockMode: true
+                        }
+                    })
+                    .eq('id', payment.id);
+
+                // Log activity
+                logActivity(userId, 'PAYMENT_INITIATED', {
+                    amount,
+                    eventId,
+                    method: 'lipana_mpesa_mock',
+                    txRef: transactionRef
+                }, 'PAYMENT', payment.id).catch(console.error);
+
+                res.json({
+                    success: true,
+                    message: 'Payment initiated successfully (Mock Mode)',
+                    data: {
+                        paymentId: payment.id,
+                        transactionRef,
+                        checkoutRequestId: mockLipanaResponse.checkout_request_id,
+                        status: 'pending',
+                        checkStatusUrl: `/api/payment-service/status/${payment.id}`,
+                        instructions: 'MOCK MODE: Check your phone for M-Pesa prompt and enter your PIN to complete the payment',
+                        mockMode: true
+                    }
                 });
 
-                if (rpcError) {
-                    console.error('Mock payment processing failed:', rpcError);
-                } else if (result && !result.success) {
-                    console.error('Mock payment processing failed:', result.message);
-                } else {
-                    console.log(`Mock payment completed for transaction ${transactionRef}`);
-                }
-            }, 3000);
+                // Simulate callback after 10 seconds for testing
+                setTimeout(async () => {
+                    try {
+                        const mockCallback = {
+                            status: 'success',
+                            reference: transactionRef,
+                            transaction_id: `MOCK_TXN_${Date.now()}`,
+                            receipt_number: `MOCK_RECEIPT_${Date.now()}`,
+                            amount: amount,
+                            phone: phoneNumber,
+                            metadata: {
+                                payment_id: payment.id
+                            }
+                        };
 
-            return res.json({
-                message: 'Payment initiated successfully (Mock Mode)',
-                transactionRef,
-                paymentId: payment.id,
-                status: 'pending',
-                checkStatusUrl: `/api/payments/status/${payment.id}`
-            });
-        }
+                        // Process mock callback
+                        await supabase
+                            .from('payments')
+                            .update({
+                                status: 'completed',
+                                transaction_id: mockCallback.transaction_id,
+                                updated_at: new Date().toISOString(),
+                                metadata: {
+                                    ...payment.metadata,
+                                    callback: mockCallback,
+                                    completedAt: new Date().toISOString()
+                                }
+                            })
+                            .eq('id', payment.id);
 
-        // Real M-Pesa integration
-        try {
-            const accessToken = await getMpesaAccessToken();
-            const baseUrl = MPESA_CONFIG.environment === 'production'
-                ? 'https://api.safaricom.co.ke'
-                : 'https://sandbox.safaricom.co.ke';
+                        console.log(`🎉 Mock payment completed: ${mockCallback.receipt_number} for transaction ${transactionRef}`);
+                    } catch (mockError) {
+                        console.error('Mock callback processing failed:', mockError);
+                    }
+                }, 10000);
 
-            const stkPushPayload = {
-                BusinessShortCode: MPESA_CONFIG.shortcode,
-                Password: Buffer.from(`${MPESA_CONFIG.shortcode}${MPESA_CONFIG.passkey}${timestamp}`).toString('base64'),
-                Timestamp: timestamp,
-                TransactionType: 'CustomerPayBillOnline',
-                Amount: amount,
-                PartyA: phoneNumber,
-                PartyB: MPESA_CONFIG.shortcode,
-                PhoneNumber: phoneNumber,
-                CallBackURL: MPESA_CONFIG.callbackUrl,
-                AccountReference: transactionRef,
-                TransactionDesc: `Payment for ${event.title}`
+                return;
+            }
+
+            // Real Lipana API call
+            const lipanaPayload = {
+                phone: phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`,
+                amount: parseFloat(amount) * 100, // Convert to cents (5000 = 50.00 KSh)
+                reference: transactionRef, // Add our transaction reference
+                callback_url: LIPANA_CONFIG.callbackUrl // Add callback URL for webhooks
             };
 
-            const stkResponse = await axios.post(`${baseUrl}/mpesa/stkpush/v1/processrequest`, stkPushPayload, {
+            // Correct Lipana.dev endpoint
+            const lipanaResponse = await axios.post(`${LIPANA_CONFIG.baseUrl}/api/v1/transactions/push-stk`, lipanaPayload, {
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`,
+                    'x-api-key': LIPANA_CONFIG.liveKey,
                     'Content-Type': 'application/json'
                 }
             });
 
-            // Update payment with M-Pesa checkout request ID
+            // Update payment with Lipana response
             await supabase
                 .from('payments')
                 .update({
-                    mpesa_checkout_request_id: stkResponse.data.CheckoutRequestID
+                    transaction_id: lipanaResponse.data.data.transactionId,
+                    metadata: {
+                        ...payment.metadata,
+                        lipanaResponse: lipanaResponse.data,
+                        checkoutRequestID: lipanaResponse.data.data.checkoutRequestID
+                    }
                 })
                 .eq('id', payment.id);
 
+            // Log activity
+            logActivity(userId, 'PAYMENT_INITIATED', {
+                amount,
+                eventId,
+                method: 'lipana_mpesa',
+                txRef: transactionRef
+            }, 'PAYMENT', payment.id).catch(console.error);
+
             res.json({
-                message: 'Payment initiated successfully',
-                transactionRef,
-                paymentId: payment.id,
-                checkoutRequestId: stkResponse.data.CheckoutRequestID,
-                status: 'pending',
-                checkStatusUrl: `/api/payments/status/${payment.id}`
+                success: true,
+                message: lipanaResponse.data.message,
+                data: {
+                    paymentId: payment.id,
+                    transactionRef,
+                    transactionId: lipanaResponse.data.data.transactionId,
+                    checkoutRequestId: lipanaResponse.data.data.checkoutRequestID,
+                    status: lipanaResponse.data.data.status,
+                    checkStatusUrl: `/api/payment-service/status/${payment.id}`,
+                    instructions: lipanaResponse.data.data.message
+                }
             });
 
-        } catch (mpesaError) {
-            console.error('M-Pesa STK Push error:', mpesaError);
+        } catch (lipanaError) {
+            console.error('Lipana API error:', lipanaError.response?.data || lipanaError.message);
 
             // Update payment status to failed
             await supabase
                 .from('payments')
-                .update({ status: 'failed' })
+                .update({ 
+                    status: 'failed',
+                    metadata: {
+                        ...payment.metadata,
+                        error: lipanaError.response?.data || lipanaError.message
+                    }
+                })
                 .eq('id', payment.id);
 
             res.status(500).json({
+                success: false,
                 message: 'Failed to initiate M-Pesa payment',
-                error: mpesaError.response?.data || mpesaError.message
+                error: lipanaError.response?.data?.message || 'Payment service unavailable'
             });
         }
 
     } catch (error) {
-        console.error('Error initiating M-Pesa payment:', error);
-        res.status(500).json({ message: 'Payment initiation failed' });
+        console.error('Error initiating Lipana payment:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Payment initiation failed' 
+        });
     }
 });
 
-// M-Pesa callback handler
-router.post('/mpesa/callback', async (req, res) => {
+// Lipana callback handler
+router.post('/lipana/callback', async (req, res) => {
     try {
-        const { Body } = req.body;
+        const callbackData = req.body;
+        const signature = req.headers['x-lipana-signature'];
+        
+        console.log('Lipana webhook received:', callbackData);
+        console.log('Signature:', signature);
 
-        if (Body && Body.stkCallback) {
-            const callback = Body.stkCallback;
-            const checkoutRequestId = callback.CheckoutRequestID;
-            const resultCode = callback.ResultCode;
+        // TODO: Verify webhook signature for security
+        // You should verify the X-Lipana-Signature header to ensure the webhook is from Lipana
+        
+        // Extract payment information from Lipana webhook
+        const { event, data } = callbackData;
+        
+        if (event !== 'payment.success') {
+            console.log('Ignoring non-success event:', event);
+            return res.json({ success: true, message: 'Event acknowledged' });
+        }
 
-            // Find payment by checkout request ID
-            const { data: payment, error } = await supabase
+        const { 
+            transactionId, 
+            amount, 
+            currency, 
+            status, 
+            phone, 
+            checkoutRequestID, // This might not always be present
+            timestamp 
+        } = data;
+
+        // Find payment by checkout request ID, transaction ID, or phone/amount combination
+        let payment = null;
+
+        // Try to find by checkoutRequestID first (if available)
+        if (checkoutRequestID) {
+            const { data: paymentByCheckout } = await supabase
                 .from('payments')
                 .select('*')
-                .eq('mpesa_checkout_request_id', checkoutRequestId)
+                .eq('metadata->>checkoutRequestID', checkoutRequestID)
+                .single();
+            payment = paymentByCheckout;
+        }
+
+        // If not found and no checkoutRequestID, try by transaction_id
+        if (!payment) {
+            const { data: paymentByTxn } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('transaction_id', transactionId)
+                .single();
+            payment = paymentByTxn;
+        }
+
+        // If still not found, try by phone and amount (as fallback)
+        if (!payment) {
+            const { data: paymentByPhoneAmount } = await supabase
+                .from('payments')
+                .select('*')
+                .eq('metadata->>phoneNumber', phone.replace('+', ''))
+                .eq('amount', amount / 100) // Convert cents back to KSh
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+            payment = paymentByPhoneAmount;
+        }
+
+        if (!payment) {
+            console.error('Payment not found for webhook:', { 
+                transactionId, 
+                checkoutRequestID: checkoutRequestID || 'not_provided', 
+                phone, 
+                amount 
+            });
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+
+        if (status === 'success') {
+            // Payment successful
+            const { data: updatedPayment, error: updateError } = await supabase
+                .from('payments')
+                .update({
+                    status: 'completed',
+                    transaction_id: transactionId,
+                    updated_at: new Date().toISOString(),
+                    metadata: {
+                        ...payment.metadata,
+                        webhook: callbackData,
+                        completedAt: timestamp,
+                        lipanaTransactionId: transactionId,
+                        ...(checkoutRequestID && { checkoutRequestID: checkoutRequestID })
+                    }
+                })
+                .eq('id', payment.id)
+                .select()
                 .single();
 
-            if (error || !payment) {
-                console.error('Payment not found for checkout request:', checkoutRequestId);
-                return res.status(404).json({ message: 'Payment not found' });
+            if (updateError) {
+                console.error('Error updating payment:', updateError);
+                return res.status(500).json({ message: 'Failed to update payment' });
             }
 
-            if (resultCode === 0) {
-                // Payment successful
-                const callbackMetadata = callback.CallbackMetadata;
-                const items = callbackMetadata.Item;
-
-                const receiptNumber = items.find(item => item.Name === 'MpesaReceiptNumber')?.Value;
-                const transactionDate = items.find(item => item.Name === 'TransactionDate')?.Value;
-
-                // Update payment status
-                await supabase
-                    .from('payments')
-                    .update({
-                        status: 'completed',
-                        mpesa_receipt_number: receiptNumber,
-                        completed_at: new Date().toISOString()
-                    })
-                    .eq('id', payment.id);
-
-                // Update event registration payment status
+            // Update event registration if applicable
+            if (payment.event_id) {
                 await supabase
                     .from('event_attendees')
                     .update({ payment_status: 'paid' })
                     .eq('event_id', payment.event_id)
                     .eq('user_id', payment.user_id);
-
-                console.log(`Payment completed: ${receiptNumber} for transaction ${payment.transaction_reference}`);
-
-                // Send confirmation email
-                try {
-                    await axios.post(`${req.protocol}://${req.get('host')}/api/email/registration-confirmation`, {
-                        userId: payment.user_id,
-                        eventId: payment.event_id,
-                        registrationId: payment.id
-                    });
-                } catch (emailError) {
-                    console.error('Failed to send confirmation email:', emailError);
-                }
-
-            } else {
-                // Payment failed
-                await supabase
-                    .from('payments')
-                    .update({
-                        status: 'failed',
-                        failure_reason: callback.ResultDesc
-                    })
-                    .eq('id', payment.id);
-
-                console.log(`Payment failed: ${callback.ResultDesc} for transaction ${payment.transaction_reference}`);
             }
+
+            // Log successful payment
+            logActivity(payment.user_id, 'PAYMENT_COMPLETED', {
+                amount: payment.amount,
+                transactionId: transactionId,
+                ...(checkoutRequestID && { checkoutRequestID: checkoutRequestID }),
+                currency: currency
+            }, 'PAYMENT', payment.id).catch(console.error);
+
+            console.log(`✅ Payment completed via Lipana: ${transactionId} for amount ${amount/100} ${currency}`);
+
+            // Send confirmation email (optional)
+            try {
+                await axios.post(`${req.protocol}://${req.get('host')}/api/email/payment-confirmation`, {
+                    userId: payment.user_id,
+                    paymentId: payment.id,
+                    amount: payment.amount,
+                    transactionId: transactionId
+                });
+            } catch (emailError) {
+                console.error('Failed to send confirmation email:', emailError);
+            }
+
+        } else {
+            // Payment failed or other status
+            await supabase
+                .from('payments')
+                .update({
+                    status: 'failed',
+                    updated_at: new Date().toISOString(),
+                    metadata: {
+                        ...payment.metadata,
+                        webhook: callbackData,
+                        failureReason: `Payment ${status}`
+                    }
+                })
+                .eq('id', payment.id);
+
+            console.log(`❌ Payment failed via Lipana: ${transactionId} with status ${status}`);
         }
 
-        res.json({ message: 'Callback processed successfully' });
+        res.json({ 
+            success: true,
+            message: 'Webhook processed successfully' 
+        });
 
     } catch (error) {
-        console.error('Error processing M-Pesa callback:', error);
-        res.status(500).json({ message: 'Callback processing failed' });
+        console.error('Error processing Lipana webhook:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Webhook processing failed' 
+        });
     }
 });
 

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leadership - JKUAT Innovation and Entrepreneurship Club</title>
+
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="leadership.css" rel="stylesheet">
+
+    <!-- Meta Tags -->
+    <meta name="description"
+        content="Meet the leadership team of JKUAT Innovation and Entrepreneurship Club. Executive committee, patrons, and club officials.">
+    <meta name="keywords" content="JKUAT, leadership, executive committee, patrons, officials, innovation club">
+</head>
+
+<body class="leadership-page">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <!-- Badge -->
+            <div class="hero-badge">
+                <span class="badge-indicator"></span>
+                LEADERSHIP TEAM
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="hero-title">
+                Meet Our <span class="accent-text">Leaders</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="hero-subtitle">
+                Dedicated individuals driving innovation and entrepreneurship at JKUAT. Our leadership team combines
+                experience, vision, and passion to guide the club towards excellence.
+            </p>
+
+            <!-- Quick Stats -->
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="executiveCount">0</div>
+                    <div class="stat-label">Executive Members</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="patronCount">0</div>
+                    <div class="stat-label">Club Patrons</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalLeadership">0</div>
+                    <div class="stat-label">Total Leaders</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Executive Committee Section -->
+    <section id="executive-committee" class="executive-section">
+        <div class="container">
+
+            <!-- Section Header -->
+            <div class="section-header">
+                <div class="section-badge">
+                    EXECUTIVE COMMITTEE
+                </div>
+                <h2 class="section-title">
+                    Student <span class="accent-text">Leadership</span>
+                </h2>
+                <p class="section-subtitle">
+                    Elected student leaders who represent the voice of innovation and drive club activities.
+                </p>
+            </div>
+
+            <!-- Executive Grid -->
+            <div id="executiveGrid" class="leadership-grid">
+                <!-- Executive members will be loaded here -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading executive committee...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Club Patrons Section -->
+    <section id="club-patrons" class="patrons-section">
+        <div class="container">
+
+            <!-- Section Header -->
+            <div class="section-header">
+                <div class="section-badge patrons-badge">
+                    CLUB PATRONS
+                </div>
+                <h2 class="section-title">
+                    Faculty <span class="accent-text">Mentors</span>
+                </h2>
+                <p class="section-subtitle">
+                    Experienced faculty members who provide guidance, mentorship, and support to our innovation
+                    initiatives.
+                </p>
+            </div>
+
+            <!-- Patrons Grid -->
+            <div id="patronsGrid" class="patrons-grid">
+                <!-- Patrons will be loaded here -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading club patrons...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Leadership Section -->
+    <section class="contact-leadership-section">
+        <div class="container">
+            <div class="contact-leadership-card">
+                <div class="contact-leadership-content">
+                    <h3>Want to Connect with Our Leadership?</h3>
+                    <p>Have questions, suggestions, or want to get involved? Our leadership team is always open to
+                        hearing from club members and the JKUAT community.</p>
+                    <div class="contact-leadership-actions">
+                        <a href="/support" class="btn btn-primary">
+                            <i class="fas fa-envelope"></i>Contact Support
+                        </a>
+                        <a href="/support" class="btn btn-outline">
+                            <i class="fas fa-question-circle"></i>Get Support
+                        </a>
+                    </div>
+                </div>
+                <div class="contact-leadership-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Member Profile Modal -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Member Profile</h3>
+                <button class="modal-close" onclick="closeMemberModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Member details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="leadership-footer">
+        <div class="container">
+            <div class="footer-content">
+                <p class="footer-text">
+                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/shared/core/app.js"></script>
+    <script src="/shared/components/auth.js"></script>
+    <script src="/shared/components/navigation.js"></script>
+    <script src="/shared/components/notifications.js"></script>
+    <script src="mock-data.js"></script>
+    <script src="leadership.js"></script>
+    <script src="leadership-init.js"></script>
+
+    <!-- Notification Styles -->
+    <link href="/shared/components/notifications.css" rel="stylesheet">
+
+
+</body>
+
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKUAT Innovation and Entrepreneurship Club</title>
+    
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/home/home.css?v=2025010201" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="glass-nav">
+        <div class="container">
+            <div class="nav-club-header">
+                <h1 class="nav-club-title">JKUAT Innovation and Entrepreneurship Club</h1>
+            </div>
+            <div class="nav-links-container">
+                <div class="nav-center">
+                    <a href="/" class="glass-button">
+                        <i class="fas fa-home"></i>Home
+                    </a>
+                    <a href="/dashboard" class="glass-button">
+                        <i class="fas fa-tachometer-alt"></i>Dashboard
+                    </a>
+                    <a href="/events" class="glass-button">
+                        <i class="fas fa-calendar"></i>Events
+                    </a>
+                    <a href="/leadership" class="glass-button">
+                        <i class="fas fa-users"></i>Leadership
+                    </a>
+                    <a href="/resources" class="glass-button">
+                        <i class="fas fa-book"></i>Resources
+                    </a>
+                    
+                    <!-- More Dropdown -->
+                    <div class="nav-dropdown">
+                        <button class="glass-button dropdown-toggle" type="button">
+                            <i class="fas fa-ellipsis-h"></i>More
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="/payment" class="dropdown-item">
+                                <i class="fas fa-credit-card"></i>Payments & Billing
+                            </a>
+                            <a href="/financial" class="dropdown-item">
+                                <i class="fas fa-chart-line"></i>Financial
+                            </a>
+                            <a href="/opportunities" class="dropdown-item">
+                                <i class="fas fa-briefcase"></i>Opportunities
+                            </a>
+                            <a href="/ideas" class="dropdown-item">
+                                <i class="fas fa-lightbulb"></i>Ideas Hub
+                            </a>
+                            <a href="/projects" class="dropdown-item">
+                                <i class="fas fa-rocket"></i>Projects
+                            </a>
+                            <a href="/cms" class="dropdown-item">
+                                <i class="fas fa-newspaper"></i>News & Articles
+                            </a>
+                            <a href="/support" class="dropdown-item">
+                                <i class="fas fa-headset"></i>Support
+                            </a>
+                            <a href="/settings" class="dropdown-item">
+                                <i class="fas fa-cog"></i>Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-auth">
+                    <div class="notification-bell" id="notificationBell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </div>
+                    <button class="glass-button" id="navLoginBtn">
+                        <i class="fas fa-user"></i>Login
+                    </button>
+                    <button class="glass-button" id="navJoinBtn">
+                        <i class="fas fa-user-plus"></i>Join
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container hero-content">
+            <div class="hero-badge">
+                <span class="pulse"></span>
+                JKUAT's Premier Innovation Hub
+            </div>
+            
+            <h1>
+                Innovate. Create.<br>
+                <span class="highlight">Transform.</span>
+            </h1>
+            
+            <p>
+                Join JKUAT's premier innovation community where <strong>ideas become reality</strong> and students shape the future through technology and entrepreneurship.
+            </p>
+
+            <!-- Stats Preview -->
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number counter" data-target="500">0</span>
+                    <div class="stat-label">Active Members</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number counter" data-target="50">0</span>
+                    <div class="stat-label">Projects Launched</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number counter" data-target="25">0</span>
+                    <div class="stat-label">Industry Partners</div>
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="hero-buttons">
+                <button id="heroRegisterBtn" class="btn-primary">
+                    <i class="fas fa-rocket"></i>Become a Member
+                </button>
+                <button id="heroLearnMoreBtn" class="btn-glass">
+                    <i class="fas fa-book-open"></i>Learn More
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <div class="section-badge about">ABOUT US</div>
+                <h2>
+                    JKUAT Innovation and<br>
+                    <span class="highlight">Entrepreneurship Club</span>
+                </h2>
+                <p>
+                    We are a <strong>student-led organization</strong> dedicated to fostering innovation, entrepreneurship, and technological advancement among JKUAT students.
+                </p>
+            </div>
+            
+            <div class="grid grid-3">
+                <div class="card">
+                    <div class="icon-container vision">
+                        <span class="icon">🎯</span>
+                    </div>
+                    <h3>Our Vision</h3>
+                    <p>To be the leading student innovation hub in East Africa, nurturing the next generation of tech entrepreneurs and innovators.</p>
+                </div>
+                
+                <div class="card">
+                    <div class="icon-container mission">
+                        <span class="icon">🚀</span>
+                    </div>
+                    <h3>Our Mission</h3>
+                    <p>To empower JKUAT students with the skills, resources, and network needed to transform innovative ideas into impactful solutions.</p>
+                </div>
+
+                <div class="card">
+                    <div class="icon-container values">
+                        <span class="icon">⭐</span>
+                    </div>
+                    <h3>Our Values</h3>
+                    <p>Innovation, Collaboration, Excellence, Integrity, and Sustainable Development - guiding principles in everything we do.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section id="upcoming-events" class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <div class="section-badge events">UPCOMING EVENTS</div>
+                <h2>
+                    Don't Miss Out on<br>
+                    <span class="highlight">Exciting Opportunities</span>
+                </h2>
+                <p>
+                    Join our upcoming events and connect with fellow innovators, learn from industry experts, and showcase your ideas.
+                </p>
+            </div>
+            
+            <div id="upcomingEventsGrid" class="grid grid-2">
+                <div class="loading-placeholder">
+                    <div class="spinner"></div>
+                    <p>Loading upcoming events...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Partners Section -->
+    <section id="partners" class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <div class="section-badge partners">OUR PARTNERS</div>
+                <h2>
+                    Trusted by Leading<br>
+                    <span class="highlight">Organizations</span>
+                </h2>
+                <p>
+                    We collaborate with industry leaders to provide our members with real-world opportunities and mentorship.
+                </p>
+            </div>
+            
+            <div class="partners-scroll-container">
+                <div id="partnersScrollTrack" class="partners-scroll-track">
+                    <!-- Partners will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <div class="section-badge cta">JOIN US TODAY</div>
+                <h2>
+                    Ready to Start Your<br>
+                    <span class="highlight">Innovation Journey?</span>
+                </h2>
+                <p>
+                    Join <strong>500+ students</strong> who are already transforming their ideas into reality at JKUAT's premier innovation hub.
+                </p>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="card text-center">
+                    <div class="icon-container large membership">
+                        <span class="icon">🚀</span>
+                    </div>
+                    <h3>Become a Member</h3>
+                    <p>Join our community of innovators and get access to exclusive workshops, mentorship, and networking opportunities.</p>
+                    <button id="joinMembershipBtn" class="btn-primary">
+                        <i class="fas fa-user-plus"></i>Join the Club
+                    </button>
+                </div>
+
+                <div class="card text-center">
+                    <div class="icon-container large events-cta">
+                        <span class="icon">📅</span>
+                    </div>
+                    <h3>Attend Events</h3>
+                    <p>Participate in our weekly workshops, monthly hackathons, and quarterly innovation summits with industry experts.</p>
+                    <button id="viewEventsBtn" class="btn-glass">
+                        <i class="fas fa-calendar"></i>View Events
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Stories Section -->
+    <section class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <div class="section-badge testimonials">SUCCESS STORIES</div>
+                <h2>What Our Members Say</h2>
+                <p>Hear from students who have transformed their ideas into reality through our community</p>
+            </div>
+            
+            <div id="testimonialsGrid" class="grid grid-3">
+                <!-- Testimonials will be loaded dynamically -->
+            </div>
+
+            <!-- Impact Stats -->
+            <div class="card text-center impact-stats">
+                <h3>Our Impact</h3>
+                <div class="grid grid-2">
+                    <div>
+                        <div class="stat-number">15+</div>
+                        <div class="stat-label">Startups Launched</div>
+                    </div>
+                    <div>
+                        <div class="stat-number">₹2M+</div>
+                        <div class="stat-label">Funding Raised</div>
+                    </div>
+                    <div>
+                        <div class="stat-number">95%</div>
+                        <div class="stat-label">Job Placement Rate</div>
+                    </div>
+                    <div>
+                        <div class="stat-number">200+</div>
+                        <div class="stat-label">Industry Connections</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                
+                <!-- Club Info -->
+                <div>
+                    <h3>JKUAT Innovation Club</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1rem;">
+                        Empowering students to innovate, create, and transform ideas into reality.
+                    </p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3>Quick Links</h3>
+                    <a href="/events">Events</a>
+                    <a href="/projects">Projects</a>
+                    <a href="/opportunities">Opportunities</a>
+                    <a href="/resources">Resources</a>
+                    <a href="/support">Support</a>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <h3>Contact Us</h3>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                        <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i> 
+                        info@jkuatinnovation.club
+                    </p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                        <i class="fas fa-phone" style="margin-right: 0.5rem;"></i> 
+                        +254 700 000 000
+                    </p>
+                    <p style="color: rgba(255, 255, 255, 0.8);">
+                        <i class="fas fa-map-marker-alt" style="margin-right: 0.5rem;"></i> 
+                        JKUAT Main Campus
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Bottom Bar -->
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); margin-top: 2rem; padding-top: 2rem; text-align: center;">
+                <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+                    <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">
+                        © 2026 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
+                    </p>
+                    <div style="display: flex; gap: 2rem;">
+                        <a href="/privacy" style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">Privacy Policy</a>
+                        <a href="/terms" style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/home/modules/auth.js"></script>
+    <script src="/home/modules/components.js"></script>
+    <script src="/home/modules/animations.js"></script>
+    <script src="/home/modules/newsletter.js"></script>
+    <script src="/home/modules/navigation.js"></script>
+    <script src="/home/home.js"></script>
+</body>
+</html>
