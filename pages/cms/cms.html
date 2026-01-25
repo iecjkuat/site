@@ -8,14 +8,19 @@
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+        content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.quilljs.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
     
     <!-- Global Systems -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
             crossorigin="anonymous"></script>
+    
+    <!-- DOMPurify for HTML Sanitization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"
+            integrity="sha512-jB0TkTBeQC9ZSkBqDhdmfTv1qdfbWpGE/PcggFZTSI7b6tD/qKd5QXwQbdYBcMb9Jx8Qg2U8UaXL5Zwz5qYUdg=="
+            crossorigin="anonymous"></script>
+    
     <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
     
@@ -38,34 +43,32 @@
         <!-- Header -->
         <div class="ig-header">
             <div class="ig-header-title">
-                <i class="fas fa-camera" style="font-size: 24px; color: #E4405F;"></i>
+                <i class="fas fa-camera ig-header-icon"></i>
                 <div>
                     <h1>Content Hub</h1>
                     <div class="ig-header-subtitle">Executive Content Management</div>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <button class="ig-btn ig-btn-primary" onclick="showAnalytics()">
-                    <i class="fas fa-chart-bar"></i> Analytics
-                </button>
+                <!-- Analytics button removed -->
             </div>
         </div>
 
         <!-- Navigation Tabs -->
         <div class="ig-tabs">
-            <button class="ig-tab active" data-tab="dashboard">
+            <button class="ig-tab tab-btn active" data-tab="dashboard">
                 <i class="fas fa-home"></i> Dashboard
             </button>
-            <button class="ig-tab" data-tab="articles">
+            <button class="ig-tab tab-btn" data-tab="articles">
                 <i class="fas fa-newspaper"></i> Articles
             </button>
-            <button class="ig-tab" data-tab="events">
+            <button class="ig-tab tab-btn" data-tab="events">
                 <i class="fas fa-calendar"></i> Events
             </button>
-            <button class="ig-tab" data-tab="opportunities">
+            <button class="ig-tab tab-btn" data-tab="opportunities">
                 <i class="fas fa-briefcase"></i> Opportunities
             </button>
-            <button class="ig-tab" data-tab="media">
+            <button class="ig-tab tab-btn" data-tab="media">
                 <i class="fas fa-images"></i> Media
             </button>
         </div>
@@ -74,7 +77,7 @@
         <div class="ig-container">
             
             <!-- Dashboard Tab -->
-            <div id="dashboard-tab" class="ig-content">
+            <div id="dashboard-tab" class="ig-content tab-content">
                 <!-- Stats Grid -->
                 <div class="ig-stats-grid">
                     <div class="ig-stat-card">
@@ -113,7 +116,7 @@
 
                 <!-- Quick Actions -->
                 <div class="ig-quick-actions">
-                    <div class="ig-quick-action" onclick="showCreateArticle()">
+                    <div class="ig-quick-action" data-action="create-article">
                         <div class="ig-quick-action-icon">
                             <i class="fas fa-newspaper"></i>
                         </div>
@@ -121,7 +124,7 @@
                         <div class="ig-quick-action-desc">Write and publish news articles, announcements, and blog posts</div>
                     </div>
 
-                    <div class="ig-quick-action" onclick="showCreateEvent()">
+                    <div class="ig-quick-action" data-action="create-event">
                         <div class="ig-quick-action-icon">
                             <i class="fas fa-calendar-plus"></i>
                         </div>
@@ -129,7 +132,7 @@
                         <div class="ig-quick-action-desc">Schedule workshops, meetings, competitions, and other club events</div>
                     </div>
 
-                    <div class="ig-quick-action" onclick="showCreateOpportunity()">
+                    <div class="ig-quick-action" data-action="create-opportunity">
                         <div class="ig-quick-action-icon">
                             <i class="fas fa-briefcase"></i>
                         </div>
@@ -137,7 +140,7 @@
                         <div class="ig-quick-action-desc">Share internships, jobs, scholarships, and other opportunities</div>
                     </div>
 
-                    <div class="ig-quick-action" onclick="showMediaLibrary()">
+                    <div class="ig-quick-action" data-action="show-media">
                         <div class="ig-quick-action-icon">
                             <i class="fas fa-images"></i>
                         </div>
@@ -148,13 +151,13 @@
             </div>
 
             <!-- Articles Tab -->
-            <div id="articles-tab" class="ig-content" style="display: none;">
+            <div id="articles-tab" class="ig-content tab-content" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
                         <i class="fas fa-newspaper" style="margin-right: 8px; color: #405DE6;"></i>
                         Articles & News
                     </h2>
-                    <button onclick="showCreateArticle()" class="ig-btn ig-btn-primary">
+                    <button id="new-article-btn" class="ig-btn ig-btn-primary">
                         <i class="fas fa-plus"></i> New Article
                     </button>
                 </div>
@@ -164,13 +167,13 @@
             </div>
 
             <!-- Events Tab -->
-            <div id="events-tab" class="ig-content" style="display: none;">
+            <div id="events-tab" class="ig-content tab-content" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
                         <i class="fas fa-calendar" style="margin-right: 8px; color: #833AB4;"></i>
                         Events Management
                     </h2>
-                    <button onclick="showCreateEvent()" class="ig-btn ig-btn-primary">
+                    <button id="new-event-btn" class="ig-btn ig-btn-primary">
                         <i class="fas fa-plus"></i> New Event
                     </button>
                 </div>
@@ -180,13 +183,13 @@
             </div>
 
             <!-- Opportunities Tab -->
-            <div id="opportunities-tab" class="ig-content" style="display: none;">
+            <div id="opportunities-tab" class="ig-content tab-content" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
                         <i class="fas fa-briefcase" style="margin-right: 8px; color: #E4405F;"></i>
                         Opportunities Management
                     </h2>
-                    <button onclick="showCreateOpportunity()" class="ig-btn ig-btn-primary">
+                    <button id="new-opportunity-btn" class="ig-btn ig-btn-primary">
                         <i class="fas fa-plus"></i> New Opportunity
                     </button>
                 </div>
@@ -196,13 +199,13 @@
             </div>
 
             <!-- Media Tab -->
-            <div id="media-tab" class="ig-content" style="display: none;">
+            <div id="media-tab" class="ig-content tab-content" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
                         <i class="fas fa-images" style="margin-right: 8px; color: #F77737;"></i>
                         Media Library
                     </h2>
-                    <button onclick="showMediaUpload()" class="ig-btn ig-btn-primary">
+                    <button id="upload-media-btn" class="ig-btn ig-btn-primary">
                         <i class="fas fa-upload"></i> Upload Media
                     </button>
                 </div>
@@ -214,24 +217,68 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="../shared/core/app.js"></script>
-    <script type="module" src="cms.js"></script>
-    
-    <script>
-        // Initialize CMS when DOM is ready
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔧 Instagram-style CMS loading...');
-            
-            // The global navbar is already loaded via the script tag in head
-            // Just wait a moment for it to initialize
-            setTimeout(() => {
-                console.log('✅ Instagram-style CMS ready');
-            }, 500);
-        });
-    </script>
-</body>
-</html>75rem; font-weight: 600; margin-bottom: 0.5rem;">Event Description</label>
+    <!-- Create Event Modal -->
+    <div id="createEventModal" class="hidden">
+        <div class="modal-backdrop">
+            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+                <button id="closeEventModal" class="glass-button" style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+                
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-calendar-plus" style="font-size: 1.5rem; color: #10b981;"></i>
+                    </div>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create New Event</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Schedule workshops, meetings, competitions, and other club events</p>
+                </div>
+
+                <form id="eventForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Title</label>
+                        <input type="text" name="title" placeholder="Enter event title..." required class="glass-input">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Type</label>
+                            <select name="type" required class="glass-input">
+                                <option value="">Select Type</option>
+                                <option value="workshop">Workshop</option>
+                                <option value="seminar">Seminar</option>
+                                <option value="competition">Competition</option>
+                                <option value="meeting">Meeting</option>
+                                <option value="social">Social Event</option>
+                                <option value="conference">Conference</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Location</label>
+                            <input type="text" name="location" placeholder="Venue or Online" required class="glass-input">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Start Date & Time</label>
+                            <input type="datetime-local" name="startDate" required class="glass-input">
+                        </div>
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">End Date & Time</label>
+                            <input type="datetime-local" name="endDate" class="glass-input">
+                        </div>
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Max Participants</label>
+                            <input type="number" name="maxParticipants" placeholder="Unlimited" class="glass-input">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Registration Fee (KSh)</label>
+                        <input type="number" name="registrationFee" placeholder="0" min="0" class="glass-input">
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Description</label>
                         <div id="eventEditor" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px; min-height: 200px;"></div>
                     </div>
 
@@ -258,7 +305,7 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" onclick="closeEventModal()" class="glass-button">Cancel</button>
+                        <button type="button" id="close-event-modal" class="glass-button">Cancel</button>
                         <button type="submit" class="glass-button primary" style="background: linear-gradient(135deg, #10b981, #059669);">
                             <i class="fas fa-calendar-plus"></i>Create Event
                         </button>
@@ -349,7 +396,7 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" onclick="closeOpportunityModal()" class="glass-button">Cancel</button>
+                        <button type="button" id="close-opportunity-modal" class="glass-button">Cancel</button>
                         <button type="submit" class="glass-button primary" style="background: linear-gradient(135deg, #ec4899, #be185d);">
                             <i class="fas fa-briefcase"></i>Post Opportunity
                         </button>
@@ -418,7 +465,7 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" onclick="closeArticleModal()" class="glass-button">Cancel</button>
+                        <button type="button" id="close-article-modal" class="glass-button">Cancel</button>
                         <button type="submit" class="glass-button primary">
                             <i class="fas fa-paper-plane"></i>Publish Article
                         </button>
@@ -437,10 +484,69 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🔧 CMS DOM loaded, initializing...');
             
+            // Add event listeners for buttons (replacing inline onclick handlers)
+            const addClickListener = (id, handler) => {
+                const element = document.getElementById(id);
+                if (element && typeof handler === 'function') {
+                    element.addEventListener('click', handler);
+                }
+            };
+
+            // Analytics button removed
+            // addClickListener('analytics-btn', () => {
+            //     if (typeof showAnalytics === 'function') showAnalytics();
+            // });
+
+            // Quick action buttons
+            document.querySelectorAll('.ig-quick-action').forEach(action => {
+                action.addEventListener('click', () => {
+                    const actionType = action.dataset.action;
+                    switch (actionType) {
+                        case 'create-article':
+                            if (typeof showCreateArticle === 'function') showCreateArticle();
+                            break;
+                        case 'create-event':
+                            if (typeof showCreateEvent === 'function') showCreateEvent();
+                            break;
+                        case 'create-opportunity':
+                            if (typeof showCreateOpportunity === 'function') showCreateOpportunity();
+                            break;
+                        case 'show-media':
+                            if (typeof showMediaLibrary === 'function') showMediaLibrary();
+                            break;
+                    }
+                });
+            });
+
+            // Tab-specific create buttons
+            addClickListener('new-article-btn', () => {
+                if (typeof showCreateArticle === 'function') showCreateArticle();
+            });
+            addClickListener('new-event-btn', () => {
+                if (typeof showCreateEvent === 'function') showCreateEvent();
+            });
+            addClickListener('new-opportunity-btn', () => {
+                if (typeof showCreateOpportunity === 'function') showCreateOpportunity();
+            });
+            addClickListener('upload-media-btn', () => {
+                if (typeof showMediaUpload === 'function') showMediaUpload();
+            });
+
+            // Modal close buttons
+            addClickListener('close-event-modal', () => {
+                if (typeof closeEventModal === 'function') closeEventModal();
+            });
+            addClickListener('close-opportunity-modal', () => {
+                if (typeof closeOpportunityModal === 'function') closeOpportunityModal();
+            });
+            addClickListener('close-article-modal', () => {
+                if (typeof closeArticleModal === 'function') closeArticleModal();
+            });
+            
             // The global navbar is already loaded via the script tag in head
             // Just wait a moment for it to initialize
             setTimeout(() => {
-                console.log('✅ CMS page ready');
+                console.log('✅ CMS page ready with secure event handlers');
             }, 500);
         });
     </script>

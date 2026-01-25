@@ -32,7 +32,6 @@ const notificationsRoutes = require('./routes/notifications');
 const meetingsRoutes = require('./routes/meetings');
 const votingRoutes = require('./routes/voting');
 const communicationRoutes = require('./routes/communication');
-const analyticsRoutes = require('./routes/analytics');
 const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
 const adminRoutes = require('./routes/admin');
@@ -255,7 +254,6 @@ app.use(`${apiVersion}/notifications`, notificationsRoutes);
 app.use(`${apiVersion}/meetings`, meetingsRoutes);
 app.use(`${apiVersion}/voting`, votingRoutes);
 app.use(`${apiVersion}/communication`, communicationRoutes);
-app.use(`${apiVersion}/analytics`, analyticsRoutes);
 app.use(`${apiVersion}/stats`, statsRoutes);
 app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
 app.use(`${apiVersion}/admin`, adminRoutes);
@@ -295,10 +293,6 @@ app.get('/resources', (req, res) => {
 
 app.get('/opportunities', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'opportunities', 'opportunities.html'));
-});
-
-app.get('/analytics', (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'analytics', 'analytics.html'));
 });
 
 app.get('/support', (req, res) => {
@@ -461,8 +455,7 @@ app.get(`${apiVersion}`, (req, res) => {
       'Ideas hub with voting',
       'Resource sharing',
       'Opportunity board',
-      'Support ticket system',
-      'Comprehensive analytics'
+      'Support ticket system'
     ]
   });
 });

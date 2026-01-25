@@ -139,20 +139,22 @@ body::before {
     left: 0 !important;
     right: 0 !important;
     z-index: 1000 !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
     backdrop-filter: blur(25px) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-    padding: 0.75rem 0 !important;
+    border-bottom: 3px solid rgba(59, 130, 246, 0.6) !important;
+    border-top: 2px solid rgba(16, 185, 129, 0.4) !important;
+    padding: 1rem 0 !important;
     width: 100% !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(59, 130, 246, 0.2) !important;
     will-change: transform !important;
     transition: all 0.3s ease !important;
 }
 
 /* Sticky scroll behavior */
 .glass-nav.scrolled {
-    padding: 0.5rem 0 !important;
-    background: rgba(255, 255, 255, 0.12) !important;
+    padding: 0.75rem 0 !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(59, 130, 246, 0.3) !important;
 }
 
 .nav-club-header {
@@ -161,11 +163,17 @@ body::before {
 }
 
 .nav-club-title {
-    color: white !important;
-    font-size: 1.25rem !important;
-    font-weight: 700 !important;
+    color: #ffffff !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
     margin: 0 !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    background: linear-gradient(135deg, #3b82f6, #10b981, #f59e0b) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
 }
 
 .nav-links-container {
@@ -260,10 +268,10 @@ body::before {
 }
 
 .glass-button {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: white !important;
-    padding: 0.5rem 1rem !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(16, 185, 129, 0.25)) !important;
+    border: 2px solid rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff !important;
+    padding: 0.6rem 1.2rem !important;
     border-radius: 0.75rem !important;
     text-decoration: none !important;
     display: inline-flex !important;
@@ -272,26 +280,48 @@ body::before {
     transition: all 0.3s ease !important;
     cursor: pointer !important;
     font-size: 0.875rem !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     white-space: nowrap !important;
-    backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(15px) !important;
     font-family: inherit !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    letter-spacing: 0.25px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.glass-button::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+    transition: left 0.5s ease !important;
+}
+
+.glass-button:hover::before {
+    left: 100% !important;
 }
 
 .glass-button:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-    transform: translateY(-1px) !important;
-    color: white !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(16, 185, 129, 0.5)) !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    transform: translateY(-2px) !important;
+    color: #ffffff !important;
     text-decoration: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(59, 130, 246, 0.4) !important;
 }
 
 /* Active link state */
 .glass-button.active {
-    outline: 2px solid rgba(255, 255, 255, 0.25) !important;
-    background: rgba(59, 130, 246, 0.2) !important;
-    border-color: rgba(59, 130, 246, 0.3) !important;
-    color: #60a5fa !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.7), rgba(16, 185, 129, 0.7)) !important;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5), 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* Dropdown Styles */
@@ -324,15 +354,15 @@ body::before {
     position: absolute !important;
     top: calc(100% + 0.5rem) !important;
     left: 0 !important;
-    background: rgba(0, 0, 0, 0.9) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 8px !important;
-    min-width: 200px !important;
-    max-width: 300px !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)) !important;
+    backdrop-filter: blur(25px) !important;
+    border: 2px solid rgba(59, 130, 246, 0.4) !important;
+    border-radius: 12px !important;
+    min-width: 220px !important;
+    max-width: 320px !important;
     max-height: 80vh !important;
     overflow-y: auto !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 6px 20px rgba(59, 130, 246, 0.3) !important;
     opacity: 0 !important;
     visibility: hidden !important;
     transform: translateY(-10px) !important;
@@ -350,13 +380,31 @@ body::before {
     display: flex !important;
     align-items: center !important;
     gap: 0.75rem !important;
-    padding: 0.75rem 1rem !important;
-    color: white !important;
+    padding: 0.875rem 1.25rem !important;
+    color: #ffffff !important;
     text-decoration: none !important;
     font-size: 0.875rem !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     transition: all 0.3s ease !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.dropdown-item::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent) !important;
+    transition: left 0.4s ease !important;
+}
+
+.dropdown-item:hover::before {
+    left: 100% !important;
 }
 
 .dropdown-item:last-child {
@@ -364,16 +412,19 @@ body::before {
 }
 
 .dropdown-item:hover {
-    background: rgba(139, 92, 246, 0.2) !important;
-    color: white !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(16, 185, 129, 0.3)) !important;
+    color: #ffffff !important;
     text-decoration: none !important;
-    transform: translateX(5px) !important;
+    transform: translateX(8px) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
 }
 
 .dropdown-item i {
-    width: 16px !important;
+    width: 18px !important;
     text-align: center !important;
-    color: #8b5cf6 !important;
+    color: #60a5fa !important;
+    font-size: 16px !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
 }
 
 /* Notification Bell */
@@ -2302,41 +2353,59 @@ body.mobile-menu-open {
 
 /* Dropdown sections */
 .dropdown-section {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.75rem 0;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.2) !important;
+    padding: 1rem 0 !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    position: relative !important;
+}
+
+.dropdown-section::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent) !important;
 }
 
 .dropdown-section:last-child {
-    border-bottom: none;
+    border-bottom: none !important;
 }
 
 .dropdown-section-title {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.5rem 1rem 0.25rem;
-    margin-bottom: 0.25rem;
+    color: #60a5fa !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 0.5rem 1.25rem 0.5rem !important;
+    margin-bottom: 0.5rem !important;
     display: block !important;
     visibility: visible !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, #3b82f6, #10b981) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
 }
 
 .dropdown-section .dropdown-item {
-    padding: 0.5rem 1rem;
-    margin: 0;
-    border-bottom: none;
+    padding: 0.75rem 1.25rem !important;
+    margin: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    font-weight: 600 !important;
 }
 
 .dropdown-section .dropdown-item:hover {
-    background: rgba(139, 92, 246, 0.15);
-    transform: translateX(3px);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(16, 185, 129, 0.25)) !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
 }
 
 /* Responsive design */

@@ -160,7 +160,6 @@ class GlobalNavbar {
                     <!-- Tools Section -->
                     <div class="dropdown-section" style="display: block !important; visibility: visible !important;">
                         <div class="dropdown-section-title" style="display: block !important; visibility: visible !important;">Tools & Support</div>
-                        ${this.getNavLink('/analytics', '📈 Analytics', true)}
                         ${this.getNavLink('/feedback', '💬 Feedback', true)}
                         ${this.getNavLink('/support', '🆘 Support', true)}
                         ${this.getNavLink('/settings', '⚙️ Settings', true)}

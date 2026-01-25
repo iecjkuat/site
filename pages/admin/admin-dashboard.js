@@ -6,7 +6,7 @@
 class AdminDashboard {
     constructor() {
         this.currentSection = 'dashboard';
-        this.currentView = 'analytics'; // For sub-views like financial analytics, list, pending, reports
+        this.currentView = 'overview'; // For sub-views like financial overview, list, pending, reports
         this.isLoading = false;
         this.cache = new Map();
         this.eventHandlers = new Map();
@@ -19,7 +19,6 @@ class AdminDashboard {
 
     initializeModules() {
         // Core modules
-        this.analytics = new AdminAnalytics(this);
         console.log('📊 Creating charts module...');
         this.chartsModule = new AdminCharts(this);
         console.log('📊 Charts module created:', !!this.chartsModule);
