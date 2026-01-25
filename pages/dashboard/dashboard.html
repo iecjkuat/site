@@ -1,14 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - JKUAT Innovation Club</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Security Meta Tags -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+  <!-- Global Systems -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+          crossorigin="anonymous"></script>
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/global-navbar.js"></script>
+
+  <!-- Stylesheets -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+        crossorigin="anonymous" rel="stylesheet">
+  <link href="/home/home.css" rel="stylesheet">
   <link href="dashboard.css?v=2026010201" rel="stylesheet">
-  <meta name="description" content="Your personal dashboard for JKUAT Innovation Club activities, events, and progress tracking.">
+  
+  <!-- Override conflicting navbar styles -->
+  <style>
+    body { padding-top: 140px !important; }
+  </style>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="Your personal dashboard for JKUAT Innovation Club activities, events, and progress tracking.">
+  <meta name="keywords" content="JKUAT, dashboard, innovation, club, projects, events, membership, student">
 </head>
+
 <body class="bg-gradient-to-br from-indigo-700 via-purple-700 to-purple-900 min-h-screen">
 
   <!-- Navigation -->
@@ -44,6 +74,10 @@
           <button id="viewProfileBtn" class="btn btn-outline">
             <i class="fas fa-user"></i> Profile
           </button>
+          <!-- User switching removed - users have fixed roles -->
+          <button id="debugUserBtn" class="btn btn-outline">
+            <i class="fas fa-bug"></i> Debug User
+          </button>
         </div>
       </div>
     </div>
@@ -52,7 +86,8 @@
     <div class="stats-grid">
       <!-- Events Attended -->
       <div class="glass-card stat-card">
-        <div class="w-12 h-12 bg-blue-200/30 backdrop-blur-sm border border-blue-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
+        <div
+          class="w-12 h-12 bg-blue-200/30 backdrop-blur-sm border border-blue-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
           <i class="fas fa-calendar-check text-blue-500 text-xl"></i>
         </div>
         <div id="eventsAttended" class="stat-number text-blue-500">0</div>
@@ -61,7 +96,8 @@
 
       <!-- Projects -->
       <div class="glass-card stat-card">
-        <div class="w-12 h-12 bg-green-200/30 backdrop-blur-sm border border-green-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
+        <div
+          class="w-12 h-12 bg-green-200/30 backdrop-blur-sm border border-green-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
           <i class="fas fa-project-diagram text-green-500 text-xl"></i>
         </div>
         <div id="myProjects" class="stat-number text-green-500">0</div>
@@ -70,7 +106,8 @@
 
       <!-- Membership -->
       <div class="glass-card stat-card">
-        <div class="w-12 h-12 bg-yellow-200/30 backdrop-blur-sm border border-yellow-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
+        <div
+          class="w-12 h-12 bg-yellow-200/30 backdrop-blur-sm border border-yellow-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
           <i class="fas fa-user-check text-yellow-500 text-xl"></i>
         </div>
         <div class="membership-status stat-number text-yellow-500">Loading...</div>
@@ -85,7 +122,8 @@
 
       <!-- Account Balance -->
       <div class="glass-card stat-card">
-        <div class="w-12 h-12 bg-green-300/30 backdrop-blur-sm border border-green-400 rounded-full flex items-center justify-center mb-3 shadow-lg">
+        <div
+          class="w-12 h-12 bg-green-300/30 backdrop-blur-sm border border-green-400 rounded-full flex items-center justify-center mb-3 shadow-lg">
           <i class="fas fa-wallet text-green-600 text-xl"></i>
         </div>
         <div id="accountBalance" class="stat-number text-green-600">KSh 0</div>
@@ -206,18 +244,19 @@
 
         <!-- Profile Summary -->
         <div class="glass-card text-center">
-          <div class="avatar-circle avatar-large bg-green-200/30 backdrop-blur-sm border border-green-300 mx-auto mb-4 shadow-lg">
+          <div
+            class="avatar-circle avatar-large bg-green-200/30 backdrop-blur-sm border border-green-300 mx-auto mb-4 shadow-lg">
             <i class="fas fa-user text-green-500 text-2xl"></i>
           </div>
           <h4 id="userName2" class="text-white mb-1">Loading...</h4>
           <p id="userRole" class="text-green-500 text-sm mb-4">Member</p>
           <div class="space-y-2 mb-4 text-sm">
             <div class="flex justify-between text-gray-300">
-              <span>Email:</span> 
+              <span>Email:</span>
               <span id="userEmail" class="text-white">-</span>
             </div>
             <div class="flex justify-between text-gray-300">
-              <span>Member Since:</span> 
+              <span>Member Since:</span>
               <span id="memberSince" class="text-white">-</span>
             </div>
           </div>
@@ -238,10 +277,10 @@
   <script src="modules/notifications.js"></script>
   <script src="modules/projects.js"></script>
   <script src="mock-data.js"></script>
-  <script src="auth.js"></script>
   <script src="navigation.js"></script>
   <script src="footer.js"></script>
   <script src="dashboard.js"></script>
 
 </body>
+
 </html>

@@ -1,3 +1,11 @@
+﻿/* ===== CSP UTILITY CLASSES ===== */
+.hidden { display: none !important; }
+.border-success { border-color: #10b981 !important; }
+.border-error { border-color: #ef4444 !important; }
+.text-success { color: #10b981 !important; }
+.text-error { color: #ef4444 !important; }
+.text-warning { color: #f59e0b !important; }
+
 /**
  * Enhanced Payments & Billing Page Styles
  * JKUAT Innovation and Entrepreneurship Club
@@ -81,6 +89,7 @@ body.bg-pattern {
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
+    padding-top: 120px;
     /* Optimize font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

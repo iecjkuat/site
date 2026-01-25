@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #1a1a1a; color: white; padding: 20px; }
+        .chart-container { width: 400px; height: 300px; margin: 20px; background: #2a2a2a; padding: 20px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Chart Test Page</h1>
+    
+    <div class="chart-container">
+        <h3>User Trend Chart</h3>
+        <canvas id="userTrendChart" width="400" height="300"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>Revenue Chart</h3>
+        <canvas id="revenueTrendChart" width="400" height="300"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>College Distribution</h3>
+        <canvas id="collegeChart" width="400" height="300"></canvas>
+    </div>
+
+    <script src="modules/charts.js"></script>
+    <script>
+        console.log('🧪 Testing charts...');
+        console.log('Chart.js available:', typeof Chart !== 'undefined');
+        
+        // Create a mock admin dashboard object
+        const mockAdmin = {
+            admin: null
+        };
+        
+        // Initialize charts
+        const charts = new AdminCharts(mockAdmin);
+        
+        // Test chart rendering
+        setTimeout(() => {
+            console.log('🎨 Rendering test charts...');
+            charts.loadCharts();
+        }, 1000);
+    </script>
+</body>
+</html>

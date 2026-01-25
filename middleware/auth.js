@@ -1,11 +1,42 @@
 const jwt = require('jsonwebtoken');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin } = require('../lib/supabase');
 
 // Simple in-memory cache for user profiles
 const userCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Middleware to authenticate JWT tokens
+// Function to clear user cache (for logout, role changes, etc.)
+const clearUserCache = (userId) => {
+    if (userId) {
+        userCache.delete(userId);
+        console.log(`Cache cleared for user: ${userId}`);
+    }
+};
+
+// Function to clear all cache (for security incidents)
+const clearAllCache = () => {
+    userCache.clear();
+    console.log('All user cache cleared');
+};
+
+// Function to generate secure JWT token
+const generateSecureToken = (userId, userRole, options = {}) => {
+    const payload = {
+        userId: userId,
+        role: userRole,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + (options.expiresIn || 24 * 60 * 60), // 24 hours default
+        iss: 'jkuat-innovation-club',
+        aud: 'jkuat-platform',
+        jti: require('crypto').randomUUID() // Unique token ID
+    };
+
+    return jwt.sign(payload, process.env.JWT_SECRET, {
+        algorithm: 'HS256'
+    });
+};
+
+// Middleware to authenticate JWT tokens (backend-issued)
 const authenticateToken = async (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
@@ -39,7 +70,7 @@ const authenticateToken = async (req, res, next) => {
 
         if (cached && (now - cached.timestamp < CACHE_TTL)) {
             // Validate cached user is still active
-            if (cached.user.status === 'inactive' || cached.user.deleted_at) {
+            if (cached.user.membership_status === 'inactive') {
                 userCache.delete(decoded.userId);
                 return res.status(401).json({ message: 'User account inactive' });
             }
@@ -48,19 +79,18 @@ const authenticateToken = async (req, res, next) => {
         }
 
         // Get user from database with security checks
-        const { data: user, error } = await supabase
+        const { data: user, error } = await supabaseAdmin
             .from('users')
-            .select('id, name, email, role, status, email_verified, created_at, updated_at')
+            .select('id, name, email, role, membership_status, email_verified, created_at, updated_at')
             .eq('id', decoded.userId)
-            .is('deleted_at', null) // Ensure user is not deleted
             .single();
 
         if (error || !user) {
             return res.status(401).json({ message: 'Invalid token - user not found' });
         }
 
-        // Check if user account is active
-        if (user.status === 'inactive' || user.status === 'suspended') {
+        // Check if user account is active (using membership_status instead of status)
+        if (user.membership_status === 'inactive' || user.membership_status === 'suspended') {
             return res.status(401).json({ message: 'Account inactive or suspended' });
         }
 
@@ -81,12 +111,18 @@ const authenticateToken = async (req, res, next) => {
             issued: decoded.iat * 1000,
             expires: decoded.exp * 1000
         };
-        
+
         next();
     } catch (error) {
+        console.error('Auth verification failed:', {
+            errorName: error.name,
+            errorMessage: error.message,
+            path: req.path
+        });
+
         // Clear potentially compromised cache entry
         if (error.name === 'JsonWebTokenError') {
-            return res.status(403).json({ message: 'Invalid token format' });
+            return res.status(403).json({ message: `Invalid token format: ${error.message}` });
         }
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: 'Token expired' });
@@ -94,7 +130,7 @@ const authenticateToken = async (req, res, next) => {
         if (error.name === 'NotBeforeError') {
             return res.status(401).json({ message: 'Token not active yet' });
         }
-        
+
         console.error('Auth middleware error:', {
             name: error.name,
             message: error.message,
@@ -131,7 +167,7 @@ const requireRole = (roles) => {
                 ip: req.ip,
                 timestamp: new Date().toISOString()
             });
-            
+
             return res.status(403).json({
                 message: `Access denied. Required roles: ${roles.join(', ')}`,
                 userRole: userRole
@@ -144,11 +180,11 @@ const requireRole = (roles) => {
             if (!req.user.email_verified) {
                 return res.status(403).json({ message: 'Admin account requires email verification' });
             }
-            
+
             // Check for recent password change (optional additional security)
             const accountAge = Date.now() - new Date(req.user.created_at).getTime();
             const daysSinceCreation = accountAge / (1000 * 60 * 60 * 24);
-            
+
             if (daysSinceCreation < 1 && !req.user.profile_completed) {
                 return res.status(403).json({ message: 'New admin accounts must complete profile setup' });
             }
@@ -172,46 +208,6 @@ module.exports = {
     authenticateToken,
     requireRole,
     requireAdmin,
-    requireExecutive
-};
-
-// Function to clear user cache (for logout, role changes, etc.)
-const clearUserCache = (userId) => {
-    if (userId) {
-        userCache.delete(userId);
-        console.log(`Cache cleared for user: ${userId}`);
-    }
-};
-
-// Function to clear all cache (for security incidents)
-const clearAllCache = () => {
-    userCache.clear();
-    console.log('All user cache cleared');
-};
-
-// Function to generate secure JWT token
-const generateSecureToken = (userId, userRole, options = {}) => {
-    const payload = {
-        userId: userId,
-        role: userRole,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (options.expiresIn || 24 * 60 * 60), // 24 hours default
-        iss: 'jkuat-innovation-club',
-        aud: 'jkuat-platform',
-        jti: require('crypto').randomUUID() // Unique token ID
-    };
-
-    return jwt.sign(payload, process.env.JWT_SECRET, {
-        algorithm: 'HS256'
-    });
-};
-
-module.exports = {
-    authenticateToken,
-    requireRole,
-    requireAdmin,
     requireExecutive,
-    clearUserCache,
-    clearAllCache,
     generateSecureToken
 };

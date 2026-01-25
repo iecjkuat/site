@@ -20,85 +20,119 @@ class OpportunitiesManager {
         this.init();
     }
 
+    escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     async init() {
         console.log('🚀 Initializing OpportunitiesManager...');
-        
+
         // Get current user if available
         this.currentUser = window.currentUser || null;
-        
+
         // Initialize mock service if no real service available
         this.initializeService();
-        
+
         // Load opportunities and bind events
         await this.loadOpportunities();
         this.bindEvents();
-        
+
         console.log('✅ OpportunitiesManager initialized');
     }
 
     initializeService() {
-        // Use mock data service for now
+        // Enhanced service with API integration
         this.opportunitiesService = {
             getOpportunities: async (filters) => {
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Get mock data
-                const mockData = window.opportunitiesMockData || this.getMockOpportunities();
-                let opportunities = [...mockData];
-                
-                // Apply filters
-                if (filters.type) {
-                    opportunities = opportunities.filter(opp => opp.opportunity_type === filters.type);
-                }
-                if (filters.location) {
-                    opportunities = opportunities.filter(opp => opp.location.includes(filters.location));
-                }
-                if (filters.search) {
-                    const searchTerm = filters.search.toLowerCase();
-                    opportunities = opportunities.filter(opp => 
-                        opp.title.toLowerCase().includes(searchTerm) ||
-                        opp.description.toLowerCase().includes(searchTerm) ||
-                        opp.organization.toLowerCase().includes(searchTerm)
-                    );
-                }
-                if (filters.featured) {
-                    opportunities = opportunities.filter(opp => opp.is_featured);
-                }
-                
-                // Sort
-                opportunities.sort((a, b) => {
-                    switch (filters.sort) {
-                        case 'created_at':
-                            return new Date(b.created_at) - new Date(a.created_at);
-                        case 'application_deadline':
-                            return new Date(a.application_deadline) - new Date(b.application_deadline);
-                        case 'view_count':
-                            return b.view_count - a.view_count;
-                        case 'compensation_amount':
-                            return (b.compensation_amount || 0) - (a.compensation_amount || 0);
-                        default:
-                            return 0;
+                try {
+                    // Try API first
+                    const params = new URLSearchParams({
+                        page: filters.page || 1,
+                        limit: filters.limit || 12,
+                        type: filters.type || '',
+                        location: filters.location || '',
+                        search: filters.search || '',
+                        sort: filters.sort || 'created_at',
+                        featured: filters.featured || false
+                    });
+
+                    const response = await fetch(`/api/opportunities?${params}`);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ Opportunities loaded from API:', data.opportunities?.length || 0);
+                        return data;
+                    } else {
+                        throw new Error('API failed');
                     }
-                });
-                
-                // Pagination
-                const page = filters.page || 1;
-                const limit = filters.limit || 12;
-                const startIndex = (page - 1) * limit;
-                const endIndex = startIndex + limit;
-                const paginatedOpportunities = opportunities.slice(startIndex, endIndex);
-                
-                return {
-                    opportunities: paginatedOpportunities,
-                    pagination: {
-                        current: page,
-                        total: Math.ceil(opportunities.length / limit),
-                        totalOpportunities: opportunities.length
+                } catch (error) {
+                    console.log('⚠️ API unavailable, using mock data');
+
+                    // Fallback to mock data
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    const mockData = window.opportunitiesMockData || this.getMockOpportunities();
+                    let opportunities = [...mockData];
+
+                    // Apply filters
+                    if (filters.type) {
+                        opportunities = opportunities.filter(opp => opp.opportunity_type === filters.type);
                     }
-                };
+                    if (filters.location) {
+                        opportunities = opportunities.filter(opp => opp.location.includes(filters.location));
+                    }
+                    if (filters.search) {
+                        const searchTerm = filters.search.toLowerCase();
+                        opportunities = opportunities.filter(opp =>
+                            opp.title.toLowerCase().includes(searchTerm) ||
+                            opp.description.toLowerCase().includes(searchTerm) ||
+                            opp.organization.toLowerCase().includes(searchTerm)
+                        );
+                    }
+                    if (filters.featured) {
+                        opportunities = opportunities.filter(opp => opp.is_featured);
+                    }
+
+                    // Sort
+                    opportunities.sort((a, b) => {
+                        switch (filters.sort) {
+                            case 'created_at':
+                                return new Date(b.created_at) - new Date(a.created_at);
+                            case 'application_deadline':
+                                return new Date(a.application_deadline) - new Date(b.application_deadline);
+                            case 'view_count':
+                                return b.view_count - a.view_count;
+                            case 'compensation_amount':
+                                return (b.compensation_amount || 0) - (a.compensation_amount || 0);
+                            default:
+                                return 0;
+                        }
+                    });
+
+                    // Pagination
+                    const page = filters.page || 1;
+                    const limit = filters.limit || 12;
+                    const startIndex = (page - 1) * limit;
+                    const endIndex = startIndex + limit;
+                    const paginatedOpportunities = opportunities.slice(startIndex, endIndex);
+
+                    return {
+                        opportunities: paginatedOpportunities,
+                        pagination: {
+                            current: page,
+                            total: Math.ceil(opportunities.length / limit),
+                            totalOpportunities: opportunities.length
+                        }
+                    };
+                }
             },
-            
+
             getOpportunity: async (id, userId) => {
                 const mockData = window.opportunitiesMockData || this.getMockOpportunities();
                 const opportunity = mockData.find(opp => opp.id === parseInt(id));
@@ -109,7 +143,7 @@ class OpportunitiesManager {
                 }
                 return opportunity;
             },
-            
+
             toggleBookmark: async (opportunityId, userId) => {
                 // Mock bookmark toggle
                 return {
@@ -117,7 +151,7 @@ class OpportunitiesManager {
                     message: 'Opportunity bookmarked successfully!'
                 };
             },
-            
+
             getCategories: async () => {
                 return {
                     categories: [
@@ -285,7 +319,7 @@ class OpportunitiesManager {
                 // Update active state
                 filterBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                
+
                 // Apply filter
                 this.currentFilter = btn.dataset.filter;
                 this.applyFilter(this.currentFilter);
@@ -297,20 +331,20 @@ class OpportunitiesManager {
         const grid = document.getElementById('opportunitiesGrid');
         const loading = document.getElementById('opportunitiesLoading');
         const noMessage = document.getElementById('noOpportunitiesMessage');
-        
+
         // Show loading
         if (loading) loading.style.display = 'block';
         if (noMessage) noMessage.style.display = 'none';
         if (grid) grid.innerHTML = '';
-        
+
         try {
             const data = await this.opportunitiesService.getOpportunities(this.currentFilters);
             this.opportunities = data.opportunities;
             this.renderOpportunities();
-            
+
             // Update stats
             this.updateStats(data.pagination.totalOpportunities);
-            
+
         } catch (error) {
             console.error('Error loading opportunities:', error);
             this.showError('Failed to load opportunities. Please try again.');
@@ -322,70 +356,70 @@ class OpportunitiesManager {
     renderOpportunities() {
         const grid = document.getElementById('opportunitiesGrid');
         const noMessage = document.getElementById('noOpportunitiesMessage');
-        
+
         if (!this.opportunities || this.opportunities.length === 0) {
             if (grid) grid.innerHTML = '';
             if (noMessage) noMessage.style.display = 'block';
             return;
         }
-        
+
         if (noMessage) noMessage.style.display = 'none';
-        
+
         if (grid) {
-            grid.innerHTML = this.opportunities.map(opportunity => 
+            grid.innerHTML = this.opportunities.map(opportunity =>
                 this.createOpportunityCard(opportunity)
             ).join('');
-            
+
             // Add click handlers for View Details buttons
             this.addViewDetailsHandlers();
         }
     }
 
     createOpportunityCard(opportunity) {
-        const deadlineText = opportunity.application_deadline 
+        const deadlineText = opportunity.application_deadline
             ? `<div class="deadline">
                  <i class="fas fa-clock"></i>
                  Deadline: ${new Date(opportunity.application_deadline).toLocaleDateString()}
                </div>`
             : '';
-            
+
         const compensationText = opportunity.compensation_amount
             ? `<div class="compensation">
                  <i class="fas fa-money-bill-wave"></i>
-                 ${this.formatCompensation(opportunity)}
+                 ${this.escapeHtml(this.formatCompensation(opportunity))}
                </div>`
             : '';
 
         return `
-            <div class="opportunity-card glass-card" data-id="${opportunity.id}">
+            <div class="opportunity-card glass-card" data-id="${this.escapeHtml(opportunity.id)}">
                 <div class="card-header">
-                    <div class="opportunity-type ${opportunity.opportunity_type}">
-                        <i class="fas ${this.getTypeIcon(opportunity.opportunity_type)}"></i>
-                        ${opportunity.opportunity_type.charAt(0).toUpperCase() + opportunity.opportunity_type.slice(1)}
+                    <div class="opportunity-type ${this.escapeHtml(opportunity.opportunity_type)}">
+                        <i class="fas ${this.escapeHtml(this.getTypeIcon(opportunity.opportunity_type))}"></i>
+                        ${this.escapeHtml(opportunity.opportunity_type.charAt(0).toUpperCase() + opportunity.opportunity_type.slice(1))}
                     </div>
                     ${opportunity.is_featured ? '<div class="featured-badge"><i class="fas fa-star"></i> Featured</div>' : ''}
                 </div>
                 
-                <h3 class="opportunity-title">${opportunity.title}</h3>
-                <div class="organization">${opportunity.organization}</div>
-                <p class="description">${opportunity.description}</p>
+                <h3 class="opportunity-title">${this.escapeHtml(opportunity.title)}</h3>
+                <div class="organization">${this.escapeHtml(opportunity.organization)}</div>
+                <p class="description">${this.escapeHtml(opportunity.description)}</p>
                 
                 <div class="opportunity-details">
                     <div class="location">
                         <i class="fas fa-map-marker-alt"></i>
-                        ${opportunity.location}
+                        ${this.escapeHtml(opportunity.location)}
                     </div>
                     ${compensationText}
                     ${deadlineText}
                 </div>
                 
                 <div class="opportunity-stats">
-                    <span><i class="fas fa-eye"></i> ${opportunity.view_count}</span>
-                    <span><i class="fas fa-users"></i> ${opportunity.application_count}</span>
+                    <span><i class="fas fa-eye"></i> ${this.escapeHtml(opportunity.view_count)}</span>
+                    <span><i class="fas fa-users"></i> ${this.escapeHtml(opportunity.application_count)}</span>
                 </div>
                 
                 <div class="opportunity-actions">
-                    <button class="btn btn-primary view-details" data-id="${opportunity.id}">
+                    <button class="btn btn-primary view-details" data-id="${this.escapeHtml(opportunity.id)}">
                         <i class="fas fa-info-circle"></i> View Details
                     </button>
                 </div>
@@ -415,30 +449,30 @@ class OpportunitiesManager {
     openDetailsModal(opportunity) {
         const modal = document.getElementById('opportunityModal');
         const modalContent = document.getElementById('opportunityModalContent');
-        
+
         if (!modal || !modalContent) return;
-        
+
         const compensationText = opportunity.compensation_amount
-            ? `<p><strong>💰 Compensation:</strong> ${this.formatCompensation(opportunity)}</p>`
+            ? `<p><strong>💰 Compensation:</strong> ${this.escapeHtml(this.formatCompensation(opportunity))}</p>`
             : '';
-            
+
         const deadlineText = opportunity.application_deadline
             ? `<p><strong>⏰ Application Deadline:</strong> ${new Date(opportunity.application_deadline).toLocaleDateString()}</p>`
             : '';
 
         modalContent.innerHTML = `
             <div class="modal-header">
-                <h2>${opportunity.title}</h2>
-                <p class="organization"><strong>🏢 ${opportunity.organization}</strong></p>
-                <div class="opportunity-type-badge ${opportunity.opportunity_type}">
-                    <i class="fas ${this.getTypeIcon(opportunity.opportunity_type)}"></i>
-                    ${opportunity.opportunity_type.charAt(0).toUpperCase() + opportunity.opportunity_type.slice(1)}
+                <h2>${this.escapeHtml(opportunity.title)}</h2>
+                <p class="organization"><strong>🏢 ${this.escapeHtml(opportunity.organization)}</strong></p>
+                <div class="opportunity-type-badge ${this.escapeHtml(opportunity.opportunity_type)}">
+                    <i class="fas ${this.escapeHtml(this.getTypeIcon(opportunity.opportunity_type))}"></i>
+                    ${this.escapeHtml(opportunity.opportunity_type.charAt(0).toUpperCase() + opportunity.opportunity_type.slice(1))}
                 </div>
             </div>
             
             <div class="modal-body">
                 <div class="opportunity-details">
-                    <p><strong>📍 Location:</strong> ${opportunity.location}</p>
+                    <p><strong>📍 Location:</strong> ${this.escapeHtml(opportunity.location)}</p>
                     ${compensationText}
                     ${deadlineText}
                 </div>
@@ -446,29 +480,29 @@ class OpportunitiesManager {
                 <div class="description-section">
                     <h3>📋 Details</h3>
                     <div class="description-content">
-                        ${opportunity.description}
+                        ${this.escapeHtml(opportunity.description)}
                         
                         ${opportunity.eligibility_criteria ? `
                             <br><br><strong>✅ Eligibility:</strong><br>
-                            ${opportunity.eligibility_criteria}
+                            ${this.escapeHtml(opportunity.eligibility_criteria)}
                         ` : ''}
                         
                         ${opportunity.application_requirements ? `
                             <br><br><strong>📝 Requirements:</strong><br>
-                            ${opportunity.application_requirements}
+                            ${this.escapeHtml(opportunity.application_requirements)}
                         ` : ''}
                         
                         ${opportunity.application_url ? `
                             <br><br><strong>🔗 Apply Here:</strong><br>
-                            <a href="${opportunity.application_url}" target="_blank" style="color: #3b82f6; text-decoration: underline;">
-                                ${opportunity.application_url}
+                            <a href="${this.escapeHtml(opportunity.application_url)}" target="_blank" style="color: #3b82f6; text-decoration: underline;">
+                                ${this.escapeHtml(opportunity.application_url)}
                             </a>
                         ` : ''}
                     </div>
                 </div>
             </div>
         `;
-        
+
         modal.style.display = 'flex';
     }
 
@@ -491,7 +525,7 @@ class OpportunitiesManager {
             grid.innerHTML = `
                 <div class="error-message glass-card">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>${message}</p>
+                    <p>${this.escapeHtml(message)}</p>
                     <button class="btn btn-primary" onclick="window.opportunitiesManager.loadOpportunities()">
                         <i class="fas fa-refresh"></i> Try Again
                     </button>
@@ -523,13 +557,13 @@ class OpportunitiesManager {
 
     formatCompensation(opportunity) {
         if (!opportunity.compensation_amount) return null;
-        
+
         const amount = new Intl.NumberFormat('en-KE', {
             style: 'currency',
             currency: opportunity.compensation_currency || 'KES',
             minimumFractionDigits: 0
         }).format(opportunity.compensation_amount);
-        
+
         return amount;
     }
 

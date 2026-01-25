@@ -19,7 +19,7 @@ body.bg-pattern {
     line-height: 1.6;
     color: #374151;
     background: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80') center/cover fixed,
-                linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #1e3a8a 100%);
+        linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #1e3a8a 100%);
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
@@ -296,7 +296,8 @@ body.bg-pattern::before {
 }
 
 /* Buttons */
-.btn, .btn-primary {
+.btn,
+.btn-primary {
     background: linear-gradient(135deg, #10b981, #059669);
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: white;
@@ -311,7 +312,8 @@ body.bg-pattern::before {
     font-size: 0.875rem;
 }
 
-.btn:hover, .btn-primary:hover {
+.btn:hover,
+.btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     color: white;
@@ -412,6 +414,7 @@ body.bg-pattern::before {
     transform: translateY(-5px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
+
 /* Additional Resources Page Styles */
 
 /* Category Filter Buttons */
@@ -902,8 +905,15 @@ body.bg-pattern::before {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 
@@ -928,7 +938,10 @@ body.bg-pattern::before {
     color: white;
 }
 
-.pdf-header, .doc-header, .txt-header, .generic-header {
+.pdf-header,
+.doc-header,
+.txt-header,
+.generic-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -939,14 +952,16 @@ body.bg-pattern::before {
     color: #8b5cf6;
 }
 
-.pdf-content h3, .doc-content .document-title {
+.pdf-content h3,
+.doc-content .document-title {
     color: white;
     margin-bottom: 1rem;
     font-size: 1.25rem;
     font-weight: 700;
 }
 
-.sample-content, .document-body {
+.sample-content,
+.document-body {
     margin-top: 1.5rem;
 }
 
@@ -1077,60 +1092,61 @@ body.bg-pattern::before {
         max-width: 95vw;
         margin: 1rem;
     }
-    
+
     .preview-container {
         max-height: 50vh;
         padding: 1rem;
     }
-    
+
     .text-content {
         font-size: 0.75rem;
     }
-    
+
     .section-item {
         padding: 0.75rem;
     }
 }
+
 @media (max-width: 768px) {
     .container {
         padding: 0 1rem;
     }
-    
+
     .resource-preview {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .preview-icon {
         align-self: center;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
     .modal-backdrop {
         padding: 1rem;
     }
-    
+
     .modal-header,
     .modal-body {
         padding: 1.5rem;
     }
-    
+
     .resource-actions {
         flex-direction: column;
     }
-    
+
     .resource-meta {
         grid-template-columns: 1fr;
     }
-    
+
     .btn-group {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .btn-group .btn {
         width: 100%;
         max-width: 300px;
@@ -1141,16 +1157,16 @@ body.bg-pattern::before {
     .resource-card {
         padding: 1.5rem;
     }
-    
+
     .resource-title {
         font-size: 1.125rem;
     }
-    
+
     .category-btn {
         padding: 0.5rem 1rem;
         font-size: 0.75rem;
     }
-    
+
     .modal-content {
         margin: 1rem;
         max-height: calc(100vh - 2rem);
@@ -1163,24 +1179,24 @@ body.bg-pattern::before {
         background: white !important;
         color: black !important;
     }
-    
+
     body.bg-pattern::before {
         display: none;
     }
-    
+
     .glass-card,
     .modal-content {
         background: white !important;
         border: 1px solid #ddd !important;
         color: black !important;
     }
-    
+
     .resource-title,
     .modal-header h2,
     .hero-title {
         color: black !important;
     }
-    
+
     .resource-actions,
     .modal-actions {
         display: none;
@@ -1192,7 +1208,7 @@ body.bg-pattern::before {
     .nav-center {
         gap: 0.25rem !important;
     }
-    
+
     .glass-button {
         padding: 0.5rem 0.75rem !important;
         font-size: 0.75rem !important;
@@ -1204,18 +1220,18 @@ body.bg-pattern::before {
         flex-direction: column !important;
         gap: 1rem !important;
     }
-    
+
     .nav-center {
         order: 2 !important;
         width: 100% !important;
         justify-content: center !important;
     }
-    
+
     .nav-auth {
         order: 1 !important;
         justify-content: center !important;
     }
-    
+
     .nav-club-title {
         font-size: 1.125rem !important;
     }
@@ -1225,17 +1241,45 @@ body.bg-pattern::before {
     .nav-center {
         gap: 0.25rem !important;
     }
-    
+
     .glass-button {
         padding: 0.375rem 0.5rem !important;
         font-size: 0.625rem !important;
     }
-    
+
     .nav-club-title {
         font-size: 1rem !important;
     }
-    
+
     .glass-nav {
         padding: 0.75rem 0 !important;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .resource-card,
+    .btn,
+    .glass-input {
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .pulse {
+        animation: none !important;
+    }
+
+    .loading-spinner {
+        animation: none !important;
     }
 }

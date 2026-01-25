@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Portal - JKUAT Innovation Club</title>
+
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script src="/home/supabase-client.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="../shared/core/theme.css" rel="stylesheet">
+    <link href="../shared/components/navigation.css" rel="stylesheet">
+    <link href="../shared/components/notifications.css" rel="stylesheet">
+    <link href="voting.css?v=2025010803" rel="stylesheet">
+    
+    <!-- Override conflicting navbar styles -->
+    <style>
+        body { padding-top: 140px !important; }
+    </style>
+</head>
+
+<body>
+    <!-- Global Background -->
+    <div class="global-bg"></div>
+
+
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gradient">Voting Portal</h1>
+            <p class="text-xl text-gray-200">Participate in shaping the future of JKUAT Innovation Club</p>
+        </header>
+
+        <!-- Election Status Overview -->
+        <div id="electionStatus" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <!-- Stats items like "Active Votes", "Upcoming", "Total Votes" -->
+            <div class="glass-card p-6 text-center">
+                <i class="fas fa-vote-yea text-3xl text-emerald-400 mb-3"></i>
+                <div class="text-2xl font-bold" id="activeCount">0</div>
+                <div class="text-gray-300">Active Votes</div>
+            </div>
+            <div class="glass-card p-6 text-center">
+                <i class="fas fa-hourglass-half text-3xl text-yellow-400 mb-3"></i>
+                <div class="text-2xl font-bold" id="upcomingCount">0</div>
+                <div class="text-gray-300">Upcoming</div>
+            </div>
+            <div class="glass-card p-6 text-center">
+                <i class="fas fa-check-circle text-3xl text-green-400 mb-3"></i>
+                <div class="text-2xl font-bold" id="myVotesCount">0</div>
+                <div class="text-gray-300">My Votes Cast</div>
+            </div>
+        </div>
+
+        <!-- Voting List -->
+        <section id="votingListSection">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 class="text-2xl font-semibold">Current & Upcoming Votes</h2>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="upcoming">Upcoming</button>
+                    <button class="filter-btn" data-filter="completed">Results</button>
+                    <button class="filter-btn" data-filter="leadership">Leadership</button>
+                    <button class="filter-btn" data-filter="project">Projects</button>
+                    <button class="filter-btn" data-filter="decision">Decisions</button>
+                </div>
+            </div>
+
+            <div id="votingGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Voting Cards will be injected here -->
+                <div class="loading-state flex flex-col items-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                    <p class="mt-4">Loading votes...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Content Area (Candidate View / Voting Form) -->
+        <section id="voteDetailSection" class="hidden mt-12">
+            <button id="backToList"
+                class="flex items-center gap-2 text-emerald-300 hover:text-white mb-6 transition-colors">
+                <i class="fas fa-arrow-left"></i> Back to All Votes
+            </button>
+            <div id="voteDetailContent">
+                <!-- Injected via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Area -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="../shared/components/navigation.js"></script>
+    <script src="mock-data.js"></script>
+    <script src="voting.js"></script>
+</body>
+
+</html>

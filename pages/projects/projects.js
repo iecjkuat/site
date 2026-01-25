@@ -1,4 +1,4 @@
-/**
+﻿/**
  * JKUAT Innovation Club - Projects & Innovation Page
  * Handles project showcase, submissions, hackathons, and incubation program
  */
@@ -10,12 +10,21 @@ class ProjectsManager {
         this.projects = [];
         this.hackathons = [];
         this.incubationProjects = [];
-        
+
         this.init();
+    }
+
+    // Security helper to prevent XSS attacks
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     async init() {
         this.setupEventListeners();
+        this.setupDocumentListeners(); // Fix potential memory leak
         await this.loadInitialData();
         this.updateStats();
     }
@@ -24,7 +33,7 @@ class ProjectsManager {
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const tab = e.target.dataset.tab;
+                const tab = e.currentTarget.dataset.tab;
                 this.switchTab(tab);
             });
         });
@@ -32,7 +41,7 @@ class ProjectsManager {
         // Filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const filter = e.target.dataset.filter;
+                const filter = e.currentTarget.dataset.filter;
                 this.applyFilter(filter);
             });
         });
@@ -55,7 +64,9 @@ class ProjectsManager {
         document.getElementById('projectSubmissionForm')?.addEventListener('submit', (e) => {
             this.handleProjectSubmission(e);
         });
+    }
 
+    setupDocumentListeners() {
         // Event delegation for all buttons and modal management
         document.addEventListener('click', (e) => {
             // Handle project view buttons
@@ -64,63 +75,81 @@ class ProjectsManager {
                 const projectId = button.dataset.projectId;
                 this.viewProject(projectId);
             }
-            
+
             // Handle project join buttons
             if (e.target.matches('[data-action="join-project"]') || e.target.closest('[data-action="join-project"]')) {
                 const button = e.target.matches('[data-action="join-project"]') ? e.target : e.target.closest('[data-action="join-project"]');
                 const projectId = button.dataset.projectId;
                 this.joinProject(projectId);
             }
-            
+
             // Handle hackathon view buttons
             if (e.target.matches('[data-action="view-hackathon"]') || e.target.closest('[data-action="view-hackathon"]')) {
                 const button = e.target.matches('[data-action="view-hackathon"]') ? e.target : e.target.closest('[data-action="view-hackathon"]');
                 const hackathonId = button.dataset.hackathonId;
                 this.viewHackathon(hackathonId);
             }
-            
+
             // Handle hackathon register buttons
             if (e.target.matches('[data-action="register-hackathon"]') || e.target.closest('[data-action="register-hackathon"]')) {
                 const button = e.target.matches('[data-action="register-hackathon"]') ? e.target : e.target.closest('[data-action="register-hackathon"]');
                 const hackathonId = button.dataset.hackathonId;
                 this.registerForHackathon(hackathonId);
             }
-            
+
             // Handle incubation project view buttons
             if (e.target.matches('[data-action="view-incubation"]') || e.target.closest('[data-action="view-incubation"]')) {
                 const button = e.target.matches('[data-action="view-incubation"]') ? e.target : e.target.closest('[data-action="view-incubation"]');
                 const projectId = button.dataset.projectId;
                 this.viewIncubationProject(projectId);
             }
-            
+
             // Handle contact founder buttons
             if (e.target.matches('[data-action="contact-founder"]') || e.target.closest('[data-action="contact-founder"]')) {
                 const button = e.target.matches('[data-action="contact-founder"]') ? e.target : e.target.closest('[data-action="contact-founder"]');
                 const projectId = button.dataset.projectId;
                 this.contactFounder(projectId);
             }
-            
+
             // Handle modal close buttons
-            if (e.target.matches('.modal-close') || e.target.closest('.modal-close') || 
+            if (e.target.matches('.modal-close') || e.target.closest('.modal-close') ||
                 e.target.matches('[data-action="close-modal"]') || e.target.closest('[data-action="close-modal"]')) {
                 const modal = e.target.closest('.modal-backdrop');
                 if (modal) {
-                    modal.style.display = 'none';
+                    modal.classList.remove('active');
                 }
             }
-            
+
             // Handle modal backdrop clicks (close modal when clicking outside)
             if (e.target.classList.contains('modal-backdrop')) {
-                e.target.style.display = 'none';
+                e.target.classList.remove('active');
+            }
+
+            // Handle share project buttons
+            if (e.target.matches('[data-action="share-project"]') || e.target.closest('[data-action="share-project"]')) {
+                const button = e.target.matches('[data-action="share-project"]') ? e.target : e.target.closest('[data-action="share-project"]');
+                this.shareProject(button.dataset.projectId);
+            }
+
+            // Handle share hackathon buttons
+            if (e.target.matches('[data-action="share-hackathon"]') || e.target.closest('[data-action="share-hackathon"]')) {
+                const button = e.target.matches('[data-action="share-hackathon"]') ? e.target : e.target.closest('[data-action="share-hackathon"]');
+                this.shareHackathon(button.dataset.hackathonId);
+            }
+
+            // Handle share incubation buttons
+            if (e.target.matches('[data-action="share-incubation"]') || e.target.closest('[data-action="share-incubation"]')) {
+                const button = e.target.matches('[data-action="share-incubation"]') ? e.target : e.target.closest('[data-action="share-incubation"]');
+                this.shareIncubationProject(button.dataset.projectId);
             }
         });
 
         // Handle Escape key to close modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const openModal = document.querySelector('.modal-backdrop[style*="flex"]');
+                const openModal = document.querySelector('.modal-backdrop.active');
                 if (openModal) {
-                    openModal.style.display = 'none';
+                    openModal.classList.remove('active');
                 }
             }
         });
@@ -138,29 +167,17 @@ class ProjectsManager {
 
         // Update tab buttons
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-            btn.style.background = 'transparent';
-            btn.style.color = 'rgba(255, 255, 255, 0.8)';
+            const isActive = btn.dataset.tab === tabName;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', isActive);
         });
-
-        const activeTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
-        if (activeTabBtn) {
-            activeTabBtn.classList.add('active');
-            activeTabBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-            activeTabBtn.style.color = 'white';
-        }
 
         // Update tab content
         document.querySelectorAll('.tab-content').forEach(content => {
-            content.style.display = 'none';
-            content.classList.remove('active');
+            const isActive = content.id === `${tabName}-tab`;
+            content.classList.toggle('active', isActive);
+            content.setAttribute('aria-hidden', !isActive);
         });
-
-        const activeTab = document.getElementById(`${tabName}-tab`);
-        if (activeTab) {
-            activeTab.style.display = 'block';
-            activeTab.classList.add('active');
-        }
 
         // Load tab-specific data
         this.loadTabData(tabName);
@@ -172,17 +189,11 @@ class ProjectsManager {
         // Update filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
-            btn.style.background = 'rgba(255, 255, 255, 0.1)';
-            btn.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-            btn.style.color = 'rgba(255, 255, 255, 0.8)';
         });
 
         const activeFilter = document.querySelector(`[data-filter="${filter}"]`);
         if (activeFilter) {
             activeFilter.classList.add('active');
-            activeFilter.style.background = 'rgba(16, 185, 129, 0.2)';
-            activeFilter.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-            activeFilter.style.color = '#10b981';
         }
 
         this.renderProjects();
@@ -192,13 +203,13 @@ class ProjectsManager {
         try {
             // Load projects
             await this.loadProjects();
-            
+
             // Load hackathons
             await this.loadHackathons();
-            
+
             // Load incubation projects
             await this.loadIncubationProjects();
-            
+
         } catch (error) {
             console.error('Error loading initial data:', error);
             this.showError('Failed to load data. Please refresh the page.');
@@ -274,17 +285,17 @@ class ProjectsManager {
 
         let filteredProjects = this.projects;
         if (this.currentFilter !== 'all') {
-            filteredProjects = this.projects.filter(project => 
+            filteredProjects = this.projects.filter(project =>
                 project.category.toLowerCase() === this.currentFilter.toLowerCase()
             );
         }
 
         if (filteredProjects.length === 0) {
             grid.innerHTML = `
-                <div style="text-align: center; grid-column: 1 / -1; padding: 3rem;">
-                    <i class="fas fa-search" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 1rem;"></i>
-                    <h3 style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">No projects found</h3>
-                    <p style="color: rgba(255, 255, 255, 0.6);">Try adjusting your filter or check back later for new projects.</p>
+                <div class="empty-state">
+                    <i class="fas fa-search empty-state-icon search"></i>
+                    <h3 class="empty-state-title">No projects found</h3>
+                    <p class="empty-state-text">Try adjusting your filter or check back later for new projects.</p>
                 </div>
             `;
             return;
@@ -294,53 +305,45 @@ class ProjectsManager {
     }
 
     createProjectCard(project) {
-        const statusColors = {
-            'Planning': '#f59e0b',
-            'Active': '#10b981',
-            'Completed': '#3b82f6',
-            'On Hold': '#6b7280',
-            'Cancelled': '#ef4444'
-        };
-
         return `
-            <div class="project-card" data-project-id="${project.id}">
+            <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
                 <div class="project-header">
-                    <div style="flex: 1;">
-                        <h3 class="project-title">${project.title}</h3>
-                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                            <span class="project-status ${project.status?.toLowerCase() || 'active'}">${project.status || 'Active'}</span>
-                            <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${project.category}</span>
+                    <div class="project-lead-wrapper">
+                        <h3 class="project-title">${this.escapeHtml(project.title)}</h3>
+                        <div class="project-meta-row">
+                            <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
+                            <span class="category-badge-static">${this.escapeHtml(project.category)}</span>
                         </div>
                     </div>
                 </div>
                 
-                <p class="project-description">${project.description}</p>
+                <p class="project-description">${this.escapeHtml(project.description)}</p>
                 
                 ${project.technologies && project.technologies.length > 0 ? `
                     <div class="project-tech">
                         ${project.technologies.slice(0, 3).map(tech => `
-                            <span class="tech-tag">${tech}</span>
+                            <span class="tech-tag">${this.escapeHtml(tech)}</span>
                         `).join('')}
-                        ${project.technologies.length > 3 ? `<span style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">+${project.technologies.length - 3} more</span>` : ''}
+                        ${project.technologies.length > 3 ? `<span class="tech-tag-more">+${project.technologies.length - 3} more</span>` : ''}
                     </div>
                 ` : ''}
                 
                 <div class="project-stats">
                     <div class="project-stat team">
                         <i class="fas fa-user"></i>
-                        <span>${project.project_lead?.name || 'Team Lead'}</span>
+                        <span>${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
                     </div>
                     <div class="project-stat timeline">
                         <i class="fas fa-clock"></i>
-                        <span>${this.getTimeAgo(new Date(project.created_at))}</span>
+                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
                     </div>
                 </div>
                 
                 <div class="project-actions">
-                    <button class="btn btn-outline btn-sm" data-action="view-project" data-project-id="${project.id}">
+                    <button class="btn btn-outline btn-sm" data-action="view-project" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-eye"></i>View
                     </button>
-                    <button class="btn btn-primary btn-sm" data-action="join-project" data-project-id="${project.id}">
+                    <button class="btn btn-primary btn-sm" data-action="join-project" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-plus"></i>Join
                     </button>
                 </div>
@@ -353,10 +356,10 @@ class ProjectsManager {
 
         if (this.hackathons.length === 0) {
             grid.innerHTML = `
-                <div style="text-align: center; grid-column: 1 / -1; padding: 3rem;">
-                    <i class="fas fa-trophy" style="font-size: 3rem; color: rgba(139, 92, 246, 0.3); margin-bottom: 1rem;"></i>
-                    <h3 style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">No hackathons available</h3>
-                    <p style="color: rgba(255, 255, 255, 0.6);">Check back soon for exciting hackathon opportunities!</p>
+                <div class="empty-state">
+                    <i class="fas fa-trophy empty-state-icon hackathon"></i>
+                    <h3 class="empty-state-title">No hackathons available</h3>
+                    <p class="empty-state-text">Check back soon for exciting hackathon opportunities!</p>
                 </div>
             `;
             return;
@@ -375,63 +378,63 @@ class ProjectsManager {
         const daysLeft = Math.ceil((registrationDeadline - now) / (1000 * 60 * 60 * 24));
 
         return `
-            <div class="glass-card" style="padding: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <h3 style="color: white; font-weight: 600; font-size: 1.25rem; flex: 1;">${hackathon.title}</h3>
-                    <span style="background: ${isRegistrationOpen ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${isRegistrationOpen ? '#10b981' : '#ef4444'}; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;">
+            <div class="glass-card p-8">
+                <div class="hackathon-card-header">
+                    <h3 class="hackathon-title-main">${this.escapeHtml(hackathon.title)}</h3>
+                    <span class="status-badge ${isRegistrationOpen ? 'open' : 'closed'}">
                         ${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}
                     </span>
                 </div>
                 
-                <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">${hackathon.description}</p>
+                <p class="hackathon-desc">${this.escapeHtml(hackathon.description)}</p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="hackathon-stats-grid">
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">Start Date</div>
-                        <div style="color: white; font-weight: 600;">${startDate.toLocaleDateString()}</div>
+                        <div class="stat-label">Start Date</div>
+                        <div class="stat-value">${startDate.toLocaleDateString()}</div>
                     </div>
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">End Date</div>
-                        <div style="color: white; font-weight: 600;">${endDate.toLocaleDateString()}</div>
+                        <div class="stat-label">End Date</div>
+                        <div class="stat-value">${endDate.toLocaleDateString()}</div>
                     </div>
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">Participants</div>
-                        <div style="color: white; font-weight: 600;">${hackathon.current_participants}/${hackathon.max_participants}</div>
+                        <div class="stat-label">Participants</div>
+                        <div class="stat-value">${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)}</div>
                     </div>
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">Registration Fee</div>
-                        <div style="color: white; font-weight: 600;">KSh ${hackathon.registration_fee || 0}</div>
+                        <div class="stat-label">Registration Fee</div>
+                        <div class="stat-value">KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</div>
                     </div>
                 </div>
                 
                 ${hackathon.theme ? `
-                    <div style="margin-bottom: 1rem;">
-                        <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600;">
-                            Theme: ${hackathon.theme}
+                    <div class="mb-4">
+                        <span class="hackathon-theme-badge">
+                            Theme: ${this.escapeHtml(hackathon.theme)}
                         </span>
                     </div>
                 ` : ''}
                 
                 ${isRegistrationOpen ? `
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <i class="fas fa-clock" style="color: #10b981;"></i>
-                            <span style="color: #10b981; font-weight: 600; font-size: 0.875rem;">Registration closes in ${daysLeft} days</span>
+                    <div class="registration-alert">
+                        <div class="registration-alert-inner">
+                            <i class="fas fa-clock text-green-500"></i>
+                            <span class="registration-alert-text">Registration closes in ${daysLeft} days</span>
                         </div>
-                        <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.75rem;">Deadline: ${registrationDeadline.toLocaleDateString()}</div>
+                        <div class="registration-deadline-info">Deadline: ${registrationDeadline.toLocaleDateString()}</div>
                     </div>
                 ` : ''}
                 
-                <div style="display: flex; gap: 0.75rem;">
-                    <button class="btn btn-outline btn-sm" data-action="view-hackathon" data-hackathon-id="${hackathon.id}" style="flex: 1;">
+                <div class="flex gap-3">
+                    <button class="btn btn-outline btn-sm flex-1" data-action="view-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
                         <i class="fas fa-info-circle"></i>Details
                     </button>
                     ${isRegistrationOpen ? `
-                        <button class="btn btn-primary btn-sm" data-action="register-hackathon" data-hackathon-id="${hackathon.id}" style="flex: 1;">
+                        <button class="btn btn-primary btn-sm flex-1" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
                             <i class="fas fa-user-plus"></i>Register
                         </button>
                     ` : `
-                        <button class="btn btn-secondary btn-sm" disabled style="flex: 1; opacity: 0.5;">
+                        <button class="btn btn-secondary btn-sm flex-1 opacity-50" disabled>
                             <i class="fas fa-lock"></i>Closed
                         </button>
                     `}
@@ -446,10 +449,10 @@ class ProjectsManager {
 
         if (this.incubationProjects.length === 0) {
             grid.innerHTML = `
-                <div style="text-align: center; grid-column: 1 / -1; padding: 3rem;">
-                    <i class="fas fa-seedling" style="font-size: 3rem; color: rgba(245, 158, 11, 0.3); margin-bottom: 1rem;"></i>
-                    <h3 style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">No projects in incubation</h3>
-                    <p style="color: rgba(255, 255, 255, 0.6);">Submit your innovative idea to join our incubation program!</p>
+                <div class="empty-state">
+                    <i class="fas fa-seedling empty-state-icon incubation"></i>
+                    <h3 class="empty-state-title">No projects in incubation</h3>
+                    <p class="empty-state-text">Submit your innovative idea to join our incubation program!</p>
                 </div>
             `;
             return;
@@ -460,31 +463,31 @@ class ProjectsManager {
 
     createIncubationCard(project) {
         return `
-            <div class="glass-card" style="padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <h3 style="color: white; font-weight: 600; font-size: 1.125rem;">${project.title}</h3>
-                    <span style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Incubation</span>
+            <div class="glass-card p-6">
+                <div class="hackathon-card-header">
+                    <h3 class="hackathon-title-main">${this.escapeHtml(project.title)}</h3>
+                    <span class="incubation-badge">Incubation</span>
                 </div>
                 
-                <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; line-height: 1.5; margin-bottom: 1rem;">${project.description}</p>
+                <p class="hackathon-desc">${this.escapeHtml(project.description)}</p>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="hackathon-stats-grid">
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">Stage</div>
-                        <div style="color: white; font-weight: 600;">${project.stage || 'Validation'}</div>
+                        <div class="stat-label">Stage</div>
+                        <div class="stat-value">${this.escapeHtml(project.stage || 'Validation')}</div>
                     </div>
                     <div>
-                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">Funding</div>
-                        <div style="color: white; font-weight: 600;">KSh ${project.funding || '0'}</div>
+                        <div class="stat-label">Funding</div>
+                        <div class="stat-value">KSh ${this.escapeHtml(project.funding || '0')}</div>
                     </div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-user" style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;"></i>
-                        <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.75rem;">${project.founder || project.project_lead?.name || 'Founder'}</span>
+                <div class="flex justify-between items-center">
+                    <div class="lead-info-container">
+                        <i class="fas fa-user lead-icon-small"></i>
+                        <span class="lead-name-small">${this.escapeHtml(project.founder || project.project_lead?.name || 'Founder')}</span>
                     </div>
-                    <button class="btn btn-outline btn-sm" data-action="view-incubation" data-project-id="${project.id}">
+                    <button class="btn btn-outline btn-sm" data-action="view-incubation" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-eye"></i>View Details
                     </button>
                 </div>
@@ -494,13 +497,13 @@ class ProjectsManager {
 
     async handleProjectSubmission(e) {
         e.preventDefault();
-        
+
         // Show loading state
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Submitting...';
         submitBtn.disabled = true;
-        
+
         const formData = {
             title: document.getElementById('projectTitle').value,
             category: document.getElementById('projectCategory').value,
@@ -539,10 +542,10 @@ class ProjectsManager {
             // For static deployment, show success message since backend isn't available
             this.showMessage('Thank you for your submission! Your project idea is now pending review by our team. You will be notified via email once it has been approved and published.', 'success');
             document.getElementById('projectSubmissionForm').reset();
-            
+
             // Simulate adding to pending projects
             this.simulateProjectSubmission(formData);
-            
+
             setTimeout(() => {
                 this.switchTab('showcase');
             }, 4000);
@@ -559,36 +562,36 @@ class ProjectsManager {
         if (!window.pendingProjects) {
             window.pendingProjects = [];
         }
-        
+
         projectData.id = 'pending_proj_' + Date.now();
         projectData.status = 'Pending Review';
         projectData.progress_percentage = 0;
-        projectData.project_lead = { 
-            name: 'Current User', 
-            email: 'user@jkuat.ac.ke' 
+        projectData.project_lead = {
+            name: 'Current User',
+            email: 'user@jkuat.ac.ke'
         };
         projectData.created_at = new Date().toISOString();
-        
+
         window.pendingProjects.push(projectData);
-        
+
         console.log('Project added to pending queue:', projectData);
-        
+
         // Simulate admin notification (in real app, this would be an email/notification)
-        console.log('📧 Admin notification sent for new project submission');
+        console.log('ðŸ“§ Admin notification sent for new project submission');
     }
 
     async handleCollaborationSubmission(e) {
         e.preventDefault();
-        
+
         const form = e.target;
         const projectId = form.dataset.projectId;
-        
+
         // Show loading state
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Sending Request...';
         submitBtn.disabled = true;
-        
+
         const formData = new FormData(form);
         const collaborationData = {
             role: formData.get('role'),
@@ -610,18 +613,18 @@ class ProjectsManager {
             if (response.ok) {
                 const result = await response.json();
                 this.showSuccess(result.message || 'Collaboration request sent successfully!');
-                
+
                 // Close modal and reset form
                 const modal = document.getElementById('collaborationModal');
                 if (modal) {
-                    modal.style.display = 'none';
+                    modal.classList.remove('active');
                 }
                 form.reset();
-                
+
                 // Also close project modal if it's open
                 const projectModal = document.getElementById('projectModal');
-                if (projectModal && projectModal.style.display === 'flex') {
-                    projectModal.style.display = 'none';
+                if (projectModal && projectModal.classList.contains('active')) {
+                    projectModal.classList.remove('active');
                 }
             } else {
                 const error = await response.json();
@@ -631,11 +634,11 @@ class ProjectsManager {
             console.error('Error submitting collaboration request:', error);
             // For static deployment, show success message
             this.showSuccess('Collaboration request sent! The project lead will be notified and will contact you soon.');
-            
+
             // Close modal and reset form
             const modal = document.getElementById('collaborationModal');
             if (modal) {
-                modal.style.display = 'none';
+                modal.classList.remove('active');
             }
             form.reset();
         } finally {
@@ -648,24 +651,15 @@ class ProjectsManager {
     showMessage(message, type) {
         const messageDiv = document.getElementById('submissionMessage');
         const messageText = document.getElementById('messageText');
-        
+
         if (messageDiv && messageText) {
             messageText.textContent = message;
-            messageDiv.style.display = 'block';
-            
-            if (type === 'success') {
-                messageDiv.style.background = 'rgba(16, 185, 129, 0.2)';
-                messageDiv.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-                messageDiv.style.color = '#10b981';
-            } else {
-                messageDiv.style.background = 'rgba(239, 68, 68, 0.2)';
-                messageDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-                messageDiv.style.color = '#ef4444';
-            }
-            
+            messageDiv.classList.toggle('submission-msg-success', type === 'success');
+            messageDiv.classList.toggle('submission-msg-error', type !== 'success');
+
             // Auto-hide after 5 seconds
             setTimeout(() => {
-                messageDiv.style.display = 'none';
+                messageDiv.classList.remove('submission-msg-success', 'submission-msg-error');
             }, 5000);
         }
     }
@@ -695,7 +689,7 @@ class ProjectsManager {
             this.showError('Project not found');
             return;
         }
-        
+
         this.showProjectModal(project);
     }
 
@@ -705,7 +699,7 @@ class ProjectsManager {
             this.showError('Project not found');
             return;
         }
-        
+
         // Show collaboration modal instead of simple confirmation
         this.showCollaborationModal(project);
     }
@@ -716,7 +710,7 @@ class ProjectsManager {
             this.showError('Hackathon not found');
             return;
         }
-        
+
         this.showHackathonModal(hackathon);
     }
 
@@ -726,28 +720,28 @@ class ProjectsManager {
             this.showError('Hackathon not found');
             return;
         }
-        
+
         // Check if registration is still open
         const registrationDeadline = new Date(hackathon.registration_deadline);
         const now = new Date();
-        
+
         if (now > registrationDeadline) {
             this.showError('Registration for this hackathon has closed');
             return;
         }
-        
+
         // Show registration confirmation
         const message = `Register for "${hackathon.title}"?\n\nRegistration Fee: KSh ${hackathon.registration_fee || 0}\nDeadline: ${registrationDeadline.toLocaleDateString()}`;
-        
+
         if (confirm(message)) {
             this.showSuccess(`Registration successful for "${hackathon.title}"! Check your email for confirmation details.`);
-            
+
             // Close modal if it's open
             const modal = document.getElementById('projectModal');
-            if (modal && modal.style.display === 'flex') {
-                modal.style.display = 'none';
+            if (modal && modal.classList.contains('active')) {
+                modal.classList.remove('active');
             }
-            
+
             // TODO: Implement actual registration API call
             console.log('Registering for hackathon:', hackathonId);
         }
@@ -759,7 +753,7 @@ class ProjectsManager {
             this.showError('Incubation project not found');
             return;
         }
-        
+
         this.showIncubationModal(project);
     }
 
@@ -769,16 +763,16 @@ class ProjectsManager {
             this.showError('Project not found');
             return;
         }
-        
+
         const founderName = project.founder || project.project_lead?.name || 'the founder';
         this.showSuccess(`Contact request sent to ${founderName}! They will be notified of your interest.`);
-        
+
         // Close modal if it's open
         const modal = document.getElementById('projectModal');
-        if (modal && modal.style.display === 'flex') {
-            modal.style.display = 'none';
+        if (modal && modal.classList.contains('active')) {
+            modal.classList.remove('active');
         }
-        
+
         // TODO: Implement actual contact/messaging system
         console.log('Contacting founder for project:', projectId);
     }
@@ -787,25 +781,25 @@ class ProjectsManager {
         const modalHtml = `
             <div class="project-detail-header">
                 <div class="project-detail-meta">
-                    <span class="project-status ${project.status?.toLowerCase() || 'active'}">${project.status || 'Active'}</span>
-                    <span class="project-owner">by ${project.project_lead?.name || 'Team Lead'}</span>
-                    <span class="project-date">${project.priority || 'Medium'} Priority</span>
+                    <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
+                    <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
+                    <span class="project-date">${this.escapeHtml(project.priority || 'Medium')} Priority</span>
                 </div>
                 
-                <h1 class="project-detail-title">${project.title}</h1>
+                <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
                 
                 <div class="project-detail-stats">
                     <div class="stat-item">
                         <i class="fas fa-chart-line"></i>
-                        <span>${project.progress_percentage || 0}% Complete</span>
+                        <span>${this.escapeHtml(project.progress_percentage || 0)}% Complete</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-tag"></i>
-                        <span>${project.category}</span>
+                        <span>${this.escapeHtml(project.category)}</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-clock"></i>
-                        <span>${this.getTimeAgo(new Date(project.created_at))}</span>
+                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
                     </div>
                 </div>
             </div>
@@ -813,14 +807,14 @@ class ProjectsManager {
             <div class="project-detail-content">
                 <section class="detail-section">
                     <h3>Description</h3>
-                    <p>${project.description}</p>
+                    <p>${this.escapeHtml(project.description)}</p>
                 </section>
                 
                 ${project.technologies && project.technologies.length > 0 ? `
                     <section class="detail-section">
                         <h3>Technologies</h3>
                         <div class="tech-stack">
-                            ${project.technologies.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+                            ${project.technologies.map(tech => `<span class="tech-tag">${this.escapeHtml(tech)}</span>`).join('')}
                         </div>
                     </section>
                 ` : ''}
@@ -828,48 +822,48 @@ class ProjectsManager {
                 <div class="detail-grid">
                     <section class="detail-section">
                         <h3>Status</h3>
-                        <span class="project-status ${project.status?.toLowerCase() || 'active'}">${project.status || 'Active'}</span>
+                        <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
                     </section>
                     
                     <section class="detail-section">
                         <h3>Priority</h3>
-                        <span class="project-status planning">${project.priority || 'Medium'}</span>
+                        <span class="project-status planning">${this.escapeHtml(project.priority || 'Medium')}</span>
                     </section>
                     
                     <section class="detail-section">
                         <h3>Progress</h3>
-                        <p>${project.progress_percentage || 0}% Complete</p>
+                        <p>${this.escapeHtml(project.progress_percentage || 0)}% Complete</p>
                     </section>
                     
                     <section class="detail-section">
                         <h3>Team Lead</h3>
-                        <p>${project.project_lead?.name || 'Team Lead'}</p>
+                        <p>${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</p>
                     </section>
                 </div>
                 
                 <div class="project-detail-actions">
-                    <button class="btn btn-primary" data-action="join-project" data-project-id="${project.id}">
+                    <button class="btn btn-primary" data-action="join-project" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-handshake"></i>
                         Request to Join
                     </button>
-                    <button class="btn btn-outline" onclick="projectsManager.shareProject('${project.id}')">
+                    <button class="btn btn-outline" data-action="share-project" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-share"></i>
                         Share Project
                     </button>
                 </div>
             </div>
         `;
-        
+
         // Update modal content
         const modalContent = document.getElementById('projectModalContent');
         if (modalContent) {
             modalContent.innerHTML = modalHtml;
         }
-        
+
         // Show modal
         const modal = document.getElementById('projectModal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
     }
 
@@ -879,24 +873,24 @@ class ProjectsManager {
         const registrationDeadline = new Date(hackathon.registration_deadline);
         const now = new Date();
         const isRegistrationOpen = now < registrationDeadline;
-        
+
         const modalHtml = `
             <div class="project-detail-header">
                 <div class="project-detail-meta">
                     <span class="project-status ${isRegistrationOpen ? 'active' : 'completed'}">${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}</span>
-                    ${hackathon.theme ? `<span class="project-owner">Theme: ${hackathon.theme}</span>` : ''}
+                    ${hackathon.theme ? `<span class="project-owner">Theme: ${this.escapeHtml(hackathon.theme)}</span>` : ''}
                 </div>
                 
-                <h1 class="project-detail-title">${hackathon.title}</h1>
+                <h1 class="project-detail-title">${this.escapeHtml(hackathon.title)}</h1>
                 
                 <div class="project-detail-stats">
                     <div class="stat-item">
                         <i class="fas fa-users"></i>
-                        <span>${hackathon.current_participants}/${hackathon.max_participants} Participants</span>
+                        <span>${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)} Participants</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-money-bill"></i>
-                        <span>KSh ${hackathon.registration_fee || 0}</span>
+                        <span>KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</span>
                     </div>
                 </div>
             </div>
@@ -904,7 +898,7 @@ class ProjectsManager {
             <div class="project-detail-content">
                 <section class="detail-section">
                     <h3>Description</h3>
-                    <p>${hackathon.description}</p>
+                    <p>${this.escapeHtml(hackathon.description)}</p>
                 </section>
                 
                 <div class="detail-grid">
@@ -922,68 +916,68 @@ class ProjectsManager {
                     </section>
                     <section class="detail-section">
                         <h3>Venue</h3>
-                        <p>${hackathon.venue || 'TBA'}</p>
+                        <p>${this.escapeHtml(hackathon.venue || 'TBA')}</p>
                     </section>
                 </div>
                 
                 <div class="project-detail-actions">
                     ${isRegistrationOpen ? `
-                        <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${hackathon.id}">
+                        <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
                             <i class="fas fa-user-plus"></i>
                             Register Now
                         </button>
                     ` : `
-                        <button class="btn btn-secondary" disabled style="opacity: 0.5;">
+                        <button class="btn btn-secondary opacity-50" disabled>
                             <i class="fas fa-lock"></i>
                             Registration Closed
                         </button>
                     `}
-                    <button class="btn btn-outline" onclick="projectsManager.shareHackathon('${hackathon.id}')">
+                    <button class="btn btn-outline" data-action="share-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
                         <i class="fas fa-share"></i>
                         Share Event
                     </button>
                 </div>
             </div>
         `;
-        
+
         // Update modal content and title
         const modalContent = document.getElementById('projectModalContent');
         const modalTitle = document.getElementById('projectModalTitle');
-        
+
         if (modalContent) {
             modalContent.innerHTML = modalHtml;
         }
         if (modalTitle) {
             modalTitle.textContent = 'Hackathon Details';
         }
-        
+
         // Show modal
         const modal = document.getElementById('projectModal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
     }
 
     showCollaborationModal(project) {
         // Update modal content
         const modalContent = document.getElementById('collaborationModalContent');
-        
+
         if (modalContent) {
             modalContent.innerHTML = `
-                <div style="margin-bottom: 1.5rem;">
-                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1rem;">
-                        Tell the project lead why you want to collaborate and what you can contribute to "${project.title}".
+                <div class="mb-6">
+                    <p class="collaboration-intro">
+                        Tell the project lead why you want to collaborate and what you can contribute to "${this.escapeHtml(project.title)}".
                     </p>
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <i class="fas fa-user" style="color: #10b981;"></i>
-                            <strong style="color: #10b981;">Project Lead:</strong>
+                    <div class="lead-highlight-box">
+                        <div class="lead-highlight-header">
+                            <i class="fas fa-user lead-highlight-label"></i>
+                            <strong class="lead-highlight-label">Project Lead:</strong>
                         </div>
-                        <p style="color: rgba(255, 255, 255, 0.9); margin: 0;">${project.project_lead?.name || 'Team Lead'}</p>
+                        <p class="lead-highlight-name">${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</p>
                     </div>
                 </div>
                 
-                <form id="collaborationForm" data-project-id="${project.id}">
+                <form id="collaborationForm" data-project-id="${this.escapeHtml(project.id)}">
                     <div class="form-group">
                         <label class="form-label">Your Role in the Project *</label>
                         <select name="role" class="glass-input" required>
@@ -1001,7 +995,7 @@ class ProjectsManager {
                     <div class="form-group">
                         <label class="form-label">Skills You Bring *</label>
                         <input type="text" name="skills" class="glass-input" placeholder="e.g., React, Python, Machine Learning, Project Management" required>
-                        <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">Separate multiple skills with commas</small>
+                        <small class="empty-state-text">Separate multiple skills with commas</small>
                     </div>
                     
                     <div class="form-group">
@@ -1034,11 +1028,11 @@ class ProjectsManager {
                 </form>
             `;
         }
-        
+
         // Show modal
         const modal = document.getElementById('collaborationModal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
     }
 
@@ -1047,19 +1041,19 @@ class ProjectsManager {
             <div class="project-detail-header">
                 <div class="project-detail-meta">
                     <span class="project-status planning">Incubation Program</span>
-                    <span class="project-owner">by ${project.project_lead?.name || project.founder || 'Founder'}</span>
+                    <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || project.founder || 'Founder')}</span>
                 </div>
                 
-                <h1 class="project-detail-title">${project.title}</h1>
+                <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
                 
                 <div class="project-detail-stats">
                     <div class="stat-item">
                         <i class="fas fa-chart-line"></i>
-                        <span>${project.stage || 'Validation'}</span>
+                        <span>${this.escapeHtml(project.stage || 'Validation')}</span>
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-money-bill"></i>
-                        <span>KSh ${project.funding || '0'} Funding</span>
+                        <span>KSh ${this.escapeHtml(project.funding || '0')} Funding</span>
                     </div>
                 </div>
             </div>
@@ -1067,42 +1061,42 @@ class ProjectsManager {
             <div class="project-detail-content">
                 <section class="detail-section">
                     <h3>Description</h3>
-                    <p>${project.description}</p>
+                    <p>${this.escapeHtml(project.description)}</p>
                 </section>
                 
                 <section class="detail-section">
                     <h3>Current Stage</h3>
-                    <p>${project.stage || 'Validation'}</p>
+                    <p>${this.escapeHtml(project.stage || 'Validation')}</p>
                 </section>
                 
                 <div class="project-detail-actions">
-                    <button class="btn btn-primary" data-action="contact-founder" data-project-id="${project.id}">
+                    <button class="btn btn-primary" data-action="contact-founder" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-envelope"></i>
                         Contact Founder
                     </button>
-                    <button class="btn btn-outline" onclick="projectsManager.shareIncubationProject('${project.id}')">
+                    <button class="btn btn-outline" data-action="share-incubation" data-project-id="${this.escapeHtml(project.id)}">
                         <i class="fas fa-share"></i>
                         Share Project
                     </button>
                 </div>
             </div>
         `;
-        
+
         // Update modal content and title
         const modalContent = document.getElementById('projectModalContent');
         const modalTitle = document.getElementById('projectModalTitle');
-        
+
         if (modalContent) {
             modalContent.innerHTML = modalHtml;
         }
         if (modalTitle) {
             modalTitle.textContent = 'Incubation Project';
         }
-        
+
         // Show modal
         const modal = document.getElementById('projectModal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
     }
 
@@ -1110,7 +1104,7 @@ class ProjectsManager {
     shareProject(projectId) {
         const project = this.projects.find(p => p.id === projectId);
         if (!project) return;
-        
+
         const url = `${window.location.origin}/projects#${projectId}`;
         if (navigator.share) {
             navigator.share({
@@ -1130,7 +1124,7 @@ class ProjectsManager {
     shareHackathon(hackathonId) {
         const hackathon = this.hackathons.find(h => h.id === hackathonId);
         if (!hackathon) return;
-        
+
         const url = `${window.location.origin}/projects#hackathon-${hackathonId}`;
         if (navigator.share) {
             navigator.share({
@@ -1150,7 +1144,7 @@ class ProjectsManager {
     shareIncubationProject(projectId) {
         const project = this.incubationProjects.find(p => p.id === projectId);
         if (!project) return;
-        
+
         const url = `${window.location.origin}/projects#incubation-${projectId}`;
         if (navigator.share) {
             navigator.share({
@@ -1171,12 +1165,12 @@ class ProjectsManager {
     getTimeAgo(date) {
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
-        
+
         if (diffInSeconds < 60) return 'Just now';
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
         if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-        
+
         return date.toLocaleDateString();
     }
 
@@ -1413,28 +1407,33 @@ class ProjectsManager {
 }
 
 // Global functions for modal management (kept for backward compatibility)
-window.closeProjectModal = function() {
+window.closeProjectModal = function () {
     const modal = document.getElementById('projectModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 };
 
-window.closeCollaborationModal = function() {
+window.closeCollaborationModal = function () {
     const modal = document.getElementById('collaborationModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 };
 
-window.closeCollaborationRequestsModal = function() {
+window.closeCollaborationRequestsModal = function () {
     const modal = document.getElementById('collaborationRequestsModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 };
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Navigation
+    if (typeof window.Navigation === 'function' && !window.navInstance) {
+        window.navInstance = new Navigation();
+    }
+
     window.projectsManager = new ProjectsManager();
 });

@@ -12,19 +12,30 @@ class ResourcesPage {
         this.init();
     }
 
+    escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     async init() {
         console.log('📚 Initializing Resources Page...');
-        
+
         try {
             // Load resources data
             await this.loadResources();
-            
+
             // Setup event listeners
             this.setupEventListeners();
-            
+            this.setupDocumentListeners(); // Refactored to call once
+
             // Update stats
             this.updateStats();
-            
+
             console.log('✅ Resources Page initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing resources page:', error);
@@ -35,16 +46,16 @@ class ResourcesPage {
     async loadResources(category = 'all', page = 1) {
         this.isLoading = true;
         this.showLoading();
-        
+
         try {
             console.log('📊 Loading resources data...');
-            
+
             // Build API URL
             let apiUrl = `/api/resources?page=${page}&limit=12`;
             if (category !== 'all') {
                 apiUrl += `&category=${encodeURIComponent(category)}`;
             }
-            
+
             const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
@@ -59,7 +70,7 @@ class ResourcesPage {
                 this.filteredResources = [...this.resources];
                 this.currentPage = data.pagination?.current || 1;
                 this.totalPages = data.pagination?.total || 1;
-                
+
                 console.log('✅ Resources loaded:', this.resources.length);
             } else {
                 // Use mock data if API fails
@@ -67,9 +78,9 @@ class ResourcesPage {
                 this.resources = this.getMockResources();
                 this.filteredResources = [...this.resources];
             }
-            
+
             this.renderResources();
-            
+
         } catch (error) {
             console.error('❌ Error loading resources:', error);
             // Use mock data as fallback
@@ -186,33 +197,33 @@ class ResourcesPage {
         }
 
         resourcesGrid.innerHTML = this.filteredResources.map(resource => `
-            <div class="glass-card resource-card" data-category="${resource.category}">
+            <div class="glass-card resource-card" data-category="${this.escapeHtml(resource.category)}">
                 <div class="resource-header">
-                    <div class="resource-category-badge ${resource.category.toLowerCase()}">
-                        <i class="fas ${this.getCategoryIcon(resource.category)}"></i>
-                        ${resource.category}
+                    <div class="resource-category-badge ${this.escapeHtml(resource.category.toLowerCase())}">
+                        <i class="fas ${this.escapeHtml(this.getCategoryIcon(resource.category))}"></i>
+                        ${this.escapeHtml(resource.category)}
                     </div>
-                    <div class="resource-access-level ${(resource.accessLevel || 'public').toLowerCase()}">
-                        ${resource.accessLevel || 'PUBLIC'}
+                    <div class="resource-access-level ${this.escapeHtml((resource.accessLevel || 'public').toLowerCase())}">
+                        ${this.escapeHtml(resource.accessLevel || 'PUBLIC')}
                     </div>
                 </div>
                 
                 <div class="resource-content">
-                    <h3 class="resource-title">${resource.title}</h3>
-                    <p class="resource-description">${resource.description}</p>
+                    <h3 class="resource-title">${this.escapeHtml(resource.title)}</h3>
+                    <p class="resource-description">${this.escapeHtml(resource.description)}</p>
                     
                     <div class="resource-meta">
                         <div class="meta-item">
-                            <i class="fas fa-file-${this.getFileIcon(resource.fileType)}"></i>
-                            <span>${(resource.fileType || 'FILE').toUpperCase()}</span>
+                            <i class="fas fa-file-${this.escapeHtml(this.getFileIcon(resource.fileType))}"></i>
+                            <span>${this.escapeHtml((resource.fileType || 'FILE').toUpperCase())}</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-download"></i>
-                            <span>${resource.downloadCount || 0} downloads</span>
+                            <span>${this.escapeHtml(resource.downloadCount || 0)} downloads</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-weight-hanging"></i>
-                            <span>${resource.fileSize || 'Unknown size'}</span>
+                            <span>${this.escapeHtml(resource.fileSize || 'Unknown size')}</span>
                         </div>
                         <div class="meta-item">
                             <i class="fas fa-calendar"></i>
@@ -222,13 +233,13 @@ class ResourcesPage {
                     
                     <div class="resource-uploader">
                         <i class="fas fa-user"></i>
-                        <span>Uploaded by ${resource.uploader?.name || 'Unknown'}</span>
+                        <span>Uploaded by ${this.escapeHtml(resource.uploader?.name || 'Unknown')}</span>
                     </div>
                     
                     ${resource.tags && resource.tags.length > 0 ? `
                         <div class="resource-tags">
                             ${resource.tags.slice(0, 3).map(tag => `
-                                <span class="tag">${tag}</span>
+                                <span class="tag">${this.escapeHtml(tag)}</span>
                             `).join('')}
                             ${resource.tags.length > 3 ? `<span class="tag-more">+${resource.tags.length - 3}</span>` : ''}
                         </div>
@@ -236,26 +247,27 @@ class ResourcesPage {
                 </div>
                 
                 <div class="resource-actions">
-                    <button class="btn btn-primary" data-action="download" data-resource-id="${resource.id}">
+                    <button class="btn btn-primary" data-action="download" data-resource-id="${this.escapeHtml(resource.id)}">
                         <i class="fas fa-download"></i> Download
                     </button>
-                    <button class="btn btn-outline" data-action="preview" data-resource-id="${resource.id}">
+                    <button class="btn btn-outline" data-action="preview" data-resource-id="${this.escapeHtml(resource.id)}">
                         <i class="fas fa-eye"></i> Preview
                     </button>
                 </div>
             </div>
         `).join('');
-        
+
         // Add event listeners for the buttons
         this.addResourceButtonListeners();
     }
 
     addResourceButtonListeners() {
-        // Add event listeners for download and preview buttons
+        // This method is now only for grid-specific listeners if needed, 
+        // but it's largely replaced by setupDocumentListeners for efficiency.
         const resourcesGrid = document.getElementById('resourcesGrid');
-        if (!resourcesGrid) return;
+        if (!resourcesGrid || resourcesGrid.dataset.listenersAttached) return;
 
-        // Use event delegation to handle dynamically created buttons
+        // Use event delegation to handle dynamically created buttons within the grid
         resourcesGrid.addEventListener('click', (e) => {
             const button = e.target.closest('[data-action]');
             if (!button) return;
@@ -280,10 +292,20 @@ class ResourcesPage {
             }
         });
 
-        // Handle modal events
+        resourcesGrid.dataset.listenersAttached = 'true';
+    }
+
+    setupDocumentListeners() {
+        // Handle modal events globally, added once in init
         document.addEventListener('click', (e) => {
             const button = e.target.closest('[data-action]');
-            if (!button) return;
+            if (!button) {
+                // Close modal when clicking backdrop
+                if (e.target.classList.contains('modal-backdrop')) {
+                    e.target.remove();
+                }
+                return;
+            }
 
             const action = button.dataset.action;
 
@@ -312,13 +334,6 @@ class ResourcesPage {
                     break;
             }
         });
-
-        // Close modal when clicking backdrop
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-backdrop')) {
-                e.target.remove();
-            }
-        });
     }
 
     setupEventListeners() {
@@ -330,7 +345,7 @@ class ResourcesPage {
                 categoryButtons.forEach(btn => btn.classList.remove('active'));
                 // Add active class to clicked button
                 button.classList.add('active');
-                
+
                 const category = button.dataset.category;
                 this.filterByCategory(category);
             });
@@ -367,22 +382,22 @@ class ResourcesPage {
 
     filterByCategory(category) {
         this.currentCategory = category;
-        
+
         if (category === 'all') {
             this.filteredResources = [...this.resources];
         } else {
-            this.filteredResources = this.resources.filter(resource => 
+            this.filteredResources = this.resources.filter(resource =>
                 resource.category.toLowerCase() === category.toLowerCase()
             );
         }
-        
+
         this.renderResources();
         this.updateStats();
     }
 
     searchResources(query) {
         this.searchQuery = query.toLowerCase().trim();
-        
+
         if (!this.searchQuery) {
             this.filteredResources = [...this.resources];
         } else {
@@ -390,12 +405,12 @@ class ResourcesPage {
                 resource.title.toLowerCase().includes(this.searchQuery) ||
                 resource.description.toLowerCase().includes(this.searchQuery) ||
                 resource.category.toLowerCase().includes(this.searchQuery) ||
-                (resource.tags && resource.tags.some(tag => 
+                (resource.tags && resource.tags.some(tag =>
                     tag.toLowerCase().includes(this.searchQuery)
                 ))
             );
         }
-        
+
         this.renderResources();
         this.updateStats();
     }
@@ -423,11 +438,11 @@ class ResourcesPage {
 
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     // Update download count in UI
                     resource.downloadCount = (resource.downloadCount || 0) + 1;
                     this.renderResources();
-                    
+
                     // If API provides download URL, use it
                     if (data.downloadUrl) {
                         this.initiateDownload(data.downloadUrl, data.fileName || resource.title);
@@ -435,9 +450,9 @@ class ResourcesPage {
                         // Fallback to simulated download
                         this.simulateDownload(resource);
                     }
-                    
+
                     this.showMessage(`Downloaded: ${resource.title}`, 'success');
-                    
+
                 } else {
                     throw new Error('API download failed');
                 }
@@ -469,13 +484,13 @@ class ResourcesPage {
         const content = this.generateDownloadContent(resource);
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
-        
+
         const filename = `${resource.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
         this.initiateDownload(url, filename);
-        
+
         // Clean up the blob URL
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        
+
         // Update download count
         resource.downloadCount = (resource.downloadCount || 0) + 1;
         this.renderResources();
@@ -532,7 +547,7 @@ JKUAT Innovation Club - Resources System
         modal.innerHTML = `
             <div class="modal-content preview-modal">
                 <div class="modal-header">
-                    <h2><i class="fas fa-eye"></i> Preview: ${resource.title}</h2>
+                    <h2><i class="fas fa-eye"></i> Preview: ${this.escapeHtml(resource.title)}</h2>
                     <button class="modal-close" data-action="close-modal">
                         <i class="fas fa-times"></i>
                     </button>
@@ -544,18 +559,18 @@ JKUAT Innovation Club - Resources System
                     
                     <div class="preview-info">
                         <div class="info-row">
-                            <strong>File Type:</strong> ${(resource.fileType || 'Unknown').toUpperCase()}
+                            <strong>File Type:</strong> ${this.escapeHtml((resource.fileType || 'Unknown').toUpperCase())}
                         </div>
                         <div class="info-row">
-                            <strong>File Size:</strong> ${resource.fileSize || 'Unknown'}
+                            <strong>File Size:</strong> ${this.escapeHtml(resource.fileSize || 'Unknown')}
                         </div>
                         <div class="info-row">
-                            <strong>Downloads:</strong> ${resource.downloadCount || 0}
+                            <strong>Downloads:</strong> ${this.escapeHtml(resource.downloadCount || 0)}
                         </div>
                     </div>
                     
                     <div class="modal-actions">
-                        <button class="btn btn-primary" data-action="download" data-resource-id="${resource.id}" data-close-modal="true">
+                        <button class="btn btn-primary" data-action="download" data-resource-id="${this.escapeHtml(resource.id)}" data-close-modal="true">
                             <i class="fas fa-download"></i> Download
                         </button>
                         <button class="btn btn-outline" data-action="close-modal">
@@ -565,13 +580,13 @@ JKUAT Innovation Club - Resources System
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 
     generatePreviewContent(resource) {
         const fileType = (resource.fileType || '').toLowerCase();
-        
+
         // For demo purposes, we'll show sample content based on file type
         // In a real application, you'd fetch the actual file content
         switch (fileType) {
@@ -583,14 +598,14 @@ JKUAT Innovation Club - Resources System
                             <span>PDF Document Preview</span>
                         </div>
                         <div class="pdf-content">
-                            <h3>${resource.title}</h3>
+                            <h3>${this.escapeHtml(resource.title)}</h3>
                             <p><strong>Document Summary:</strong></p>
-                            <p>${resource.description}</p>
+                            <p>${this.escapeHtml(resource.description)}</p>
                             
                             <div class="sample-content">
                                 <h4>Sample Content:</h4>
                                 <div class="content-block">
-                                    <p>This is a preview of the ${resource.category.toLowerCase()} document. The full document contains detailed information about:</p>
+                                    <p>This is a preview of the ${this.escapeHtml(resource.category.toLowerCase())} document. The full document contains detailed information about:</p>
                                     <ul>
                                         <li>Club policies and procedures</li>
                                         <li>Member guidelines and expectations</li>
@@ -607,7 +622,7 @@ JKUAT Innovation Club - Resources System
                         </div>
                     </div>
                 `;
-                
+
             case 'doc':
             case 'docx':
                 return `
@@ -617,21 +632,21 @@ JKUAT Innovation Club - Resources System
                             <span>Word Document Preview</span>
                         </div>
                         <div class="doc-content">
-                            <div class="document-title">${resource.title}</div>
+                            <div class="document-title">${this.escapeHtml(resource.title)}</div>
                             <div class="document-meta">
-                                <span>Category: ${resource.category}</span> | 
-                                <span>Type: ${resource.fileType.toUpperCase()}</span>
+                                <span>Category: ${this.escapeHtml(resource.category)}</span> | 
+                                <span>Type: ${this.escapeHtml(resource.fileType.toUpperCase())}</span>
                             </div>
                             
                             <div class="document-body">
                                 <h3>Document Overview</h3>
-                                <p>${resource.description}</p>
+                                <p>${this.escapeHtml(resource.description)}</p>
                                 
                                 <h3>Key Sections</h3>
                                 <div class="section-list">
                                     <div class="section-item">
                                         <strong>1. Introduction</strong>
-                                        <p>Overview of the ${resource.category.toLowerCase()} and its purpose within the JKUAT Innovation Club.</p>
+                                        <p>Overview of the ${this.escapeHtml(resource.category.toLowerCase())} and its purpose within the JKUAT Innovation Club.</p>
                                     </div>
                                     <div class="section-item">
                                         <strong>2. Guidelines</strong>
@@ -650,7 +665,7 @@ JKUAT Innovation Club - Resources System
                         </div>
                     </div>
                 `;
-                
+
             case 'txt':
                 return `
                     <div class="txt-preview">
@@ -660,16 +675,16 @@ JKUAT Innovation Club - Resources System
                         </div>
                         <div class="txt-content">
                             <pre class="text-content">
-${resource.title}
+${this.escapeHtml(resource.title)}
 ${'='.repeat(resource.title.length)}
 
-Description: ${resource.description}
+Description: ${this.escapeHtml(resource.description)}
 
-Category: ${resource.category}
+Category: ${this.escapeHtml(resource.category)}
 
 This is a sample preview of the text document content.
 The actual document contains detailed information and
-instructions related to ${resource.category.toLowerCase()}.
+instructions related to ${this.escapeHtml(resource.category.toLowerCase())}.
 
 Key topics covered:
 - Innovation methodologies
@@ -682,7 +697,7 @@ Download the complete document to access all content.
                         </div>
                     </div>
                 `;
-                
+
             default:
                 return `
                     <div class="generic-preview">
@@ -691,13 +706,13 @@ Download the complete document to access all content.
                             <span>File Preview</span>
                         </div>
                         <div class="generic-content">
-                            <h3>${resource.title}</h3>
-                            <p><strong>Description:</strong> ${resource.description}</p>
-                            <p><strong>Category:</strong> ${resource.category}</p>
-                            <p><strong>File Type:</strong> ${(resource.fileType || 'Unknown').toUpperCase()}</p>
+                            <h3>${this.escapeHtml(resource.title)}</h3>
+                            <p><strong>Description:</strong> ${this.escapeHtml(resource.description)}</p>
+                            <p><strong>Category:</strong> ${this.escapeHtml(resource.category)}</p>
+                            <p><strong>File Type:</strong> ${this.escapeHtml((resource.fileType || 'Unknown').toUpperCase())}</p>
                             
                             <div class="file-info">
-                                <p>This file type (${resource.fileType || 'unknown'}) cannot be previewed directly in the browser.</p>
+                                <p>This file type (${this.escapeHtml(resource.fileType || 'unknown')}) cannot be previewed directly in the browser.</p>
                                 <p>Please download the file to view its contents with the appropriate application.</p>
                             </div>
                         </div>
@@ -716,7 +731,7 @@ Download the complete document to access all content.
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>${resource.title}</h2>
+                    <h2>${this.escapeHtml(resource.title)}</h2>
                     <button class="modal-close" data-action="close-modal">
                         <i class="fas fa-times"></i>
                     </button>
@@ -724,30 +739,30 @@ Download the complete document to access all content.
                 <div class="modal-body">
                     <div class="resource-preview">
                         <div class="preview-icon">
-                            <i class="fas fa-file-${this.getFileIcon(resource.fileType)}"></i>
+                            <i class="fas fa-file-${this.escapeHtml(this.getFileIcon(resource.fileType))}"></i>
                         </div>
                         <div class="preview-details">
-                            <h3>${resource.title}</h3>
-                            <p>${resource.description}</p>
+                            <h3>${this.escapeHtml(resource.title)}</h3>
+                            <p>${this.escapeHtml(resource.description)}</p>
                             
                             <div class="preview-meta">
                                 <div class="meta-row">
-                                    <strong>Category:</strong> ${resource.category}
+                                    <strong>Category:</strong> ${this.escapeHtml(resource.category)}
                                 </div>
                                 <div class="meta-row">
-                                    <strong>File Type:</strong> ${(resource.fileType || 'Unknown').toUpperCase()}
+                                    <strong>File Type:</strong> ${this.escapeHtml((resource.fileType || 'Unknown').toUpperCase())}
                                 </div>
                                 <div class="meta-row">
-                                    <strong>File Size:</strong> ${resource.fileSize || 'Unknown'}
+                                    <strong>File Size:</strong> ${this.escapeHtml(resource.fileSize || 'Unknown')}
                                 </div>
                                 <div class="meta-row">
-                                    <strong>Downloads:</strong> ${resource.downloadCount || 0}
+                                    <strong>Downloads:</strong> ${this.escapeHtml(resource.downloadCount || 0)}
                                 </div>
                                 <div class="meta-row">
                                     <strong>Uploaded:</strong> ${new Date(resource.createdAt).toLocaleDateString()}
                                 </div>
                                 <div class="meta-row">
-                                    <strong>Uploader:</strong> ${resource.uploader?.name || 'Unknown'}
+                                    <strong>Uploader:</strong> ${this.escapeHtml(resource.uploader?.name || 'Unknown')}
                                 </div>
                             </div>
                             
@@ -755,7 +770,7 @@ Download the complete document to access all content.
                                 <div class="preview-tags">
                                     <strong>Tags:</strong>
                                     <div class="tags-list">
-                                        ${resource.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                        ${resource.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('')}
                                     </div>
                                 </div>
                             ` : ''}
@@ -763,7 +778,7 @@ Download the complete document to access all content.
                     </div>
                     
                     <div class="modal-actions">
-                        <button class="btn btn-primary" data-action="download" data-resource-id="${resource.id}" data-close-modal="true">
+                        <button class="btn btn-primary" data-action="download" data-resource-id="${this.escapeHtml(resource.id)}" data-close-modal="true">
                             <i class="fas fa-download"></i> Download
                         </button>
                         <button class="btn btn-outline" data-action="close-modal">
@@ -773,7 +788,7 @@ Download the complete document to access all content.
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 
@@ -789,6 +804,12 @@ Download the complete document to access all content.
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div id="uploadProgress" class="upload-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p id="progressText">Uploading...</p>
+                    </div>
                     <form id="uploadResourceForm" class="upload-form">
                         <div class="form-group">
                             <label for="resourceTitle">Title *</label>
@@ -826,8 +847,9 @@ Download the complete document to access all content.
                         
                         <div class="form-group">
                             <label for="resourceFile">File *</label>
-                            <input type="file" id="resourceFile" name="file" accept=".pdf,.doc,.docx,.txt,.zip" required>
+                            <input type="file" id="resourceFile" name="file" accept=".pdf,.doc,.docx,.txt,.zip" required onchange="validateFile(this)">
                             <small>Supported formats: PDF, DOC, DOCX, TXT, ZIP (Max 10MB)</small>
+                            <div id="fileValidationMessage" class="validation-message"></div>
                         </div>
                         
                         <div class="form-group">
@@ -847,27 +869,88 @@ Download the complete document to access all content.
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
+    }
+
+    validateFile(input) {
+        const file = input.files[0];
+        const validationMessage = document.getElementById('fileValidationMessage');
+        
+        if (!file) {
+            validationMessage.textContent = '';
+            return true;
+        }
+
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/zip'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (!allowedTypes.includes(file.type)) {
+            validationMessage.textContent = 'Invalid file type. Please select a supported format.';
+            validationMessage.className = 'validation-message error';
+            input.value = '';
+            return false;
+        }
+
+        if (file.size > maxSize) {
+            validationMessage.textContent = 'File too large. Maximum size is 10MB.';
+            validationMessage.className = 'validation-message error';
+            input.value = '';
+            return false;
+        }
+
+        validationMessage.textContent = 'File validated successfully.';
+        validationMessage.className = 'validation-message success';
+        return true;
     }
 
     async submitUpload() {
         const form = document.getElementById('uploadResourceForm');
         const formData = new FormData(form);
-        
+        const fileInput = document.getElementById('resourceFile');
+
+        if (!this.validateFile(fileInput)) {
+            return;
+        }
+
+        const progressContainer = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
         try {
+            progressContainer.style.display = 'block';
             this.showMessage('Uploading resource...', 'info');
-            
-            // Simulate successful upload
+
+            // Simulate upload with progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) progress = 100;
+                progressFill.style.width = `${progress}%`;
+                progressText.textContent = `Uploading... ${Math.round(progress)}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 200);
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            clearInterval(interval);
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Upload complete!';
+
             setTimeout(() => {
                 this.showMessage('Resource uploaded successfully!', 'success');
                 document.querySelector('.modal-backdrop').remove();
-                this.loadResources(); // Reload resources
-            }, 2000);
-            
+                this.loadResources();
+            }, 500);
+
         } catch (error) {
             console.error('Upload error:', error);
             this.showMessage('Upload failed', 'error');
+            progressContainer.style.display = 'none';
         }
     }
 
@@ -879,11 +962,11 @@ Download the complete document to access all content.
 
     resetFilters() {
         this.currentCategory = 'all';
-        
+
         // Reset UI
         document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector('[data-category="all"]')?.classList.add('active');
-        
+
         this.filteredResources = [...this.resources];
         this.renderResources();
         this.updateStats();
@@ -894,16 +977,16 @@ Download the complete document to access all content.
         const totalResourcesEl = document.getElementById('totalResourcesCount');
         const categoriesEl = document.getElementById('categoriesCount');
         const downloadsEl = document.getElementById('downloadsCount');
-        
+
         if (totalResourcesEl) {
             totalResourcesEl.textContent = this.filteredResources.length;
         }
-        
+
         if (categoriesEl) {
             const uniqueCategories = [...new Set(this.resources.map(r => r.category))];
             categoriesEl.textContent = uniqueCategories.length;
         }
-        
+
         if (downloadsEl) {
             const totalDownloads = this.resources.reduce((sum, r) => sum + (r.downloadCount || 0), 0);
             downloadsEl.textContent = totalDownloads > 1000 ? `${(totalDownloads / 1000).toFixed(1)}K` : totalDownloads;
@@ -981,3 +1064,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make available globally
 window.ResourcesPage = ResourcesPage;
+
+// Add global validation function
+function validateFile(input) {
+    if (window.resourcesPage) {
+        window.resourcesPage.validateFile(input);
+    }
+}

@@ -1,28 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payments & Billing - JKUAT Innovation and Entrepreneurship Club</title>
-    
+
     <!-- Security Meta Tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script src="/shared/supabase-client.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script type="module" src="/shared/global-auth-loader.js"></script>
+
     <!-- Stylesheets -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="../shared/components/navigation.css" rel="stylesheet">
     <link href="payment.css" rel="stylesheet">
     
-    <!-- Meta Tags -->
-    <meta name="description" content="Secure payments and billing portal for JKUAT Innovation Club memberships, events, and services.">
-    <meta name="keywords" content="JKUAT, payment, billing, membership, events, secure, mpesa">
+    <!-- Override conflicting navbar styles -->
+    <style>
+        body { padding-top: 140px !important; }
+    </style>
 </head>
+
 <body class="bg-pattern">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+    <!-- Shared navbar will be automatically inserted here -->
 
     <!-- Hero Section -->
     <section class="hero-section">
@@ -31,14 +48,15 @@
                 <span class="badge-indicator"></span>
                 SECURE PAYMENTS
             </div>
-            
+
             <h1 class="hero-title">
                 Payments &<br>
                 <span class="accent-text">Billing</span>
             </h1>
-            
+
             <p class="hero-subtitle">
-                Secure and convenient payment processing for all <strong>JKUAT Innovation Club services</strong> including memberships, events, and donations.
+                Secure and convenient payment processing for all <strong>JKUAT Innovation Club services</strong>
+                including memberships, events, and donations.
             </p>
         </div>
     </section>
@@ -134,7 +152,7 @@
     </section>
 
     <!-- Service Details Section -->
-    <section id="serviceDetails" class="payment-section" style="display: none;">
+    <section id="serviceDetails" class="payment-section hidden">
         <div class="container">
             <div class="back-button">
                 <button class="btn btn-ghost" id="backToServices" type="button">
@@ -163,10 +181,10 @@
                     <!-- Amount Section -->
                     <div class="amount-section">
                         <label for="paymentAmount">Amount (KSh)</label>
-                        <input type="number" id="paymentAmount" name="amount" class="glass-input" 
-                               placeholder="Enter amount" min="1" max="1000000" required 
-                               autocomplete="off" inputmode="numeric">
-                        
+                        <input type="number" id="paymentAmount" name="amount" class="glass-input"
+                            placeholder="Enter amount" min="1" max="1000000" required autocomplete="off"
+                            inputmode="numeric">
+
                         <div id="quickAmounts" class="quick-amounts">
                             <!-- Will be populated based on service -->
                         </div>
@@ -192,7 +210,7 @@
                 <!-- Payment Methods -->
                 <div class="payment-methods-card">
                     <h3>Payment Method</h3>
-                    
+
                     <!-- Payment Method Selection -->
                     <div class="payment-methods">
                         <div class="payment-method active" data-method="mpesa">
@@ -205,7 +223,7 @@
                             </div>
                             <div class="method-badge recommended">Recommended</div>
                         </div>
-                        
+
                         <div class="payment-method" data-method="card">
                             <div class="method-icon card">
                                 <i class="fas fa-credit-card"></i>
@@ -215,7 +233,7 @@
                                 <div class="method-desc">Visa, Mastercard accepted</div>
                             </div>
                         </div>
-                        
+
                         <div class="payment-method" data-method="bank">
                             <div class="method-icon bank">
                                 <i class="fas fa-university"></i>
@@ -255,15 +273,15 @@
                     <form id="paymentForm" novalidate>
                         <!-- CSRF Token (will be populated by JavaScript) -->
                         <input type="hidden" id="csrfToken" name="csrfToken" value="">
-                        
+
                         <!-- M-Pesa Form -->
                         <div id="mpesaForm" class="payment-form">
                             <div class="form-group">
                                 <label for="phoneNumber">M-Pesa Phone Number</label>
-                                <input type="tel" id="phoneNumber" name="phone" class="glass-input" 
-                                       placeholder="0XXXXXXXXX or 254XXXXXXXXX" required autocomplete="tel"
-                                       maxlength="15">
-                                <small>Enter your M-Pesa registered phone number (e.g., 0712345678 or 254712345678)</small>
+                                <input type="tel" id="phoneNumber" name="phone" class="glass-input"
+                                    placeholder="0XXXXXXXXX or 254XXXXXXXXX" required autocomplete="tel" maxlength="15">
+                                <small>Enter your M-Pesa registered phone number (e.g., 0712345678 or
+                                    254712345678)</small>
                             </div>
                         </div>
 
@@ -271,20 +289,19 @@
                         <div id="cardForm" class="payment-form" style="display: none;">
                             <div class="form-group">
                                 <label for="cardNumber">Card Number</label>
-                                <input type="text" id="cardNumber" name="cardNumber" class="glass-input" 
-                                       placeholder="1234 5678 9012 3456" autocomplete="cc-number"
-                                       maxlength="19">
+                                <input type="text" id="cardNumber" name="cardNumber" class="glass-input"
+                                    placeholder="1234 5678 9012 3456" autocomplete="cc-number" maxlength="19">
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="expiryDate">Expiry Date</label>
-                                    <input type="text" id="expiryDate" name="expiry" class="glass-input" 
-                                           placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
+                                    <input type="text" id="expiryDate" name="expiry" class="glass-input"
+                                        placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
                                 </div>
                                 <div class="form-group">
                                     <label for="cvv">CVV</label>
-                                    <input type="text" id="cvv" name="cvv" class="glass-input" 
-                                           placeholder="123" autocomplete="cc-csc" maxlength="4">
+                                    <input type="text" id="cvv" name="cvv" class="glass-input" placeholder="123"
+                                        autocomplete="cc-csc" maxlength="4">
                                 </div>
                             </div>
                         </div>
@@ -326,13 +343,14 @@
                                     </ol>
                                 </div>
                             </div>
-                            
-                            <button type="submit" class="btn btn-primary btn-full btn-lg" id="paymentSubmitBtn" disabled>
-                                <i class="fas fa-lock"></i> 
+
+                            <button type="submit" class="btn btn-primary btn-full btn-lg" id="paymentSubmitBtn"
+                                disabled>
+                                <i class="fas fa-lock"></i>
                                 <span class="btn-text">Complete Payment</span>
                                 <span class="btn-amount" id="btnAmount">KSh 0</span>
                             </button>
-                            
+
                             <div class="payment-security-note">
                                 <i class="fas fa-shield-alt"></i>
                                 Your payment is secured with 256-bit SSL encryption
@@ -345,7 +363,7 @@
     </section>
 
     <!-- Processing Section -->
-    <section id="processingSection" class="payment-section" style="display: none;">
+    <section id="processingSection" class="payment-section hidden">
         <div class="container">
             <div class="processing-card">
                 <div class="processing-icon">
@@ -353,7 +371,7 @@
                 </div>
                 <h2>Check Your Phone</h2>
                 <p>An M-Pesa prompt has been sent to your phone. Please enter your PIN to complete the payment.</p>
-                
+
                 <div class="transaction-details">
                     <div class="detail-row">
                         <span>Transaction Ref:</span>
@@ -364,7 +382,7 @@
                         <span id="processingAmount">-</span>
                     </div>
                 </div>
-                
+
                 <div class="payment-status">
                     <div class="status-indicator">
                         <i class="fas fa-spinner fa-spin"></i>
@@ -376,7 +394,7 @@
     </section>
 
     <!-- Success Section -->
-    <section id="successSection" class="payment-section" style="display: none;">
+    <section id="successSection" class="payment-section hidden">
         <div class="container">
             <div class="success-card">
                 <div class="success-icon">
@@ -384,7 +402,7 @@
                 </div>
                 <h2>Payment Successful!</h2>
                 <p>Your payment has been processed successfully. Thank you!</p>
-                
+
                 <div class="success-details">
                     <div class="detail-row">
                         <span>Transaction ID:</span>
@@ -399,12 +417,12 @@
                         <span id="successService">-</span>
                     </div>
                 </div>
-                
+
                 <div class="success-actions">
                     <a href="/dashboard" class="btn btn-primary">
                         <i class="fas fa-tachometer-alt"></i> Go to Dashboard
                     </a>
-                    <button class="btn btn-outline" onclick="window.print()" type="button">
+                    <button class="btn btn-outline" id="printReceiptBtn" type="button">
                         <i class="fas fa-print"></i> Print Receipt
                     </button>
                 </div>
@@ -416,27 +434,18 @@
     <div id="footer-placeholder"></div>
 
     <!-- JavaScript -->
-    <script src="/shared/core/app.js"></script>
-    <script src="/shared/components/auth.js"></script>
-    <script src="/shared/components/navigation.js"></script>
-    <script src="/shared/components/notifications.js"></script>
+    <script src="../shared/components/navigation.js"></script>
     <script src="payment.js"></script>
-    
-    <script>
-        // Initialize page with security enhancements
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Initializing Secure Payments & Billing page...');
-            
-            // Initialize navigation
-            if (window.Navigation) {
-                window.navigation = new Navigation();
-            }
 
-            // Initialize payment page
-            if (window.PaymentPage) {
-                window.paymentPage = new PaymentPage();
+    <script>
+        // Initialize Navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.Navigation === 'function' && !window.navInstance) {
+                window.navInstance = new Navigation();
             }
         });
     </script>
+
 </body>
+
 </html>

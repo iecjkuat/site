@@ -7,69 +7,36 @@ class ProjectManager {
         this.projectsContainer = document.getElementById('myProjectsGrid');
     }
 
+    // Security: Prevent XSS attacks
+    escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // Load projects into the grid
-    loadProjects() {
+    async loadProjects() {
         if (!this.projectsContainer) return;
 
-        // Sample projects (replace with backend fetch)
-        const projects = [
-            {
-                id: 'proj_001',
-                title: 'Smart Irrigation System',
-                description: 'IoT-based automated irrigation for campus farms',
-                category: 'IoT',
-                status: 'in_progress',
-                approval: 'approved',
-                teamSize: 4,
-                teamMembers: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson'],
-                mentor: 'Dr. Kamau',
-                mentorAssigned: true,
-                progress: 65,
-                milestones: { completed: 3, total: 5 },
-                lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-                deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                priority: 'high',
-                funding: { requested: 50000, approved: 35000, spent: 15000 }
-            },
-            {
-                id: 'proj_002',
-                title: 'Student Portal App',
-                description: 'Mobile app for JKUAT student services and announcements',
-                category: 'Mobile App',
-                status: 'completed',
-                approval: 'approved',
-                teamSize: 3,
-                teamMembers: ['Alice Brown', 'Bob Davis', 'Carol White'],
-                mentor: 'Prof. Wanjiku',
-                mentorAssigned: true,
-                progress: 100,
-                milestones: { completed: 4, total: 4 },
-                lastUpdated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-                deadline: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                priority: 'medium',
-                funding: { requested: 25000, approved: 25000, spent: 23500 }
-            },
-            {
-                id: 'proj_003',
-                title: 'Campus Energy Monitor',
-                description: 'Real-time energy consumption tracking and optimization system',
-                category: 'Sustainability',
-                status: 'idea',
-                approval: 'pending',
-                teamSize: 2,
-                teamMembers: ['David Lee', 'Emma Taylor'],
-                mentor: null,
-                mentorAssigned: false,
-                progress: 15,
-                milestones: { completed: 0, total: 6 },
-                lastUpdated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                deadline: null,
-                priority: 'medium',
-                funding: { requested: 75000, approved: 0, spent: 0 }
+        try {
+            // Try API first
+            const response = await fetch('/api/projects?user_projects=true');
+            if (response.ok) {
+                const data = await response.json();
+                this.projects = data.projects || [];
+                console.log('✅ Projects loaded from API:', this.projects.length);
+            } else {
+                throw new Error('API failed');
             }
-        ];
+        } catch (error) {
+            console.log('⚠️ API unavailable, using mock projects');
+            this.projects = this.getMockProjects();
+        }
 
-        this.projects = projects;
         this.renderProjects();
     }
 
@@ -93,8 +60,7 @@ class ProjectManager {
     // Create individual project card
     createProjectCard(project) {
         const card = document.createElement('div');
-        card.className = 'glass-card slide-in project-card';
-        card.style.padding = '1.25rem';
+        card.className = 'glass-card slide-in project-card p-4';
         card.dataset.projectId = project.id;
 
         const statusInfo = this.getProjectStatusInfo(project.status);
@@ -110,12 +76,12 @@ class ProjectManager {
         card.innerHTML = `
             <div class="project-header mb-3">
                 <div class="flex items-start justify-between mb-2">
-                    <h4 class="text-white font-semibold text-sm flex-1 pr-2">${project.title}</h4>
+                    <h4 class="text-white font-semibold text-sm flex-1 pr-2">${this.escapeHtml(project.title)}</h4>
                     <div class="flex gap-1 flex-shrink-0">${approvalInfo.badge} ${statusInfo.badge}</div>
                 </div>
-                <p class="text-gray-300 text-xs mb-2 leading-relaxed">${project.description}</p>
+                <p class="text-gray-300 text-xs mb-2 leading-relaxed">${this.escapeHtml(project.description)}</p>
                 <div class="flex items-center gap-3 text-xs">
-                    <span class="text-green-500 font-medium">${project.category}</span>
+                    <span class="text-green-500 font-medium">${this.escapeHtml(project.category)}</span>
                     <span class="text-gray-400">${project.teamSize} members</span>
                     ${priorityInfo.display}
                 </div>
@@ -213,9 +179,9 @@ class ProjectManager {
     getTimeAgo(date) {
         const diff = Math.floor((new Date() - date) / 1000);
         if (diff < 60) return 'Just now';
-        if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-        if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-        if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
@@ -230,6 +196,9 @@ class ProjectManager {
         const project = this.projects.find(p => p.id === projectId);
         if (!project) return;
         this.createModal(this.getProjectUpdateContent(project));
+        const r = document.getElementById('progressRange');
+        const v = document.getElementById('progressValue');
+        if (r && v) r.addEventListener('input', (e) => v.textContent = e.target.value + '%');
     }
 
     downloadProjectReport(projectId) {
@@ -250,12 +219,12 @@ class ProjectManager {
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
         modal.dataset.modalId = `modal_${Date.now()}`;
-        Object.assign(modal.style, { position: 'fixed', inset: '0', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: '9999' });
         modal.innerHTML = contentHTML;
         document.body.appendChild(modal);
 
-        modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => document.body.removeChild(modal)));
-        modal.addEventListener('click', e => { if (e.target === modal) document.body.removeChild(modal); });
+        // Use {once: true} to prevent memory leaks
+        modal.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => document.body.removeChild(modal), { once: true }));
+        modal.addEventListener('click', e => { if (e.target === modal) document.body.removeChild(modal); }, { once: true });
     }
 
     // ===== Modal content generators =====
@@ -265,25 +234,25 @@ class ProjectManager {
         const fundingPercent = project.funding && project.funding.requested > 0 ? (project.funding.approved / project.funding.requested) * 100 : 0;
 
         return `
-            <div class="modal-content" style="max-width:600px; width:90%; max-height:80vh; overflow-y:auto; padding:1rem; background:#1f1f1f; border-radius:0.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <h2 style="color:white; font-weight:700; font-size:1.5rem; margin:0;">${project.title}</h2>
+            <div class="modal-content modal-inner-lg">
+                <div class="modal-header-flex">
+                    <h2>${this.escapeHtml(project.title)}</h2>
                     <button class="btn-glass btn-icon close-modal"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="flex gap-2 mb-2">${approvalInfo.badge} ${statusInfo.badge}</div>
-                <p class="text-gray-300 mb-2">${project.description}</p>
-                <p class="text-green-500 mb-1">${project.category}</p>
-                <p class="${project.priority==='high'?'text-red-400':project.priority==='medium'?'text-yellow-400':'text-gray-400'} mb-2">${project.priority.charAt(0).toUpperCase()+project.priority.slice(1)}</p>
+                <p class="text-gray-300 mb-2">${this.escapeHtml(project.description)}</p>
+                <p class="text-green-500 mb-1">${this.escapeHtml(project.category)}</p>
+                <p class="${project.priority === 'high' ? 'text-red-400' : project.priority === 'medium' ? 'text-yellow-400' : 'text-gray-400'} mb-2">${this.escapeHtml(project.priority.charAt(0).toUpperCase() + project.priority.slice(1))}</p>
                 <p class="text-gray-400 mb-1">Progress: ${project.progress}%</p>
                 <div class="w-full bg-gray-700 h-2 rounded-full mb-2">
                     <div class="${statusInfo.progressColor} h-2 rounded-full" style="width:${project.progress}%"></div>
                 </div>
                 ${project.funding ? `<p class="text-gray-400">Funding: KSh ${project.funding.approved.toLocaleString()} / ${project.funding.requested.toLocaleString()} (${fundingPercent.toFixed(1)}%)</p>` : ''}
-                <div class="flex gap-2 mt-4">
+                <div class="modal-footer-flex mt-4">
                     <button class="btn btn-outline close-modal flex-1">Close</button>
-                    ${project.status !== 'completed' 
-                        ? `<button class="btn btn-primary flex-1" id="updateStatusBtn">Update Status</button>` 
-                        : `<button class="btn btn-primary flex-1" id="downloadReportBtn">Download Report</button>`}
+                    ${project.status !== 'completed'
+                ? `<button class="btn btn-primary flex-1" id="updateStatusBtn">Update Status</button>`
+                : `<button class="btn btn-primary flex-1" id="downloadReportBtn">Download Report</button>`}
                 </div>
             </div>
         `;
@@ -291,28 +260,87 @@ class ProjectManager {
 
     getProjectUpdateContent(project) {
         return `
-            <div class="modal-content" style="max-width:500px; width:90%; padding:1rem; background:#1f1f1f; border-radius:0.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <h2 style="color:white; font-weight:700; font-size:1.5rem; margin:0;">Update ${project.title}</h2>
+            <div class="modal-content modal-inner">
+                <div class="modal-header-flex">
+                    <h2>Update ${this.escapeHtml(project.title)}</h2>
                     <button class="btn-glass btn-icon close-modal"><i class="fas fa-times"></i></button>
                 </div>
                 <form id="projectUpdateForm">
-                    <label class="text-white mb-1 block">Status</label>
+                    <label class="form-label-block">Status</label>
                     <select name="status" class="glass-input mb-2">
-                        <option value="idea" ${project.status==='idea'?'selected':''}>Idea</option>
-                        <option value="in_progress" ${project.status==='in_progress'?'selected':''}>In Progress</option>
-                        <option value="on_hold" ${project.status==='on_hold'?'selected':''}>On Hold</option>
-                        <option value="completed" ${project.status==='completed'?'selected':''}>Completed</option>
+                        <option value="idea" ${project.status === 'idea' ? 'selected' : ''}>Idea</option>
+                        <option value="in_progress" ${project.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="on_hold" ${project.status === 'on_hold' ? 'selected' : ''}>On Hold</option>
+                        <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>Completed</option>
                     </select>
-                    <label class="text-white mb-1 block">Progress (%)</label>
-                    <input type="range" name="progress" min="0" max="100" value="${project.progress}" class="w-full mb-2" oninput="this.nextElementSibling.textContent=this.value+'%'">
-                    <div class="text-white text-sm mb-2">${project.progress}%</div>
-                    <label class="text-white mb-1 block">Milestones Completed</label>
+                    <label class="form-label-block">Progress (%)</label>
+                    <input type="range" name="progress" min="0" max="100" value="${project.progress}" class="w-full mb-2" id="progressRange">
+                    <div class="text-white text-sm mb-2" id="progressValue">${project.progress}%</div>
+                    <label class="form-label-block">Milestones Completed</label>
                     <input type="number" name="milestones" class="glass-input mb-2" min="0" max="${project.milestones.total}" value="${project.milestones.completed}">
                     <button type="submit" class="btn btn-primary w-full mt-2">Update Project</button>
                 </form>
             </div>
         `;
+    }
+
+    getMockProjects() {
+        return [
+            {
+                id: 'proj_001',
+                title: 'Smart Irrigation System',
+                description: 'IoT-based automated irrigation for campus farms',
+                category: 'IoT',
+                status: 'in_progress',
+                approval: 'approved',
+                teamSize: 4,
+                teamMembers: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson'],
+                mentor: 'Dr. Kamau',
+                mentorAssigned: true,
+                progress: 65,
+                milestones: { completed: 3, total: 5 },
+                lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+                deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                priority: 'high',
+                funding: { requested: 50000, approved: 35000, spent: 15000 }
+            },
+            {
+                id: 'proj_002',
+                title: 'Student Portal App',
+                description: 'Mobile app for JKUAT student services and announcements',
+                category: 'Mobile App',
+                status: 'completed',
+                approval: 'approved',
+                teamSize: 3,
+                teamMembers: ['Alice Brown', 'Bob Davis', 'Carol White'],
+                mentor: 'Prof. Wanjiku',
+                mentorAssigned: true,
+                progress: 100,
+                milestones: { completed: 4, total: 4 },
+                lastUpdated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                deadline: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+                priority: 'medium',
+                funding: { requested: 25000, approved: 25000, spent: 23500 }
+            },
+            {
+                id: 'proj_003',
+                title: 'Campus Energy Monitor',
+                description: 'Real-time energy consumption tracking and optimization system',
+                category: 'Sustainability',
+                status: 'idea',
+                approval: 'pending',
+                teamSize: 2,
+                teamMembers: ['David Lee', 'Emma Taylor'],
+                mentor: null,
+                mentorAssigned: false,
+                progress: 15,
+                milestones: { completed: 0, total: 6 },
+                lastUpdated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+                deadline: null,
+                priority: 'medium',
+                funding: { requested: 75000, approved: 0, spent: 0 }
+            }
+        ];
     }
 }
 

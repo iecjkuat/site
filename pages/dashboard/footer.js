@@ -24,20 +24,20 @@ class DashboardFooter {
                         <!-- Club Info -->
                         <div>
                             <h3>JKUAT Innovation Club</h3>
-                            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1rem;">
+                            <p class="footer-description">
                                 Empowering students to innovate, create, and transform ideas into reality.
                             </p>
-                            <div style="display: flex; gap: 1rem;">
-                                <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                            <div class="social-links">
+                                <a href="#" class="social-link">
                                     <i class="fab fa-facebook"></i>
                                 </a>
-                                <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                                <a href="#" class="social-link">
                                     <i class="fab fa-twitter"></i>
                                 </a>
-                                <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                                <a href="#" class="social-link">
                                     <i class="fab fa-instagram"></i>
                                 </a>
-                                <a href="#" style="color: rgba(255, 255, 255, 0.6); font-size: 1.25rem;">
+                                <a href="#" class="social-link">
                                     <i class="fab fa-linkedin"></i>
                                 </a>
                             </div>

@@ -1,0 +1,96 @@
+<tr class="message-row" data-message-id="{{id}}">
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="message-icon bg-{{typeColor}} text-white rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; font-size: 12px;">
+                <i class="fas fa-{{typeIcon}}"></i>
+            </div>
+            <div>
+                <strong>{{subject}}</strong>
+                <br><small class="text-muted">{{type}}</small>
+            </div>
+        </div>
+    </td>
+    <td>
+        <div>
+            {{#if recipientCount}}
+                <strong>{{recipientCount}} recipients</strong>
+                <br><small class="text-muted">{{recipientType}}</small>
+            {{else}}
+                <strong>{{recipientName}}</strong>
+                <br><small class="text-muted">{{recipientEmail}}</small>
+            {{/if}}
+        </div>
+    </td>
+    <td>
+        <span class="badge bg-{{statusColor}}">{{status}}</span>
+        {{#if deliveryRate}}
+            <br><small class="text-{{deliveryColor}}">{{deliveryRate}}% delivered</small>
+        {{/if}}
+    </td>
+    <td>
+        <small class="text-muted">{{sentDate}}</small>
+        {{#if sentTime}}
+            <br><small class="text-muted">{{sentTime}}</small>
+        {{/if}}
+        {{#if scheduledDate}}
+            <br><small class="text-info">Scheduled: {{scheduledDate}}</small>
+        {{/if}}
+    </td>
+    <td>
+        {{#if readCount}}
+            <div class="text-center">
+                <strong class="text-success">{{readCount}}</strong>
+                <br><small class="text-muted">reads</small>
+            </div>
+        {{else}}
+            <small class="text-muted">-</small>
+        {{/if}}
+    </td>
+    <td>
+        {{#if clickCount}}
+            <div class="text-center">
+                <strong class="text-primary">{{clickCount}}</strong>
+                <br><small class="text-muted">clicks</small>
+            </div>
+        {{else}}
+            <small class="text-muted">-</small>
+        {{/if}}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary btn-sm" onclick="viewMessage('{{id}}')" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+            {{#if canResend}}
+            <button class="btn btn-outline-info btn-sm" onclick="resendMessage('{{id}}')" title="Resend">
+                <i class="fas fa-redo"></i>
+            </button>
+            {{/if}}
+            {{#if canCancel}}
+            <button class="btn btn-outline-warning btn-sm" onclick="cancelMessage('{{id}}')" title="Cancel">
+                <i class="fas fa-times"></i>
+            </button>
+            {{/if}}
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="More Actions">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="viewAnalytics('{{id}}')">
+                    <i class="fas fa-chart-bar me-2"></i>View Analytics
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="duplicateMessage('{{id}}')">
+                    <i class="fas fa-copy me-2"></i>Duplicate
+                </a></li>
+                {{#if canEdit}}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="editMessage('{{id}}')">
+                    <i class="fas fa-edit me-2"></i>Edit
+                </a></li>
+                {{/if}}
+                <li><a class="dropdown-item" href="#" onclick="createTemplate('{{id}}')">
+                    <i class="fas fa-file-alt me-2"></i>Save as Template
+                </a></li>
+            </ul>
+        </div>
+    </td>
+</tr>

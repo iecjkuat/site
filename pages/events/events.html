@@ -1,44 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events - JKUAT Innovation and Entrepreneurship Club</title>
+
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Debug Script - Remove after fixing modal issue -->
+    <script>
+        console.log('🔍 Modal Debug Script Loaded');
+        
+        // Override modal display functions temporarily
+        const originalShowEventDetails = window.showEventDetails;
+        window.showEventDetails = function(...args) {
+            console.error('🚫 BLOCKED: showEventDetails called with args:', args);
+            console.trace('Call stack:');
+            return false;
+        };
+        
+        // Monitor for any modal display changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const target = mutation.target;
+                    if (target.id === 'eventModal' || target.id === 'createEventModal') {
+                        if (target.style.display === 'flex' || target.style.display === 'block') {
+                            console.error('🚨 MODAL DISPLAY DETECTED:', target.id, 'Display:', target.style.display);
+                            console.trace('What triggered this modal display:');
+                            // Force hide it
+                            target.style.display = 'none';
+                            target.style.visibility = 'hidden';
+                            target.style.opacity = '0';
+                            document.body.style.overflow = '';
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Start observing after DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const eventModal = document.getElementById('eventModal');
+            const createModal = document.getElementById('createEventModal');
+            
+            if (eventModal) {
+                observer.observe(eventModal, { attributes: true, attributeFilter: ['style'] });
+                console.log('👀 Monitoring eventModal for display changes');
+                
+                // Force hide immediately
+                eventModal.style.display = 'none';
+                eventModal.style.visibility = 'hidden';
+                eventModal.style.opacity = '0';
+            }
+            if (createModal) {
+                observer.observe(createModal, { attributes: true, attributeFilter: ['style'] });
+                console.log('👀 Monitoring createEventModal for display changes');
+                
+                // Force hide immediately
+                createModal.style.display = 'none';
+                createModal.style.visibility = 'hidden';
+                createModal.style.opacity = '0';
+            }
+            
+            // Additional safety: check every 100ms for the first 5 seconds
+            let checkCount = 0;
+            const intervalId = setInterval(function() {
+                checkCount++;
+                if (checkCount > 50) { // 5 seconds
+                    clearInterval(intervalId);
+                    return;
+                }
+                
+                const modals = document.querySelectorAll('#eventModal, #createEventModal');
+                modals.forEach(modal => {
+                    if (modal.style.display !== 'none') {
+                        console.warn('🚨 Modal found visible, forcing hide:', modal.id);
+                        modal.style.display = 'none';
+                        modal.style.visibility = 'hidden';
+                        modal.style.opacity = '0';
+                        document.body.style.overflow = '';
+                    }
+                });
+            }, 100);
+        });
+    </script>
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
     
+    <!-- Events Page Navbar Initialization -->
     <!-- Stylesheets -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="events.css?v=2025010201" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="events.css?v=2025012201" rel="stylesheet">
     
-    <!-- Meta Tags -->
-    <meta name="description" content="Discover upcoming innovation events, workshops, hackathons, and networking opportunities at JKUAT Innovation Club.">
+    <!-- Aggressive Modal Prevention CSS -->
+    <style>
+        /* Completely prevent modal display */
+        #eventModal, #createEventModal, .modal-backdrop {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            position: fixed !important;
+            top: -9999px !important;
+            left: -9999px !important;
+            z-index: -1 !important;
+        }
+        
+        /* Ensure body scroll is never locked */
+        body {
+            overflow: auto !important;
+        }
+        
+        /* Hide any elements that might trigger modals */
+        .details-btn, .view-details-btn, [data-action="details"] {
+            pointer-events: none !important;
+            opacity: 0.5 !important;
+        }
+        
+        /* Ensure proper spacing for navbar */
+        body {
+            padding-top: 140px !important;
+        }
+    </style>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Discover upcoming innovation events, workshops, hackathons, and networking opportunities at JKUAT Innovation Club.">
     <meta name="keywords" content="JKUAT, events, workshops, hackathons, innovation, entrepreneurship, technology">
 </head>
+
 <body class="bg-pattern">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+    <!-- Shared navbar will be automatically inserted here -->
 
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container hero-container">
-            
+
             <!-- Badge -->
             <div class="hero-badge">
                 <span class="pulse"></span>
                 INNOVATION EVENTS
             </div>
-            
+
             <!-- Main Heading -->
             <h1 class="hero-title gradient-text">
                 Transform Ideas into<br>
                 <span class="gradient-text accent">Reality</span>
             </h1>
-            
+
             <!-- Subtitle -->
             <p class="hero-subtitle">
-                Join our exciting lineup of <strong>workshops, hackathons, seminars</strong>, and networking events designed to accelerate your innovation journey.
+                Join our exciting lineup of <strong>workshops, hackathons, seminars</strong>, and networking events
+                designed to accelerate your innovation journey.
             </p>
-            
+
             <!-- Stats Preview -->
             <div class="hero-stats">
                 <div class="stat-item">
@@ -70,7 +201,7 @@
                 <p class="section-description">
                     Discover opportunities to learn, network, and grow with fellow innovators and industry experts.
                 </p>
-                
+
                 <!-- Admin Actions -->
                 <div id="adminActions" class="admin-actions">
                     <button id="createEventBtn" class="admin-btn">
@@ -79,9 +210,12 @@
                     <button id="manageEventsBtn" class="admin-btn secondary">
                         <i class="fas fa-cog"></i>Manage Events
                     </button>
+                    <a href="admin-media.html" class="admin-btn secondary">
+                        <i class="fas fa-images"></i>Media Management
+                    </a>
                 </div>
             </div>
-            
+
             <!-- Event Filters -->
             <div class="filters-container">
                 <button class="filter-btn active" data-filter="all">
@@ -100,12 +234,12 @@
                     Social Events
                 </button>
             </div>
-            
+
             <!-- Events Grid -->
             <div id="eventsGrid" class="events-grid">
                 <!-- Events will be loaded here -->
             </div>
-            
+
             <!-- Loading State -->
             <div id="eventsLoading" class="loading-container">
                 <div class="glass-card loading-card">
@@ -113,7 +247,7 @@
                     <p class="loading-text">Loading Events...</p>
                 </div>
             </div>
-            
+
             <!-- No Events Message -->
             <div id="noEventsMessage" class="no-events-container">
                 <div class="glass-card no-events-card">
@@ -121,7 +255,8 @@
                         <i class="fas fa-calendar-times"></i>
                     </div>
                     <h3 class="no-events-title">No Events Found</h3>
-                    <p class="no-events-text">No events match your current filter. Try selecting a different category or check back later for new events.</p>
+                    <p class="no-events-text">No events match your current filter. Try selecting a different category or
+                        check back later for new events.</p>
                     <button onclick="resetFilters()" class="reset-btn">
                         <i class="fas fa-refresh"></i>
                         Reset Filters
@@ -134,90 +269,13 @@
     <!-- Footer -->
     <div id="footer-placeholder"></div>
 
-    <!-- Event Details Modal -->
-    <div id="eventModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2 id="eventModalTitle">Event Details</h2>
-                <button class="modal-close" onclick="closeEventModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="eventModalContent">
-                <!-- Event details will be loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Event Modal -->
-    <div id="createEventModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2>Create New Event</h2>
-                <button class="modal-close" onclick="closeCreateEventModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="createEventForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Event Title *</label>
-                            <input type="text" name="title" class="glass-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Event Type *</label>
-                            <select name="type" class="glass-input" required>
-                                <option value="">Select Type</option>
-                                <option value="workshop">Workshop</option>
-                                <option value="seminar">Seminar</option>
-                                <option value="competition">Competition</option>
-                                <option value="social">Social Event</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Description *</label>
-                        <textarea name="description" class="glass-input" rows="4" required></textarea>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Start Date & Time *</label>
-                            <input type="datetime-local" name="startDateTime" class="glass-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">End Date & Time *</label>
-                            <input type="datetime-local" name="endDateTime" class="glass-input" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Location *</label>
-                            <input type="text" name="location" class="glass-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Max Attendees</label>
-                            <input type="number" name="maxAttendees" class="glass-input" min="1">
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" onclick="closeCreateEventModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Create Event</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- JavaScript -->
+    <script src="/shared/role-ui-controller.js"></script>
     <script src="mock-data.js"></script>
-    <script src="auth.js"></script>
-    <script src="navigation.js"></script>
+    <script src="media-config.js"></script>
+    <script src="media-manager.js"></script>
     <script src="footer.js"></script>
-    <script src="events.js"></script>
+    <script src="events.js?v=2025012201"></script>
 </body>
+
 </html>

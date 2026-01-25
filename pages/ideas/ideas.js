@@ -14,7 +14,7 @@ class IdeasPage {
         this.pageSize = 12;
         this.isLoading = false;
         this.hasMore = true;
-        
+
         this.init();
     }
 
@@ -36,29 +36,29 @@ class IdeasPage {
             console.log('ðŸš€ Setting up Ideas Page...');
             console.log('ðŸ” Checking for mock data availability...');
             console.log('window.ideasMockData:', window.ideasMockData);
-            
+
             // Wait for mock data to be available
             await this.waitForMockData();
-            
+
             console.log('ðŸ” Mock data after wait:', window.ideasMockData);
-            
+
             // Setup event listeners
             this.setupEventListeners();
-            
+
             // Load initial data
             await this.loadCategories();
             await this.loadStats();
             await this.loadIdeas();
             await this.loadTrendingIdeas();
-            
+
             // Initialize trending ideas immediately
             this.renderTrendingIdeas(this.getTrendingIdeas());
-            
+
             // Hide loading state
             this.hideLoadingState();
-            
+
             console.log('âœ… Ideas Page setup complete');
-            
+
         } catch (error) {
             console.error('Failed to setup page:', error);
         }
@@ -80,7 +80,7 @@ class IdeasPage {
                         console.log('â³ Still waiting for mock data...');
                     }
                 }, 100);
-                
+
                 // Timeout after 5 seconds
                 setTimeout(() => {
                     clearInterval(checkInterval);
@@ -398,7 +398,7 @@ class IdeasPage {
 
     setupEventListeners() {
         console.log('ðŸ”§ Setting up event listeners...');
-        
+
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -445,10 +445,10 @@ class IdeasPage {
 
         // Modal close handlers
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-backdrop') || 
+            if (e.target.classList.contains('modal-backdrop') ||
                 e.target.classList.contains('comments-modal-backdrop') ||
                 e.target.classList.contains('comments-modal-overlay') ||
-                e.target.matches('[data-action="close-modal"]') || 
+                e.target.matches('[data-action="close-modal"]') ||
                 e.target.closest('[data-action="close-modal"]')) {
                 this.closeAllModals();
             }
@@ -478,20 +478,20 @@ class IdeasPage {
         console.log('Setting up event delegation for idea actions...');
         document.addEventListener('click', (e) => {
             console.log('Document click detected:', e.target);
-            
+
             // Check if clicked element or its parent has data-action
             const actionElement = e.target.matches('[data-action]') ? e.target : e.target.closest('[data-action]');
-            
+
             if (actionElement) {
                 console.log('Action element found:', actionElement);
                 e.stopPropagation();
                 e.preventDefault();
-                
+
                 const action = actionElement.dataset.action;
                 const ideaId = actionElement.dataset.ideaId;
-                
+
                 console.log('Action:', action, 'Idea ID:', ideaId);
-                
+
                 switch (action) {
                     case 'view-idea':
                         console.log('Executing view-idea for ID:', ideaId);
@@ -521,7 +521,7 @@ class IdeasPage {
 
         // Category filter clicks
         this.setupCategoryFilters();
-        
+
         console.log('âœ… Event listeners setup complete');
     }
 
@@ -605,7 +605,7 @@ class IdeasPage {
     async loadCategories() {
         try {
             console.log('ðŸ“‚ Loading categories...');
-            
+
             if (window.ideasMockData) {
                 const categories = window.ideasMockData.getCategories();
                 console.log('âœ… Categories loaded:', categories.length);
@@ -626,7 +626,7 @@ class IdeasPage {
         // Clear existing categories (keep the "All" button)
         const existingCategories = container.querySelectorAll('[data-category]:not([data-category="all"])');
         existingCategories.forEach(cat => cat.remove());
-        
+
         // Add categories
         categories.forEach(category => {
             const button = document.createElement('button');
@@ -660,7 +660,7 @@ class IdeasPage {
     async loadStats() {
         try {
             console.log('ðŸ“Š Loading stats...');
-            
+
             if (window.ideasMockData) {
                 const stats = window.ideasMockData.getIdeaStats();
                 console.log('âœ… Stats loaded:', stats);
@@ -706,7 +706,7 @@ class IdeasPage {
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             const current = Math.floor(start + (targetNumber - start) * progress);
             element.textContent = current;
 
@@ -720,7 +720,7 @@ class IdeasPage {
 
     async loadIdeas() {
         if (this.isLoading) return;
-        
+
         console.log('ðŸ’¡ Loading ideas...');
         this.isLoading = true;
         this.showLoadingState();
@@ -729,23 +729,23 @@ class IdeasPage {
             if (window.ideasMockData) {
                 let ideas = window.ideasMockData.getIdeas();
                 console.log('âœ… Ideas loaded:', ideas.length);
-                
+
                 // Apply filters
                 if (this.currentFilters.category !== 'all') {
-                    ideas = ideas.filter(idea => 
+                    ideas = ideas.filter(idea =>
                         idea.category.toLowerCase().replace(/[^a-z0-9]/g, '-') === this.currentFilters.category
                     );
                 }
-                
+
                 if (this.currentFilters.search) {
                     const searchTerm = this.currentFilters.search.toLowerCase();
-                    ideas = ideas.filter(idea => 
+                    ideas = ideas.filter(idea =>
                         idea.title.toLowerCase().includes(searchTerm) ||
                         idea.description.toLowerCase().includes(searchTerm) ||
                         idea.tags.some(tag => tag.toLowerCase().includes(searchTerm))
                     );
                 }
-                
+
                 // Apply sorting
                 switch (this.currentFilters.sort) {
                     case 'popular':
@@ -759,14 +759,14 @@ class IdeasPage {
                         ideas.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                         break;
                 }
-                
+
                 console.log('ðŸ” Filtered ideas:', ideas.length);
-                
+
                 // Pagination
                 const startIndex = this.currentPage * this.pageSize;
                 const endIndex = startIndex + this.pageSize;
                 const paginatedIdeas = ideas.slice(startIndex, endIndex);
-                
+
                 if (this.currentPage === 0) {
                     this.renderIdeas(paginatedIdeas);
                 } else {
@@ -793,7 +793,7 @@ class IdeasPage {
     async loadTrendingIdeas() {
         try {
             console.log('ðŸ”¥ Loading trending ideas...');
-            
+
             const trendingIdeas = this.getTrendingIdeas();
             console.log('âœ… Trending ideas loaded:', trendingIdeas.length);
             this.renderTrendingIdeas(trendingIdeas);
@@ -804,10 +804,10 @@ class IdeasPage {
     }
     renderIdeas(ideas) {
         console.log('ðŸŽ¨ Rendering ideas:', ideas.length);
-        
+
         const container = document.getElementById('ideasGrid');
         const noIdeasMessage = document.getElementById('noIdeasMessage');
-        
+
         if (!container) {
             console.error('âŒ Ideas grid container not found');
             return;
@@ -826,13 +826,13 @@ class IdeasPage {
         }
 
         container.innerHTML = ideas.map(idea => this.createIdeaCard(idea)).join('');
-        
+
         console.log('âœ… Ideas rendered successfully');
     }
 
     renderTrendingIdeas(ideas) {
         console.log('ðŸ”¥ Rendering trending ideas:', ideas.length);
-        
+
         const container = document.getElementById('trendingGrid');
         if (!container) {
             console.error('âŒ Trending grid container not found');
@@ -851,7 +851,7 @@ class IdeasPage {
         }
 
         container.innerHTML = ideas.map(idea => this.createIdeaCard(idea)).join('');
-        
+
         console.log('âœ… Trending ideas rendered successfully');
     }
 
@@ -865,26 +865,26 @@ class IdeasPage {
 
     createIdeaCard(idea) {
         const timeAgo = this.getTimeAgo(new Date(idea.createdAt || idea.created_at));
-        
+
         return `
             <div class="idea-card" data-idea-id="${idea.id}">
                 <div class="idea-header">
                     <div style="flex: 1;">
-                        <h3 class="idea-title">${idea.title}</h3>
+                        <h3 class="idea-title">${this.escapeHtml(idea.title)}</h3>
                         <div class="idea-meta">
-                            <span><i class="fas fa-user"></i> ${idea.author.name}</span>
+                            <span><i class="fas fa-user"></i> ${this.escapeHtml(idea.author.name)}</span>
                             <span><i class="fas fa-clock"></i> ${timeAgo}</span>
-                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${idea.category}</span>
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${this.escapeHtml(idea.category)}</span>
                         </div>
                     </div>
                 </div>
                 
-                <p class="idea-description">${idea.description}</p>
+                <p class="idea-description">${this.escapeHtml(idea.description)}</p>
                 
                 ${idea.tags && idea.tags.length > 0 ? `
                     <div class="idea-tags">
                         ${idea.tags.slice(0, 3).map(tag => `
-                            <span class="idea-tag">${tag}</span>
+                            <span class="idea-tag">${this.escapeHtml(tag)}</span>
                         `).join('')}
                         ${idea.tags.length > 3 ? `<span style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">+${idea.tags.length - 3} more</span>` : ''}
                     </div>
@@ -921,15 +921,26 @@ class IdeasPage {
     }
 
     // Utility functions
+    // Security: Prevent XSS
+    escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     getTimeAgo(date) {
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
-        
+
         if (diffInSeconds < 60) return 'Just now';
         if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
         if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
         if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-        
+
         return date.toLocaleDateString();
     }
 
@@ -940,14 +951,14 @@ class IdeasPage {
             sort: 'newest'
         };
         this.currentPage = 0;
-        
+
         // Reset UI
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
-        
+
         if (searchInput) searchInput.value = '';
         if (sortSelect) sortSelect.value = 'newest';
-        
+
         // Reset category filters
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -955,7 +966,7 @@ class IdeasPage {
             btn.style.border = '1px solid rgba(255, 255, 255, 0.2)';
             btn.style.color = 'rgba(255, 255, 255, 0.8)';
         });
-        
+
         const allFilter = document.querySelector('[data-filter="all"]');
         if (allFilter) {
             allFilter.classList.add('active');
@@ -963,7 +974,7 @@ class IdeasPage {
             allFilter.style.border = '1px solid rgba(139, 92, 246, 0.3)';
             allFilter.style.color = '#8b5cf6';
         }
-        
+
         this.loadIdeas();
     }
 
@@ -1015,7 +1026,7 @@ class IdeasPage {
             alert('Idea not found');
             return;
         }
-        
+
         this.showIdeaDetailsModal(idea);
     }
 
@@ -1024,17 +1035,17 @@ class IdeasPage {
         if (!this.likedIdeas) {
             this.likedIdeas = new Set();
         }
-        
+
         const isAlreadyLiked = this.likedIdeas.has(ideaId);
         const likeButton = document.querySelector(`[data-action="like-idea"][data-idea-id="${ideaId}"]`);
-        
+
         // Find and update the like count in the UI
         const ideaCard = document.querySelector(`[data-idea-id="${ideaId}"]`);
         if (ideaCard) {
             const likeStat = ideaCard.querySelector('.idea-stat:first-child span');
             if (likeStat) {
                 const currentLikes = parseInt(likeStat.textContent.split(' ')[0]) || 0;
-                
+
                 if (isAlreadyLiked) {
                     // Unlike the idea
                     this.likedIdeas.delete(ideaId);
@@ -1054,16 +1065,16 @@ class IdeasPage {
                 }
             }
         }
-        
+
         // Update in modal if it's open
         const modal = document.getElementById('ideaModal');
         if (modal && modal.style.display === 'flex') {
             const modalLikeStat = modal.querySelector('.idea-detail-stats div:first-child span');
             const modalLikeButton = modal.querySelector('[data-action="like-idea"]');
-            
+
             if (modalLikeStat) {
                 const currentLikes = parseInt(modalLikeStat.textContent.split(' ')[0]) || 0;
-                
+
                 if (isAlreadyLiked) {
                     modalLikeStat.textContent = `${Math.max(0, currentLikes - 1)} likes`;
                     if (modalLikeButton) {
@@ -1079,7 +1090,7 @@ class IdeasPage {
                 }
             }
         }
-        
+
         // In a real app, this would also update the backend/database
     }
 
@@ -1090,7 +1101,7 @@ class IdeasPage {
             alert('Idea not found');
             return;
         }
-        
+
         console.log('Opening comments modal for idea:', idea.title);
         this.showCommentsModal(idea);
     }
@@ -1099,21 +1110,21 @@ class IdeasPage {
         // Update modal title and content
         const modalTitle = document.getElementById('ideaModalTitle');
         const modalContent = document.getElementById('ideaModalContent');
-        
+
         if (!modalTitle || !modalContent) {
             alert('Idea details modal not available. Please refresh the page.');
             return;
         }
 
         modalTitle.textContent = idea.title;
-        
+
         const timeAgo = this.getTimeAgo(new Date(idea.createdAt || idea.created_at));
-        
+
         modalContent.innerHTML = `
             <div class="idea-detail-header">
                 <div class="idea-detail-meta">
-                    <span class="approval-badge category">${idea.category}</span>
-                    <span style="color: rgba(255, 255, 255, 0.7);">by ${idea.author.name}</span>
+                    <span class="approval-badge category">${this.escapeHtml(idea.category)}</span>
+                    <span style="color: rgba(255, 255, 255, 0.7);">by ${this.escapeHtml(idea.author.name)}</span>
                     <span style="color: rgba(255, 255, 255, 0.7);">${timeAgo}</span>
                 </div>
                 
@@ -1136,7 +1147,7 @@ class IdeasPage {
             <div class="idea-detail-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
                 <section style="margin-bottom: 2rem;">
                     <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Description</h3>
-                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">${idea.description}</p>
+                    <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.6;">${this.escapeHtml(idea.description)}</p>
                 </section>
                 
                 ${idea.tags && idea.tags.length > 0 ? `
@@ -1144,7 +1155,7 @@ class IdeasPage {
                         <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Tags</h3>
                         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
                             ${idea.tags.map(tag => `
-                                <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${tag}</span>
+                                <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${this.escapeHtml(tag)}</span>
                             `).join('')}
                         </div>
                     </section>
@@ -1162,7 +1173,7 @@ class IdeasPage {
                 </div>
             </div>
         `;
-        
+
         // Show modal
         const modal = document.getElementById('ideaModal');
         if (modal) {
@@ -1175,13 +1186,13 @@ class IdeasPage {
     showCommentsModal(idea) {
         console.log('ðŸŽµ showCommentsModal called for idea:', idea.title);
         this.currentIdeaId = idea.id;
-        
+
         // Remove any existing TikTok modal
         const existingModal = document.getElementById('tikTokCommentsModal');
         if (existingModal) {
             existingModal.remove();
         }
-        
+
         // Create TikTok-style comments modal
         const modal = document.createElement('div');
         modal.id = 'tikTokCommentsModal';
@@ -1198,19 +1209,19 @@ class IdeasPage {
             justify-content: center;
             padding: 0;
         `;
-        
+
         // Load comments data
         let comments = [];
         if (window.ideasMockData) {
             comments = window.ideasMockData.getComments(idea.id);
         }
-        
+
         // Get any additional comments from session storage
         const sessionComments = this.getSessionComments(idea.id);
         comments = [...comments, ...sessionComments];
-        
+
         const totalComments = comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0);
-        
+
         modal.innerHTML = `
             <div style="
                 background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
@@ -1251,7 +1262,7 @@ class IdeasPage {
                         margin-bottom: 3px;
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         line-height: 1.2;
-                    ">${idea.title}</div>
+                    ">${this.escapeHtml(idea.title)}</div>
                     <span style="
                         color: rgba(255, 255, 255, 0.7);
                         font-size: 12px;
@@ -1344,7 +1355,7 @@ class IdeasPage {
                 </div>
             </div>
         `;
-        
+
         // Add CSS animation
         const style = document.createElement('style');
         style.textContent = `
@@ -1378,13 +1389,13 @@ class IdeasPage {
             }
         `;
         document.head.appendChild(style);
-        
+
         // Add modal to body
         document.body.appendChild(modal);
-        
+
         // Add event listeners
         this.setupTikTokModalListeners(modal);
-        
+
         console.log('âœ… TikTok-style comments modal created and displayed');
     }
 
@@ -1407,16 +1418,16 @@ class IdeasPage {
         if (!container) return;
 
         const timeAgo = this.getTimeAgo(new Date(idea.createdAt || idea.created_at));
-        
+
         container.innerHTML = `
-            <h3 class="idea-summary-title">${idea.title}</h3>
+            <h3 class="idea-summary-title">${this.escapeHtml(idea.title)}</h3>
             <div class="idea-summary-meta">
-                <span><i class="fas fa-user"></i> ${idea.author.name}</span>
+                <span><i class="fas fa-user"></i> ${this.escapeHtml(idea.author.name)}</span>
                 <span><i class="fas fa-clock"></i> ${timeAgo}</span>
-                <span><i class="fas fa-tag"></i> ${idea.category}</span>
-                <span><i class="fas fa-lightbulb"></i> ${idea.stage || 'Concept'}</span>
+                <span><i class="fas fa-tag"></i> ${this.escapeHtml(idea.category)}</span>
+                <span><i class="fas fa-lightbulb"></i> ${this.escapeHtml(idea.stage || 'Concept')}</span>
             </div>
-            <p class="idea-summary-description">${idea.description}</p>
+            <p class="idea-summary-description">${this.escapeHtml(idea.description)}</p>
         `;
     }
 
@@ -1426,11 +1437,11 @@ class IdeasPage {
         if (window.ideasMockData) {
             comments = window.ideasMockData.getComments(ideaId);
         }
-        
+
         // Get any additional comments from session storage
         const sessionComments = this.getSessionComments(ideaId);
         comments = [...comments, ...sessionComments];
-        
+
         this.renderComments(comments);
     }
 
@@ -1450,7 +1461,7 @@ class IdeasPage {
     renderComments(comments) {
         const container = document.getElementById('commentsList');
         const commentsCount = document.getElementById('commentsCount');
-        
+
         if (!container) return;
 
         // Update comments count
@@ -1471,7 +1482,7 @@ class IdeasPage {
         }
 
         container.innerHTML = comments.map(comment => this.createTikTokCommentHTML(comment)).join('');
-        
+
         // Add event listeners for comment actions
         this.setupTikTokCommentListeners();
     }
@@ -1480,7 +1491,7 @@ class IdeasPage {
         const timeAgo = this.getTimeAgo(new Date(comment.timestamp));
         const authorInitials = comment.author.name.split(' ').map(n => n[0]).join('').toUpperCase();
         const isCreator = comment.author.id === 2; // Assuming idea author has id 2
-        
+
         let html = `
             <div style="
                 display: flex;
@@ -1504,13 +1515,13 @@ class IdeasPage {
                 ">${authorInitials}</div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <span style="color: white; font-size: 14px; font-weight: 600;">${comment.author.name}</span>
+                        <span style="color: white; font-size: 14px; font-weight: 600;">${this.escapeHtml(comment.author.name)}</span>
                         ${isCreator ? '<span style="background: #ff0050; color: white; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; text-transform: uppercase;">Creator</span>' : ''}
                     </div>
-                    <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${comment.text}</div>
+                    <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${this.escapeHtml(comment.text)}</div>
                     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
                         <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${timeAgo}</span>
-                        <button class="tiktok-reply-btn" data-comment-id="${comment.id}" data-reply-to="${comment.author.name}" style="
+                        <button class="tiktok-reply-btn" data-comment-id="${comment.id}" data-reply-to="${this.escapeHtml(comment.author.name)}" style="
                             background: none;
                             border: none;
                             color: rgba(255, 255, 255, 0.6);
@@ -1547,14 +1558,14 @@ class IdeasPage {
                 </div>
             </div>
         `;
-        
+
         // Add replies (initially hidden)
         if (comment.replies && comment.replies.length > 0) {
             comment.replies.forEach(reply => {
                 const replyTimeAgo = this.getTimeAgo(new Date(reply.timestamp));
                 const replyInitials = reply.author.name.split(' ').map(n => n[0]).join('').toUpperCase();
                 const isReplyCreator = reply.author.id === 2;
-                
+
                 html += `
                     <div style="
                         display: none;
@@ -1578,13 +1589,13 @@ class IdeasPage {
                         ">${replyInitials}</div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                <span style="color: white; font-size: 14px; font-weight: 600;">${reply.author.name}</span>
+                                <span style="color: white; font-size: 14px; font-weight: 600;">${this.escapeHtml(reply.author.name)}</span>
                                 ${isReplyCreator ? '<span style="background: #ff0050; color: white; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; text-transform: uppercase;">Creator</span>' : ''}
                             </div>
-                            <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${reply.text}</div>
+                            <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${this.escapeHtml(reply.text)}</div>
                             <div style="display: flex; align-items: center; gap: 16px;">
                                 <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${replyTimeAgo}</span>
-                                <button class="tiktok-reply-btn" data-reply-to="${reply.author.name}" style="
+                                <button class="tiktok-reply-btn" data-reply-to="${this.escapeHtml(reply.author.name)}" style="
                                     background: none;
                                     border: none;
                                     color: rgba(255, 255, 255, 0.6);
@@ -1613,7 +1624,7 @@ class IdeasPage {
                 `;
             });
         }
-        
+
         return html;
     }
 
@@ -1653,13 +1664,13 @@ class IdeasPage {
                 const commentId = btn.dataset.commentId;
                 const replies = document.querySelectorAll(`[data-parent-id="${commentId}"]`);
                 const isExpanded = btn.textContent.includes('Hide');
-                
+
                 replies.forEach(reply => {
                     reply.style.display = isExpanded ? 'none' : 'flex';
                 });
-                
+
                 const replyCount = replies.length;
-                btn.textContent = isExpanded 
+                btn.textContent = isExpanded
                     ? `View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–¼`
                     : `Hide ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–²`;
             });
@@ -1668,19 +1679,19 @@ class IdeasPage {
 
     handleAddComment(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(e.target);
         const commentText = formData.get('commentText');
-        
+
         if (!commentText || !commentText.trim()) {
             return;
         }
-        
+
         if (!this.currentIdeaId) {
             alert('Error: No idea selected for commenting');
             return;
         }
-        
+
         const newComment = {
             id: Date.now(),
             author: {
@@ -1694,23 +1705,23 @@ class IdeasPage {
             liked: false,
             replies: []
         };
-        
+
         // Save to session storage
         this.saveSessionComment(this.currentIdeaId, newComment);
-        
+
         // Update comment count in the idea
         this.incrementCommentCount(this.currentIdeaId);
-        
+
         // Reload comments
         this.loadComments(this.currentIdeaId);
-        
+
         // Reset form and placeholder
         e.target.reset();
         const commentInput = document.querySelector('.comment-input');
         if (commentInput) {
             commentInput.placeholder = 'Add a comment...';
         }
-        
+
         // Scroll to bottom to show new comment
         const commentsList = document.getElementById('commentsList');
         if (commentsList) {
@@ -1722,13 +1733,13 @@ class IdeasPage {
 
     handleReplySubmission(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(e.target);
         const replyText = formData.get('replyText');
         const parentId = e.target.dataset.parentId;
-        
+
         if (!replyText.trim()) return;
-        
+
         const newReply = {
             id: Date.now(),
             author: {
@@ -1741,28 +1752,28 @@ class IdeasPage {
             likes: 0,
             liked: false
         };
-        
+
         // Add reply to parent comment
         const comments = this.getSessionComments(this.currentIdeaId);
         const parentComment = comments.find(c => c.id == parentId);
         if (parentComment) {
             if (!parentComment.replies) parentComment.replies = [];
             parentComment.replies.push(newReply);
-            
+
             // Save updated comments
             const key = `idea_comments_${this.currentIdeaId}`;
             sessionStorage.setItem(key, JSON.stringify(comments));
         }
-        
+
         // Update comment count
         this.incrementCommentCount(this.currentIdeaId);
-        
+
         // Reload comments
         this.loadComments(this.currentIdeaId);
-        
+
         // Hide reply form
         this.hideReplyForm(parentId);
-        
+
         // Show success message
         this.showCommentSuccess('Reply posted successfully!');
     }
@@ -1770,7 +1781,7 @@ class IdeasPage {
     toggleCommentLike(button) {
         const isLiked = button.classList.contains('liked');
         const likeCount = parseInt(button.querySelector('span').textContent) || 0;
-        
+
         if (isLiked) {
             button.classList.remove('liked');
             button.querySelector('span').textContent = Math.max(0, likeCount - 1);
@@ -1833,19 +1844,19 @@ class IdeasPage {
                 ${message}
             </div>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Remove after 3 seconds
         setTimeout(() => {
             notification.remove();
         }, 3000);
     }
 
-    handleSubmitIdea(e) {
+    async handleSubmitIdea(e) {
         e.preventDefault();
         console.log('Submitting new idea...');
-        
+
         // Get form data
         const formData = new FormData(e.target);
         const ideaData = {
@@ -1856,23 +1867,40 @@ class IdeasPage {
             stage: formData.get('stage'),
             complexityLevel: formData.get('complexityLevel'),
             requiredSkills: formData.get('requiredSkills'),
-            status: 'pending', // New ideas start as pending
+            status: 'pending',
             submittedAt: new Date().toISOString(),
-            submittedBy: 'current_user' // In real app, get from auth
+            submittedBy: 'current_user'
         };
-        
+
         console.log('New idea data:', ideaData);
-        
-        // Show success message with pending status
-        alert('Idea submitted successfully! Your submission is now pending review by our team. You will be notified once it has been approved.');
-        
+
+        try {
+            // Try API first
+            const response = await fetch('/api/ideas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify(ideaData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Idea submitted via API:', result);
+                alert('Idea submitted successfully! Your submission is now pending review by our team.');
+            } else {
+                throw new Error('API submission failed');
+            }
+        } catch (error) {
+            console.log('⚠️ API unavailable, using mock submission');
+            this.simulateIdeaSubmission(ideaData);
+            alert('Idea submitted successfully! (Demo mode) Your submission is now pending review.');
+        }
+
         // Reset form and switch to browse tab
         e.target.reset();
         this.switchTab('browse');
-        
-        // In a real app, this would save to database with pending status
-        // For now, we'll simulate the submission
-        this.simulateIdeaSubmission(ideaData);
     }
 
     simulateIdeaSubmission(ideaData) {
@@ -1881,12 +1909,12 @@ class IdeasPage {
         if (!window.pendingIdeas) {
             window.pendingIdeas = [];
         }
-        
+
         ideaData.id = Date.now().toString();
         window.pendingIdeas.push(ideaData);
-        
+
         console.log('Idea added to pending queue:', ideaData);
-        
+
         // Simulate admin notification (in real app, this would be an email/notification)
         console.log('ðŸ“§ Admin notification sent for new idea submission');
     }
@@ -1897,7 +1925,7 @@ class IdeasPage {
             if (e.target.matches('.filter-btn') || e.target.closest('.filter-btn')) {
                 const btn = e.target.matches('.filter-btn') ? e.target : e.target.closest('.filter-btn');
                 const filter = btn.dataset.filter;
-                
+
                 if (filter) {
                     this.applyFilter(filter);
                 }
@@ -1912,20 +1940,20 @@ class IdeasPage {
                 modal.remove();
             }
         });
-        
+
         // Handle comment form submission
         const form = modal.querySelector('#tikTokAddCommentForm');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                
+
                 const formData = new FormData(e.target);
                 const commentText = formData.get('commentText');
-                
+
                 if (!commentText || !commentText.trim()) {
                     return;
                 }
-                
+
                 const newComment = {
                     id: Date.now(),
                     author: {
@@ -1939,25 +1967,25 @@ class IdeasPage {
                     liked: false,
                     replies: []
                 };
-                
+
                 // Save to session storage
                 this.saveSessionComment(this.currentIdeaId, newComment);
-                
+
                 // Update comment count in the idea card
                 this.incrementCommentCount(this.currentIdeaId);
-                
+
                 // Refresh the modal with new comment
                 modal.remove();
                 const idea = this.findIdeaById(this.currentIdeaId);
                 if (idea) {
                     this.showCommentsModal(idea);
                 }
-                
+
                 // Show success message
                 this.showCommentSuccess('Comment posted successfully!');
             });
         }
-        
+
         // Handle like buttons
         modal.querySelectorAll('.tiktok-like-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1966,7 +1994,7 @@ class IdeasPage {
                 this.toggleTikTokCommentLike(btn);
             });
         });
-        
+
         // Handle reply buttons
         modal.querySelectorAll('.tiktok-reply-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1982,7 +2010,7 @@ class IdeasPage {
                 }
             });
         });
-        
+
         // Handle view replies
         modal.querySelectorAll('.tiktok-view-replies').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1991,13 +2019,13 @@ class IdeasPage {
                 const commentId = btn.dataset.commentId;
                 const replies = modal.querySelectorAll(`[data-parent-id="${commentId}"]`);
                 const isExpanded = btn.textContent.includes('Hide');
-                
+
                 replies.forEach(reply => {
                     reply.style.display = isExpanded ? 'none' : 'flex';
                 });
-                
+
                 const replyCount = replies.length;
-                btn.textContent = isExpanded 
+                btn.textContent = isExpanded
                     ? `View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–¼`
                     : `Hide ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–²`;
             });
@@ -2009,7 +2037,7 @@ class IdeasPage {
         const likeCountSpan = button.querySelector('.like-count');
         const heartIcon = button.querySelector('.heart-icon');
         const currentCount = parseInt(likeCountSpan.textContent) || 0;
-        
+
         if (isLiked) {
             button.classList.remove('liked');
             likeCountSpan.textContent = Math.max(0, currentCount - 1);
@@ -2057,9 +2085,9 @@ class IdeasPage {
                 ${message}
             </div>
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Remove after 3 seconds
         setTimeout(() => {
             notification.remove();
@@ -2070,7 +2098,7 @@ class IdeasPage {
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('ðŸš€ Initializing Ideas Page...');
-    
+
     // Force mock data initialization if not available
     if (!window.ideasMockData) {
         console.log('ðŸ”§ Force initializing mock data...');
@@ -2081,6 +2109,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('âŒ Failed to force initialize mock data:', error);
         }
     }
-    
+
     window.ideasPage = new IdeasPage();
 });

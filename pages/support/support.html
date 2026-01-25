@@ -6,10 +6,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Help & Support - JKUAT Innovation and Entrepreneurship Club</title>
 
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script src="/home/supabase-client.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
     <!-- Stylesheets -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="../shared/components/navigation.css" rel="stylesheet">
     <link href="support.css" rel="stylesheet">
+    
+    <!-- Override conflicting navbar styles -->
+    <style>
+        body { padding-top: 140px !important; }
+        
+        /* Hide conflicting navigation elements */
+        #navigation-placeholder,
+        .minimal-navbar,
+        .navigation-container,
+        .glass-nav,
+        .nav-club-header,
+        .nav-club-title,
+        .nav-links-container,
+        .nav-center,
+        .nav-auth,
+        .nav-dropdown {
+            display: none !important;
+        }
+        
+        /* Override support page specific navbar styles */
+        body.support-page {
+            padding-top: 140px !important;
+        }
+        
+        /* Ensure global navbar is visible */
+        #global-navbar {
+            display: block !important;
+            visibility: visible !important;
+        }
+    </style>
 
     <!-- Meta Tags -->
     <meta name="description"
@@ -18,8 +68,7 @@
 </head>
 
 <body class="support-page">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+    <!-- Shared navbar will be automatically inserted here -->
 
     <!-- Hero Section -->
     <section class="hero-section">
@@ -67,7 +116,8 @@
                         <i class="fas fa-book"></i>
                     </div>
                     <h3 class="support-card-title">Knowledge Base</h3>
-                    <p class="support-card-description">Browse our comprehensive guides, tutorials, and documentation to find answers quickly.</p>
+                    <p class="support-card-description">Browse our comprehensive guides, tutorials, and documentation to
+                        find answers quickly.</p>
                     <div class="support-card-actions">
                         <a href="#faq" class="btn btn-outline">
                             <i class="fas fa-search"></i> FAQ
@@ -84,7 +134,8 @@
                         <i class="fas fa-tools"></i>
                     </div>
                     <h3 class="support-card-title">Technical Support</h3>
-                    <p class="support-card-description">Get help with technical issues, account problems, or platform-related questions.</p>
+                    <p class="support-card-description">Get help with technical issues, account problems, or
+                        platform-related questions.</p>
                     <a href="#contact" class="btn btn-primary btn-full">
                         <i class="fas fa-headset"></i>Get Support
                     </a>
@@ -96,7 +147,8 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <h3 class="support-card-title">Community Help</h3>
-                    <p class="support-card-description">Connect with other members and get help from our vibrant community of innovators.</p>
+                    <p class="support-card-description">Connect with other members and get help from our vibrant
+                        community of innovators.</p>
                     <a href="/dashboard" class="btn btn-outline btn-full">
                         <i class="fas fa-comments"></i>Join Discussion
                     </a>
@@ -147,7 +199,9 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">To create an account, click the "Join Us" button on the homepage and fill out the registration form with your details. You'll receive a confirmation email to verify your account.</p>
+                        <p class="faq-answer">To create an account, click the "Join Us" button on the homepage and fill
+                            out the registration form with your details. You'll receive a confirmation email to verify
+                            your account.</p>
                     </div>
                 </div>
 
@@ -157,7 +211,8 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">Click "Forgot Password" on the login page, enter your email address, and follow the instructions in the reset email we send you.</p>
+                        <p class="faq-answer">Click "Forgot Password" on the login page, enter your email address, and
+                            follow the instructions in the reset email we send you.</p>
                     </div>
                 </div>
 
@@ -168,7 +223,8 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">Browse events on our Events page, click on the event you're interested in, and click the "Register" button. You'll need to be logged in to register.</p>
+                        <p class="faq-answer">Browse events on our Events page, click on the event you're interested in,
+                            and click the "Register" button. You'll need to be logged in to register.</p>
                     </div>
                 </div>
 
@@ -178,7 +234,8 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">Yes, you can cancel your registration up to 24 hours before the event starts. Go to your dashboard and click "Cancel Registration" next to the event.</p>
+                        <p class="faq-answer">Yes, you can cancel your registration up to 24 hours before the event
+                            starts. Go to your dashboard and click "Cancel Registration" next to the event.</p>
                     </div>
                 </div>
 
@@ -189,7 +246,8 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">Yes! Basic membership is completely free for all JKUAT students. Premium features may require a small fee to support club activities.</p>
+                        <p class="faq-answer">Yes! Basic membership is completely free for all JKUAT students. Premium
+                            features may require a small fee to support club activities.</p>
                     </div>
                 </div>
 
@@ -200,7 +258,8 @@
                         <i class="fas fa-chevron-down faq-icon"></i>
                     </div>
                     <div class="faq-content">
-                        <p class="faq-answer">Try refreshing the page, clearing your browser cache, or using a different browser. If the problem persists, contact our technical support team.</p>
+                        <p class="faq-answer">Try refreshing the page, clearing your browser cache, or using a different
+                            browser. If the problem persists, contact our technical support team.</p>
                     </div>
                 </div>
             </div>
@@ -235,7 +294,8 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Email *</label>
-                                <input type="email" name="email" class="form-input" placeholder="your.email@example.com" required>
+                                <input type="email" name="email" class="form-input" placeholder="your.email@example.com"
+                                    required>
                             </div>
                         </div>
 
@@ -254,7 +314,8 @@
 
                         <div class="form-group">
                             <label class="form-label">Message *</label>
-                            <textarea name="message" class="form-input" rows="5" placeholder="Describe your issue or question in detail..." required></textarea>
+                            <textarea name="message" class="form-input" rows="5"
+                                placeholder="Describe your issue or question in detail..." required></textarea>
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-full btn-lg">
@@ -298,12 +359,37 @@
         </div>
     </footer>
 
-    <!-- JavaScript -->
+    <script src="/shared/role-ui-controller.js"></script>
     <script src="mock-data.js"></script>
-    <script src="auth.js"></script>
-    <script src="navigation.js"></script>
     <script src="footer.js"></script>
     <script src="support.js"></script>
+    
+    <!-- Initialize Support Page -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🆘 Initializing Support Page...');
+            try {
+                window.supportPage = new SupportPage();
+                console.log('✅ Support Page initialized successfully');
+                console.log('📊 Support Page instance:', window.supportPage);
+                
+                // Fallback initialization after a delay
+                setTimeout(() => {
+                    console.log('🔄 Running fallback FAQ initialization...');
+                    const faqItems = document.querySelectorAll('.faq-item');
+                    if (faqItems.length > 0) {
+                        console.log(`🔧 Fallback: Found ${faqItems.length} FAQ items, re-binding events`);
+                        window.supportPage.bindFAQEventsToItems(faqItems);
+                    } else {
+                        console.log('⚠️ Fallback: No FAQ items found');
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('❌ Error initializing Support Page:', error);
+            }
+        });
+    </script>
 </body>
 
 </html>

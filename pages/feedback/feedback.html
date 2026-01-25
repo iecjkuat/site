@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Feedback - JKUAT Innovation Club</title>
+
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script src="/home/supabase-client.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="../shared/core/theme.css" rel="stylesheet">
+    <link href="../shared/components/navigation.css" rel="stylesheet">
+    <link href="../shared/components/notifications.css" rel="stylesheet">
+    <link href="feedback.css?v=2025010803" rel="stylesheet">
+    
+    <!-- Override conflicting navbar styles -->
+    <style>
+        body { padding-top: 140px !important; }
+    </style>
+</head>
+
+<body>
+    <!-- Global Background -->
+    <div class="global-bg"></div>
+
+
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
+
+    <main class="container mx-auto px-4 py-16 relative">
+
+        <!-- Header Section -->
+        <header class="feedback-section-header animate-fade-in">
+            <div class="feedback-badge">
+                Anonymous & Secure
+            </div>
+            <h1 class="feedback-title">
+                The <span class="text-gradient">Whisper</span> Box
+            </h1>
+            <p class="feedback-subtitle">
+                Have a suggestion, concern, or idea that you'd like to share privately?
+                Your voice matters, and your identity stays 100% hidden.
+            </p>
+        </header>
+
+        <!-- Main Whisper Form Card -->
+        <div class="feedback-form-card animate-slide-up">
+            <form id="feedbackForm">
+                <!-- Subject Line -->
+                <div class="form-group">
+                    <label class="form-label">Subject (Optional)</label>
+                    <input type="text" placeholder="What's on your mind?" class="form-input">
+                </div>
+
+                <!-- Message Area -->
+                <div class="form-group">
+                    <label class="form-label">Your Message</label>
+                    <textarea placeholder="Share your thoughts openly..." rows="6" required
+                        class="form-input"></textarea>
+                </div>
+
+                <!-- Privacy Assurance & Submit -->
+                <div class="submit-area">
+                    <div class="privacy-notice">
+                        <i class="fas fa-user-secret" style="color: #34d399;"></i>
+                        <span>Sent securely and anonymously. No IP tracking.</span>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        Send Whisper <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Privacy Benefit Cards (Design Only) -->
+        <section class="mt-24 max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div
+                    class="glass-card p-10 text-center rounded-3xl border border-white/5 bg-white/[0.02] transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/10 hover:border-emerald-500/30 group">
+                    <div
+                        class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center mx-auto mb-8 text-3xl group-hover:scale-110 transition-transform duration-300 border border-emerald-500/20">
+                        🕵️</div>
+                    <h3 class="text-white font-bold text-xl mb-4 group-hover:text-emerald-400 transition-colors">Truly
+                        Anonymous</h3>
+                    <p class="text-slate-400 text-base leading-relaxed">We don't collect names, emails, or IP addresses.
+                        Your digital footprint is completely scrubbed so you can speak freely without hesitation.</p>
+                </div>
+
+                <div
+                    class="glass-card p-10 text-center rounded-3xl border border-white/5 bg-white/[0.02] transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-500/30 group">
+                    <div
+                        class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex items-center justify-center mx-auto mb-8 text-3xl group-hover:scale-110 transition-transform duration-300 border border-blue-500/20">
+                        🔒</div>
+                    <h3 class="text-white font-bold text-xl mb-4 group-hover:text-blue-400 transition-colors">Secure &
+                        Private</h3>
+                    <p class="text-slate-400 text-base leading-relaxed">Your feedback is encrypted in transit and at
+                        rest. Only the club's executive leadership has access to the decrypted messages.</p>
+                </div>
+
+                <div
+                    class="glass-card p-10 text-center rounded-3xl border border-white/5 bg-white/[0.02] transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/10 hover:border-purple-500/30 group">
+                    <div
+                        class="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center mx-auto mb-8 text-3xl group-hover:scale-110 transition-transform duration-300 border border-purple-500/20">
+                        📢</div>
+                    <h3 class="text-white font-bold text-xl mb-4 group-hover:text-purple-400 transition-colors">Direct
+                        Impact</h3>
+                    <p class="text-slate-400 text-base leading-relaxed">Every whisper is read. You have the power to
+                        influence club decisions, events, and culture without needing to be in the spotlight.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Whispers / Community Voices -->
+        <section class="mt-24 max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-white text-center mb-12">Community <span
+                    class="text-emerald-400">Voices</span></h2>
+
+            <!-- Whispers Grid -->
+            <div id="whispersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Content will be loaded dynamically -->
+                <div class="glass-card p-8 animate-pulse">
+                    <div class="h-4 bg-white/10 rounded w-1/3 mb-4"></div>
+                    <div class="h-16 bg-white/10 rounded mb-4"></div>
+                    <div class="h-3 bg-white/10 rounded w-1/4"></div>
+                </div>
+                <div class="glass-card p-8 animate-pulse">
+                    <div class="h-4 bg-white/10 rounded w-1/3 mb-4"></div>
+                    <div class="h-16 bg-white/10 rounded mb-4"></div>
+                    <div class="h-3 bg-white/10 rounded w-1/4"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Area -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="../shared/components/navigation.js"></script>
+    <script src="feedback.js?v=2025010803"></script>
+</body>
+
+</html>

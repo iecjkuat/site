@@ -1,367 +1,92 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const jkuatPortal = require('../utils/jkuatPortal');
 const { logActivity } = require('../lib/audit');
+const { generateSecureToken, requireAdmin, authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
-// Send email verification
-router.post('/send-verification', [
-  body('email').isEmail().withMessage('Valid email is required')
-], async (req, res) => {
+// Create user profile (called after Supabase Auth registration)
+router.post('/create-profile', async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    const {
+      id, name, email, registrationNumber, phone, course, yearOfStudy, college, emailVerified
+    } = req.body;
 
-    const { email } = req.body;
+    console.log('🔄 Creating user profile for:', email);
 
-    // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email_verified')
-      .eq('email', email)
-      .single();
-
-    if (userError || !user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (user.email_verified) {
-      return res.status(400).json({ message: 'Email is already verified' });
-    }
-
-    // Send verification email using Supabase Auth
-    const { error: emailError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: email,
-      options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email`
-      }
-    });
-
-    if (emailError) {
-      console.error('Email verification error:', emailError);
-      return res.status(500).json({ message: 'Failed to send verification email' });
-    }
-
-    res.json({
-      message: 'Verification email sent successfully',
-      email: email
-    });
-
-  } catch (error) {
-    console.error('Send verification error:', error);
-    res.status(500).json({ message: 'Server error while sending verification email' });
-  }
-});
-
-// Verify email with token
-router.post('/verify-email', [
-  body('token').notEmpty().withMessage('Verification token is required'),
-  body('email').isEmail().withMessage('Valid email is required')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { token, email } = req.body;
-
-    // Verify the token with Supabase
-    const { data: authData, error: verifyError } = await supabase.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'signup'
-    });
-
-    if (verifyError) {
-      console.error('Token verification error:', verifyError);
-      return res.status(400).json({ message: 'Invalid or expired verification token' });
-    }
-
-    // Update user's email verification status
-    const { data: updatedUser, error: updateError } = await supabase
-      .from('users')
-      .update({
-        email_verified: true,
-        membership_status: 'active' // Activate membership upon email verification
-      })
-      .eq('email', email)
-      .select('id, name, email, membership_status')
-      .single();
-
-    if (updateError) {
-      console.error('User update error:', updateError);
-      return res.status(500).json({ message: 'Failed to update verification status' });
-    }
-
-    res.json({
-      message: 'Email verified successfully! Your membership is now active.',
-      user: updatedUser
-    });
-
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({ message: 'Server error during email verification' });
-  }
-});
-
-// Resend verification email
-router.post('/resend-verification', [
-  body('email').isEmail().withMessage('Valid email is required')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email } = req.body;
-
-    // Check if user exists and is not verified
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email_verified')
-      .eq('email', email)
-      .single();
-
-    if (userError || !user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (user.email_verified) {
-      return res.status(400).json({ message: 'Email is already verified' });
-    }
-
-    // Resend verification email
-    const { error: emailError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: email,
-      options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email`
-      }
-    });
-
-    if (emailError) {
-      console.error('Resend verification error:', emailError);
-      return res.status(500).json({ message: 'Failed to resend verification email' });
-    }
-
-    res.json({
-      message: 'Verification email resent successfully',
-      email: email
-    });
-
-  } catch (error) {
-    console.error('Resend verification error:', error);
-    res.status(500).json({ message: 'Server error while resending verification email' });
-  }
-});
-
-// Password recovery - Send reset email
-router.post('/forgot-password', [
-  body('email').isEmail().withMessage('Valid email is required')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email } = req.body;
-
-    // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name')
-      .eq('email', email)
-      .single();
-
-    if (userError || !user) {
-      // Don't reveal if email exists or not for security
-      return res.json({
-        message: 'If an account with that email exists, a password reset link has been sent.'
-      });
-    }
-
-    // Send password reset email
-    const { error: resetError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
-      options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`
-      }
-    });
-
-    if (resetError) {
-      console.error('Password reset error:', resetError);
-      return res.status(500).json({ message: 'Failed to send password reset email' });
-    }
-
-    res.json({
-      message: 'If an account with that email exists, a password reset link has been sent.'
-    });
-
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Server error while processing password reset' });
-  }
-});
-
-// Reset password with token
-router.post('/reset-password', [
-  body('token').notEmpty().withMessage('Reset token is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { token, email, newPassword } = req.body;
-
-    // Verify the reset token
-    const { data: authData, error: verifyError } = await supabase.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'recovery'
-    });
-
-    if (verifyError) {
-      console.error('Reset token verification error:', verifyError);
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
-    }
-
-    // Hash the new password
-    const passwordHash = await bcrypt.hash(newPassword, 12);
-
-    // Update user's password
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ password_hash: passwordHash })
-      .eq('email', email);
-
-    if (updateError) {
-      console.error('Password update error:', updateError);
-      return res.status(500).json({ message: 'Failed to update password' });
-    }
-
-    // Also update in Supabase Auth
-    const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-      authData.user.id,
-      { password: newPassword }
-    );
-
-    if (authUpdateError) {
-      console.error('Auth password update error:', authUpdateError);
-    }
-
-    res.json({
-      message: 'Password reset successfully! You can now login with your new password.'
-    });
-
-  } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({ message: 'Server error during password reset' });
-  }
-});
-
-// Validate student with JKUAT portal (UI ready for future API integration)
-router.post('/validate-student', [
-  body('registrationNumber').notEmpty().withMessage('Registration number is required'),
-  body('portalPassword').optional().isLength({ min: 1 }).withMessage('Portal password cannot be empty if provided')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { registrationNumber, portalPassword } = req.body;
-
-    // Validate registration number format
-    if (!jkuatPortal.isValidRegistrationFormat(registrationNumber)) {
-      return res.status(400).json({
-        message: 'Invalid JKUAT registration number format. Expected format: XX111-0000/YYYY'
-      });
-    }
-
-    // Check if student already exists in our system
-    const { data: existingUser } = await supabase
+    // Check if profile already exists
+    const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('registration_number', registrationNumber)
+      .eq('id', id)
       .single();
 
     if (existingUser) {
+      return res.json({ message: 'Profile already exists' });
+    }
+
+    // Create user profile in database
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: id,
+        name: name,
+        email: email,
+        registration_number: registrationNumber,
+        phone: phone,
+        course: course,
+        year_of_study: parseInt(yearOfStudy),
+        college: college,
+        email_verified: emailVerified,
+        membership_status: emailVerified ? 'active' : 'pending',
+        role: 'member',
+        password_hash: null, // We use Supabase Auth, not custom passwords
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('id, name, email, role, membership_status')
+      .single();
+
+    if (userError) {
+      console.error('Profile creation error:', userError);
       return res.status(400).json({
-        message: 'Student already registered in the system'
+        message: 'Failed to create user profile',
+        error: userError.message
       });
     }
 
-    // For now, use mock validation (ready for real API integration)
-    const validation = await jkuatPortal.validateStudent(registrationNumber, portalPassword);
-
-    if (!validation.isValid) {
-      return res.status(400).json({
-        message: validation.error || 'Student validation failed'
-      });
-    }
-
-    // Get detailed student information
-    const studentDetails = await jkuatPortal.getStudentDetails(registrationNumber);
-
-    if (!studentDetails.success) {
-      return res.status(400).json({
-        message: 'Failed to fetch student details from portal'
-      });
-    }
-
-    // Verify enrollment status
-    const enrollmentStatus = await jkuatPortal.verifyEnrollmentStatus(registrationNumber);
-
-    if (!enrollmentStatus.isEnrolled) {
-      return res.status(400).json({
-        message: 'Student is not currently enrolled or active in JKUAT'
-      });
-    }
-
-    // Format student data for frontend
-    const formattedData = jkuatPortal.formatStudentData(studentDetails.data);
+    console.log('✅ User profile created successfully');
 
     res.json({
-      message: 'Student validation successful',
-      studentData: formattedData,
-      enrollmentStatus: enrollmentStatus,
-      canRegister: true
+      message: 'Profile created successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        membershipStatus: user.membership_status
+      }
     });
 
   } catch (error) {
-    console.error('Student validation error:', error);
-    res.status(500).json({
-      message: 'Server error during student validation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('Create profile error:', error);
+    res.status(500).json({ message: 'Server error during profile creation' });
   }
 });
-
-// Register new user
+// Register new user (database-only approach)
 router.post('/register', [
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('email').isEmail().withMessage('Valid email is required')
+    .custom((email) => {
+      if (!email.includes('@students.jkuat.ac.ke') && !email.includes('@jkuat.ac.ke')) {
+        throw new Error('Please use a valid JKUAT email address (@students.jkuat.ac.ke or @jkuat.ac.ke)');
+      }
+      return true;
+    }),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('registrationNumber').notEmpty().withMessage('Registration number is required'),
-  body('name').notEmpty().withMessage('Name is required'),
-  body('phone').isMobilePhone().withMessage('Valid phone number is required'),
-  body('course').notEmpty().withMessage('Course is required'),
-  body('yearOfStudy').isInt({ min: 1, max: 6 }).withMessage('Valid year of study is required'),
-  body('college').notEmpty().withMessage('College is required')
+  body('name').notEmpty().withMessage('Name is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -370,96 +95,70 @@ router.post('/register', [
     }
 
     const {
-      email, password, registrationNumber, name, phone, course, yearOfStudy, college
+      email, password, name, registrationNumber, phone, course, yearOfStudy, college
     } = req.body;
 
+    console.log('🔄 Database registration for:', email);
+
     // Check if user already exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser } = await supabaseAdmin
       .from('users')
-      .select('id')
-      .or(`email.eq.${email},registration_number.eq.${registrationNumber}`)
+      .select('id, email')
+      .eq('email', email)
       .single();
 
     if (existingUser) {
       return res.status(400).json({
-        message: 'User already exists with this email or registration number'
+        message: 'User already exists with this email'
       });
     }
 
-    // Hash password
+    // Generate UUID and hash password
+    const userId = require('crypto').randomUUID();
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create user in Supabase Auth first
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: false, // Require email verification
-      user_metadata: {
-        name,
-        registrationNumber
-      }
-    });
-
-    if (authError) {
-      console.error('Supabase auth error:', authError);
-      return res.status(400).json({
-        message: 'Failed to create user account',
-        error: authError.message
-      });
-    }
-
-    // Create user in database
-    const { data: user, error: userError } = await supabase
+    // Create user profile in database
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
-        id: authData.user.id,
-        email,
+        id: userId,
+        email: email,
+        name: name,
+        registration_number: registrationNumber || null,
+        phone: phone || null,
+        course: course || null,
+        year_of_study: yearOfStudy ? parseInt(yearOfStudy) : null,
+        college: college || null,
+        email_verified: true,
+        membership_status: 'active',
+        role: 'member',
         password_hash: passwordHash,
-        registration_number: registrationNumber,
-        name,
-        phone,
-        course,
-        year_of_study: parseInt(yearOfStudy),
-        college,
-        email_verified: false,
-        membership_status: 'pending' // Will be activated after email verification
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      .select('id, name, email, registration_number, membership_status')
+      .select('id, name, email, registration_number, membership_status, role')
       .single();
 
     if (userError) {
-      console.error('User creation error:', userError);
-      // Clean up auth user if database insert fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      console.error('User profile creation error:', userError);
       return res.status(400).json({
         message: 'Failed to create user profile',
         error: userError.message
       });
     }
 
-    // Send verification email
-    const { error: emailError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: email,
-      options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email`
-      }
-    });
-
-    if (emailError) {
-      console.error('Verification email error:', emailError);
-      // Don't fail registration if email fails, user can resend later
-    }
+    console.log('✅ User created successfully in database');
 
     res.status(201).json({
-      message: 'Registration successful! Please check your email to verify your account.',
+      message: 'Registration successful! You can now log in.',
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
         membershipStatus: user.membership_status
       },
-      requiresVerification: true
+      canLoginImmediately: true
     });
 
   } catch (error) {
@@ -468,118 +167,10 @@ router.post('/register', [
   }
 });
 
-// Test endpoint to generate password hash
-router.get('/test-hash/:password', async (req, res) => {
-  try {
-    const { password } = req.params;
-    const hash = await bcrypt.hash(password, 12);
-    
-    res.json({
-      password: password,
-      hash: hash,
-      message: 'Use this hash in your database'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Test endpoint to fix sample user passwords
-router.get('/fix-passwords', async (req, res) => {
-  try {
-    const correctPassword = 'admin123';
-    const correctHash = await bcrypt.hash(correctPassword, 12);
-
-    console.log('Generated hash for admin123:', correctHash);
-
-    // Update all sample users with the correct password hash
-    const { data, error } = await supabase
-      .from('users')
-      .update({ password_hash: correctHash })
-      .in('email', [
-        'admin@jkuatinnovation.ac.ke',
-        'executive@jkuatinnovation.ac.ke',
-        'member@jkuatinnovation.ac.ke'
-      ])
-      .select('email, name');
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    res.json({
-      message: 'Password hashes updated successfully! All sample users now have password: admin123',
-      updatedUsers: data,
-      instructions: 'You can now login with any of these accounts using password: admin123'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Test endpoint to check if sample users exist
-router.get('/test-users', async (req, res) => {
-  try {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('id, name, email, role, membership_status, email_verified')
-      .in('email', [
-        'admin@jkuatinnovation.ac.ke',
-        'executive@jkuatinnovation.ac.ke',
-        'member@jkuatinnovation.ac.ke'
-      ]);
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    // Auto-fix passwords if requested
-    if (req.query.fix === 'true') {
-      const correctPassword = 'admin123';
-      const correctHash = await bcrypt.hash(correctPassword, 12);
-
-      const { data: updatedUsers, error: updateError } = await supabase
-        .from('users')
-        .update({ 
-          password_hash: correctHash,
-          email_verified: true,
-          membership_status: 'active'
-        })
-        .in('email', [
-          'admin@jkuatinnovation.ac.ke',
-          'executive@jkuatinnovation.ac.ke',
-          'member@jkuatinnovation.ac.ke'
-        ])
-        .select('email, name, email_verified, membership_status');
-
-      if (updateError) {
-        return res.status(500).json({ error: updateError.message });
-      }
-
-      return res.json({
-        message: 'Test users fixed! All sample users now have password: admin123, verified emails, and active membership',
-        users: users || [],
-        updatedUsers: updatedUsers,
-        count: users ? users.length : 0
-      });
-    }
-
-    res.json({
-      message: 'Sample users check',
-      users: users || [],
-      count: users ? users.length : 0,
-      fixPasswordsUrl: 'Add ?fix=true to this URL to fix passwords and email verification'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Login user
+// Login user (database-only approach for now)
 router.post('/login', [
   body('identifier').notEmpty().withMessage('Email or registration number is required'),
-  body('password').notEmpty().withMessage('Password is required'),
-  body('usePortalAuth').optional().isBoolean().withMessage('usePortalAuth must be boolean')
+  body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -587,125 +178,90 @@ router.post('/login', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { identifier, password, usePortalAuth = false } = req.body;
+    const { identifier, password } = req.body;
 
     // Determine if identifier is email or registration number
     const isEmail = identifier.includes('@');
-    const isRegistrationNumber = jkuatPortal.isValidRegistrationFormat(identifier);
+    const column = isEmail ? 'email' : 'registration_number';
 
-    let user;
+    console.log('Attempting database login with:', { column, identifier });
 
-    if (usePortalAuth && isRegistrationNumber) {
-      // Authenticate with JKUAT portal first
-      const portalValidation = await jkuatPortal.validateStudent(identifier, password);
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select(`
+        id, name, email, role, membership_status, email_verified,
+        registration_number, password_hash
+      `)
+      .eq(column, identifier)
+      .single();
 
-      if (!portalValidation.isValid) {
-        return res.status(400).json({
-          message: 'JKUAT portal authentication failed',
-          error: portalValidation.error
-        });
+    console.log('User query result:', { userData: userData ? 'found' : 'not found', userError });
+
+    if (userError || !userData) {
+      console.log('User not found or error:', userError);
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Check password if hash exists
+    if (userData.password_hash) {
+      const bcrypt = require('bcrypt');
+      const passwordValid = await bcrypt.compare(password, userData.password_hash);
+      
+      if (!passwordValid) {
+        console.log('Password validation failed');
+        return res.status(400).json({ message: 'Invalid credentials' });
       }
-
-      // Find user by registration number
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select(`
-          id, name, email, role, membership_status, club_id,
-          clubs:club_id(id, name, short_name)
-        `)
-        .eq('registration_number', identifier)
-        .single();
-
-      if (userError || !userData) {
-        return res.status(400).json({
-          message: 'Student not registered in any club. Please register first.'
-        });
-      }
-
-      user = userData;
     } else {
-      // Standard authentication
-      const column = isEmail ? 'email' : 'registration_number';
-
-      if (!isEmail && !isRegistrationNumber) {
-        return res.status(400).json({ message: 'Invalid email or registration number format' });
-      }
-
-      console.log('Attempting login with:', { column, identifier });
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select(`
-          id, name, email, role, membership_status, password_hash, email_verified,
-          registration_number
-        `)
-        .eq(column, identifier)
-        .single();
-
-      console.log('User query result:', { userData, userError });
-
-      if (userError || !userData) {
-        console.log('User not found or error:', userError);
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-
-      // Check if email is verified
-      if (!userData.email_verified) {
-        return res.status(400).json({
-          message: 'Please verify your email address before logging in.',
-          requiresVerification: true,
-          email: userData.email
+      // For users without password hash, we'll need to create Supabase Auth user
+      console.log('No password hash found, this might be a Supabase Auth user');
+      
+      // Try Supabase Auth login as fallback
+      try {
+        const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
+          email: userData.email,
+          password: password
         });
-      }
 
-      // Check password
-      console.log('Checking password...');
-      const isMatch = await bcrypt.compare(password, userData.password_hash);
-      console.log('Password match:', isMatch);
-
-      if (!isMatch) {
+        if (authError) {
+          console.log('Supabase Auth fallback failed:', authError.message);
+          return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        
+        console.log('✅ Supabase Auth fallback successful');
+      } catch (authFallbackError) {
+        console.log('Auth fallback error:', authFallbackError.message);
         return res.status(400).json({ message: 'Invalid credentials' });
       }
-
-      user = userData;
     }
 
     // Update login stats
-    await supabase
+    await supabaseAdmin
       .from('users')
       .update({
         last_login: new Date().toISOString(),
-        login_count: user.login_count ? user.login_count + 1 : 1
+        login_count: userData.login_count ? userData.login_count + 1 : 1
       })
-      .eq('id', user.id);
+      .eq('id', userData.id);
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate JWT token using standard security module
+    const token = generateSecureToken(userData.id, userData.role);
 
     // Audit Log
-    logActivity(user.id, 'LOGIN', {
+    logActivity(userData.id, 'LOGIN', {
       ip: req.ip,
-      method: req.body.usePortalAuth ? 'PORTAL' : 'STANDARD'
-    }, 'USER', user.id).catch(console.error);
+      method: 'DATABASE'
+    }, 'USER', userData.id).catch(console.error);
 
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        membershipStatus: user.membership_status,
-        profileCompleted: false // Default for now since column might not exist
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        membershipStatus: userData.membership_status,
+        profileCompleted: userData.profile_completed || false
       }
     });
 
@@ -729,7 +285,7 @@ router.get('/verify', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Get user details from database
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select(`
         id, name, email, role, membership_status
@@ -777,7 +333,7 @@ router.post('/complete-profile', async (req, res) => {
     } = req.body;
 
     // Update user profile
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         bio,
@@ -813,6 +369,102 @@ router.post('/complete-profile', async (req, res) => {
   }
 });
 
+// Debug endpoint to check user status (requires admin authentication)
+router.get('/debug/:identifier', requireAdmin, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    const isEmail = identifier.includes('@');
+    const column = isEmail ? 'email' : 'registration_number';
+
+    console.log(`🔍 Debugging user: ${identifier} (${isEmail ? 'email' : 'registration'})`);
+
+    // Get user from database
+    const { data: dbUser, error: dbError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name, email_verified, membership_status, created_at')
+      .eq(column, identifier)
+      .single();
+
+    let authUser = null;
+    let authError = null;
+    if (dbUser && isEmail) {
+      // Try to get user from Supabase Auth
+      try {
+        const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.listUsers();
+        authUser = authData.users.find(u => u.email === identifier);
+        authError = authErr;
+      } catch (error) {
+        authError = error;
+        console.log('No auth user found:', error.message);
+      }
+    }
+
+    // Test login capability
+    let loginTest = null;
+    if (dbUser) {
+      if (authUser && dbUser.email_verified) {
+        loginTest = {
+          type: 'registered_user',
+          method: 'supabase_auth',
+          can_login: true,
+          note: 'Uses Supabase Auth verification'
+        };
+      } else if (authUser && !dbUser.email_verified) {
+        loginTest = {
+          type: 'registered_user',
+          method: 'supabase_auth',
+          can_login: false,
+          note: 'Email verification required'
+        };
+      } else {
+        loginTest = {
+          type: 'incomplete_registration',
+          method: 'none',
+          can_login: false,
+          note: 'User exists in DB but not in Supabase Auth'
+        };
+      }
+    }
+
+    res.json({
+      identifier,
+      timestamp: new Date().toISOString(),
+      database: {
+        found: !!dbUser,
+        user: dbUser ? {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          email_verified: dbUser.email_verified,
+          membership_status: dbUser.membership_status,
+          created_at: dbUser.created_at
+        } : null,
+        error: dbError?.message
+      },
+      supabase_auth: {
+        found: !!authUser,
+        user: authUser ? {
+          id: authUser.id,
+          email: authUser.email,
+          email_confirmed_at: authUser.email_confirmed_at,
+          created_at: authUser.created_at,
+          last_sign_in_at: authUser.last_sign_in_at
+        } : null,
+        error: authError?.message
+      },
+      login_analysis: loginTest,
+      recommendations: dbUser ? [
+        ...(!dbUser.email_verified && authUser ? ['Verify email address'] : []),
+        ...(dbUser && !authUser ? ['User exists in DB but not in Auth - data inconsistency'] : [])
+      ] : ['User not found - register first']
+    });
+
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Logout user
 router.post('/logout', async (req, res) => {
   try {
@@ -825,42 +477,13 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-// Middleware to verify JWT token
-const authenticateToken = async (req, res, next) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-      return res.status(401).json({ message: 'Access token required' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Get user details from database
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', decoded.userId)
-      .single();
-
-    if (error || !user) {
-      return res.status(401).json({ message: 'Invalid token' });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(403).json({ message: 'Invalid token' });
-  }
-};
 
 // Get user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    // Return user data (password hash excluded by select)
-    const { data: user, error } = await supabase
+    // Return user data
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select(`
         id, name, email, phone, registration_number, course, year_of_study,
@@ -913,7 +536,7 @@ router.put('/profile', authenticateToken, [
 
     updateData.updated_at = new Date().toISOString();
 
-    const { data: updatedUser, error } = await supabase
+    const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', req.user.id)
@@ -965,7 +588,7 @@ router.put('/academic', authenticateToken, [
 
     updateData.updated_at = new Date().toISOString();
 
-    const { data: updatedUser, error } = await supabase
+    const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', req.user.id)
@@ -989,7 +612,7 @@ router.put('/preferences', authenticateToken, async (req, res) => {
   try {
     const preferences = req.body;
 
-    const { data: updatedUser, error } = await supabase
+    const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
       .update({
         preferences: preferences,
@@ -1014,7 +637,7 @@ router.put('/preferences', authenticateToken, async (req, res) => {
 // Get notification preferences
 router.get('/preferences', authenticateToken, async (req, res) => {
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('preferences')
       .eq('id', req.user.id)
@@ -1042,18 +665,11 @@ router.post('/change-password', authenticateToken, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user.id; // From authenticateToken middleware
-
-    // Verify current password via Supabase Auth (simulated by signing in)
-    // Supabase Admin API 'updateUserById' doesn't require old password, 
-    // but good security practice usually requires verifying the old one first.
-    // However, with Supabase, we can use the 'signInWithPassword' to verify ownership if needed,
-    // or just trust the 'authenticateToken' (which validates the JWT).
-    // Trusting JWT is standard if the token is valid.
+    const { newPassword } = req.body;
+    const userId = req.user.id;
 
     // Update password using Supabase Auth Admin API (service role)
-    const { data, error } = await supabase.auth.admin.updateUserById(
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );
@@ -1069,6 +685,8 @@ router.post('/change-password', authenticateToken, [
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Profile picture upload placeholder
 router.post('/profile-picture', authenticateToken, async (req, res) => {
   try {
     // This would handle file upload using multer
@@ -1119,7 +737,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select(`
         id, name, email, phone, registration_number, course, year_of_study,
@@ -1143,33 +761,13 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
 // Delete account
 router.delete('/delete-account', authenticateToken, async (req, res) => {
   try {
-    // 1. Delete user data from related tables (cascade should handle most, but explicit is safer for criticals)
-    // Actually, Supabase foreign keys usually handle cascade if set up correctly.
-    // We will trust the database foreign keys or just delete the user record.
-
-    // However, checking Supabase Auth deletion is trickier.
-    // Usually we delete from the public.users table (if it exists) and then sync with auth.
-    // Or we use the supabase admin client to delete the user from auth.users.
-
-    // Since we are using the service role client in this router context implicitly via imports?
-    // Wait, the `supabase` imported in routes/auth.js is usually the one initialized with SERVICE_KEY?
-    // Let's check imports. `const { supabase } = require('../lib/supabase');`
-    // If it's the service client, we can delete from auth.
-
-    // For this implementation, we'll Soft Delete or Hard Delete from public users 
-    // and assume a trigger or manual process handles the rest, OR use the admin api.
-
-    // Let's try deleting from public.users first.
-    const { error: dbError } = await supabase
+    // Delete user from database (foreign keys should handle cascade)
+    const { error: dbError } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', req.user.id);
 
     if (dbError) throw dbError;
-
-    // Optionally: Delete from Supabase Auth (requires admin privileges)
-    // We'll skip explicit Auth deletion here for safety/complexity unless we are sure we have admin rights.
-    // User asked for "Account deactivation option". Database deletion effectively deactivates them from the app.
 
     res.json({ success: true, message: 'Account deleted successfully' });
   } catch (error) {
@@ -1191,11 +789,11 @@ router.get('/export-data', authenticateToken, async (req, res) => {
       { data: payments },
       { data: activity }
     ] = await Promise.all([
-      supabase.from('users').select('*').eq('id', userId).single(),
-      supabase.from('notification_preferences').select('*').eq('user_id', userId).single(),
-      supabase.from('notifications').select('*').eq('user_id', userId),
-      supabase.from('financial_transactions').select('*').eq('user_id', userId),
-      supabase.from('user_sessions').select('*').eq('user_id', userId) // Assuming this tracks activity
+      supabaseAdmin.from('users').select('*').eq('id', userId).single(),
+      supabaseAdmin.from('notification_preferences').select('*').eq('user_id', userId).single(),
+      supabaseAdmin.from('notifications').select('*').eq('user_id', userId),
+      supabaseAdmin.from('financial_transactions').select('*').eq('user_id', userId),
+      supabaseAdmin.from('user_sessions').select('*').eq('user_id', userId) // Assuming this tracks activity
     ]);
 
     const exportData = {

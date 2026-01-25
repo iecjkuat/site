@@ -2,13 +2,16 @@
 
 class SupportPage {
     constructor() {
+        console.log('🏗️ SupportPage constructor called');
         this.init();
     }
 
     init() {
+        console.log('⚙️ SupportPage init() called');
         this.bindEvents();
         this.initializeFAQ();
         this.initializeContactForm();
+        console.log('✅ SupportPage init() complete');
     }
 
     bindEvents() {
@@ -37,15 +40,78 @@ class SupportPage {
         }
     }
 
-    initializeFAQ() {
+    async initializeFAQ() {
+        // Add a small delay to ensure DOM is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        try {
+            // Try to load FAQ from API first
+            const response = await fetch('/api/support/faq');
+            
+            if (response.ok) {
+                const data = await response.json();
+                const faqItems = data.faq || [];
+                console.log('✅ FAQ loaded from API:', faqItems.length);
+                this.renderFAQItems(faqItems);
+            } else {
+                throw new Error('API failed');
+            }
+        } catch (error) {
+            console.log('⚠️ API unavailable, using static FAQ');
+            // Fall back to existing static FAQ functionality
+            this.initializeStaticFAQ();
+        }
+    }
+
+    renderFAQItems(faqItems) {
+        const faqContainer = document.getElementById('faqContainer');
+        if (!faqContainer) return;
+
+        faqContainer.innerHTML = faqItems.map(item => `
+            <div class="faq-item" data-category="${item.category}">
+                <div class="faq-header">
+                    <h3>${item.question}</h3>
+                    <i class="fas fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-content" style="display: none;">
+                    <p>${item.answer}</p>
+                </div>
+            </div>
+        `).join('');
+
+        // Bind click events to new FAQ items
+        this.bindFAQEvents();
+    }
+
+    initializeStaticFAQ() {
+        // Original FAQ initialization for static content
+        console.log('🔧 Initializing static FAQ...');
         const faqItems = document.querySelectorAll('.faq-item');
-        faqItems.forEach(item => {
+        console.log(`📋 Found ${faqItems.length} static FAQ items`);
+        this.bindFAQEventsToItems(faqItems);
+        console.log('✅ Static FAQ initialization complete');
+    }
+
+    bindFAQEvents() {
+        const faqItems = document.querySelectorAll('.faq-item');
+        this.bindFAQEventsToItems(faqItems);
+    }
+
+    bindFAQEventsToItems(faqItems) {
+        console.log(`🔗 Binding FAQ events to ${faqItems.length} items...`);
+        
+        faqItems.forEach((item, index) => {
             const header = item.querySelector('.faq-header');
             const content = item.querySelector('.faq-content');
             
+            console.log(`FAQ Item ${index}: header=${!!header}, content=${!!content}`);
+            
             if (header && content) {
                 header.addEventListener('click', () => {
-                    const isOpen = content.style.display === 'block';
+                    console.log(`🖱️ FAQ item ${index} clicked`);
+                    
+                    const isOpen = content.classList.contains('show') || content.style.display === 'block';
+                    console.log(`Current state: ${isOpen ? 'open' : 'closed'}`);
                     
                     // Close all other FAQ items
                     faqItems.forEach(otherItem => {
@@ -53,6 +119,7 @@ class SupportPage {
                         const otherIcon = otherItem.querySelector('.faq-icon');
                         if (otherContent) {
                             otherContent.style.display = 'none';
+                            otherContent.classList.remove('show');
                         }
                         if (otherIcon) {
                             otherIcon.style.transform = 'rotate(0deg)';
@@ -62,14 +129,22 @@ class SupportPage {
                     // Toggle current item
                     if (!isOpen) {
                         content.style.display = 'block';
+                        content.classList.add('show');
                         const icon = header.querySelector('.faq-icon');
                         if (icon) {
                             icon.style.transform = 'rotate(180deg)';
                         }
+                        console.log(`✅ FAQ item ${index} opened`);
+                    } else {
+                        console.log(`📝 FAQ item ${index} was already open, now closed`);
                     }
                 });
+            } else {
+                console.error(`❌ FAQ Item ${index} missing header or content elements`);
             }
         });
+        
+        console.log('✅ FAQ event binding complete');
     }
 
     initializeContactForm() {

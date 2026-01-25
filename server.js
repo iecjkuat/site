@@ -7,7 +7,7 @@ const http = require('http');
 require('dotenv').config();
 
 // Import Supabase client
-const { supabase } = require('./lib/supabase');
+const { supabaseAdmin } = require('./lib/supabase');
 
 // Import WebSocket service
 const WebSocketService = require('./routes/websocket-service');
@@ -30,16 +30,16 @@ const paymentServiceRoutes = require('./routes/payment-service');
 const feedbackRoutes = require('./routes/feedback');
 const notificationsRoutes = require('./routes/notifications');
 const meetingsRoutes = require('./routes/meetings');
-const electionsRoutes = require('./routes/elections');
-const governanceRoutes = require('./routes/governance');
-const financialRoutes = require('./routes/financial');
+const votingRoutes = require('./routes/voting');
 const communicationRoutes = require('./routes/communication');
 const analyticsRoutes = require('./routes/analytics');
 const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
+const adminRoutes = require('./routes/admin');
 
 // Import validation middleware
 const { rateLimits, sanitizeInput } = require('./middleware/validation');
+const { csrfMiddleware } = require('./middleware/csrf');
 
 const app = express();
 const server = http.createServer(app);
@@ -53,13 +53,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      // Remove 'unsafe-inline' for better security
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", process.env.SUPABASE_URL || ""],
+      connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co", process.env.SUPABASE_URL || ""],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      mediaSrc: ["'self'", "https://sample-videos.com"],
       frameSrc: ["'none'"]
     }
   },
@@ -71,30 +75,35 @@ app.use(helmet({
   }
 }));
 
-// Input sanitization - Apply early
-app.use(sanitizeInput);
-
-// Rate limiting - Different limits for different endpoints
-app.use('/api/auth', rateLimits.auth);
-app.use('/api/admin', rateLimits.admin);
-app.use('/api/', rateLimits.api);
-
 // CORS configuration with environment-specific origins
-const allowedOrigins = process.env.NODE_ENV === 'production' 
+const allowedOrigins = process.env.NODE_ENV === 'production'
   ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
   : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5000'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.warn('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps, curl, or file:// protocol)
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+
+    // In development, be more permissive but don't log for null origins
+    if (process.env.NODE_ENV !== 'production') {
+      // Only log warnings for actual origins that are not allowed
+      if (origin) {
+        console.warn('⚠️ CORS: Allowing origin in development mode:', origin);
+      }
+      return callback(null, true);
+    }
+
+    // In production, block unknown origins
+    console.warn('❌ CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -106,39 +115,88 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Input sanitization - Apply after body parsing
+app.use(sanitizeInput);
+
+// CSRF Protection - Apply after sanitization, but skip for API endpoints in development
+app.use((req, res, next) => {
+  // Skip CSRF for API endpoints in development
+  if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/')) {
+    return next();
+  }
+  return csrfMiddleware(req, res, next);
+});
+
+// Rate limiting - Different limits for different endpoints and roles
+const createRoleBasedLimiter = (windowMs, max, message) => {
+  return rateLimit({
+    windowMs,
+    max: (req, res) => {
+      // Check user role from token (simplified)
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      // In real implementation, decode token and check role
+      const isAdmin = req.path.includes('/admin') && token; // Simplified check
+      return isAdmin ? max * 2 : max; // Admins get higher limits
+    },
+    message: { error: message },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+};
+
+app.use('/api/auth', createRoleBasedLimiter(15 * 60 * 1000, 10, 'Too many auth attempts'));
+app.use('/api/admin', createRoleBasedLimiter(15 * 60 * 1000, 100, 'Too many admin requests'));
+app.use('/api/', createRoleBasedLimiter(15 * 60 * 1000, 1000, 'Too many API requests'));
+
 // Static files - serve pages from new structure
-app.use('/shared', express.static('pages/shared'));
-app.use(express.static('pages'));
+// Add cache control for JavaScript files to prevent caching issues
+app.use('/shared', (req, res, next) => {
+  if (req.path.endsWith('.js')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+}, express.static('pages/shared'));
+
+app.use((req, res, next) => {
+  if (req.path.endsWith('.js')) {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+}, express.static('pages'));
 
 // Serve essential files from shared assets
 app.get('/favicon.ico', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'favicon.ico'));
+  res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'favicon.ico'));
 });
 
 app.get('/manifest.json', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'manifest.json'));
+  res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'manifest.json'));
 });
 
 app.get('/sw.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'sw.js'));
+  res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'sw.js'));
 });
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
     // Test database connection
-    const { data, error } = await supabase.from('clubs').select('count').limit(1);
+    const { data, error } = await supabaseAdmin.from('clubs').select('count').limit(1);
     if (error) throw error;
-    
-    res.json({ 
-      status: 'healthy', 
+
+    res.json({
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       database: 'connected',
       version: '2.0.0-supabase'
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'unhealthy', 
+    res.status(500).json({
+      status: 'unhealthy',
       timestamp: new Date().toISOString(),
       database: 'disconnected',
       error: error.message
@@ -146,31 +204,64 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Debug endpoint to check users table
+app.get('/debug/users', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin.from('users').select('id, email, name, email_verified').limit(10);
+    if (error) throw error;
+
+    res.json({
+      users: data,
+      count: data.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// API versioning - Add v1 prefix to routes
+const apiVersion = '/api/v1';
+
+// Supabase configuration endpoint for frontend
+app.get('/api/config/supabase', (req, res) => {
+  res.json({
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY
+  });
+});
+
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/clubs', clubsRoutes);
-app.use('/api/events', eventsRoutes);
-app.use('/api/payments', paymentsRoutes);
-app.use('/api/membership', membershipRoutes);
-app.use('/api/leadership', leadershipRoutes);
-app.use('/api/projects', projectsRoutes);
-app.use('/api/ideas', ideasRoutes);
-app.use('/api/resources', resourcesRoutes);
-app.use('/api/opportunities', opportunitiesRoutes);
-app.use('/api/support', supportRoutes);
-app.use('/api/content', contentRoutes);
-app.use('/api/email', emailServiceRoutes);
-app.use('/api/payment-service', paymentServiceRoutes);
-app.use('/api/feedback', feedbackRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/meetings', meetingsRoutes);
-app.use('/api/elections', electionsRoutes);
-app.use('/api/governance', governanceRoutes);
-app.use('/api/financial', financialRoutes);
-app.use('/api/communication', communicationRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/testimonials', testimonialsRoutes);
+app.use(`${apiVersion}/auth`, authRoutes);
+app.use('/api/auth', authRoutes); // Compatibility route for frontend
+app.use(`${apiVersion}/clubs`, clubsRoutes);
+app.use(`${apiVersion}/events`, eventsRoutes);
+app.use(`${apiVersion}/payments`, paymentsRoutes);
+app.use(`${apiVersion}/membership`, membershipRoutes);
+app.use(`${apiVersion}/leadership`, leadershipRoutes);
+app.use(`${apiVersion}/projects`, projectsRoutes);
+app.use(`${apiVersion}/ideas`, ideasRoutes);
+app.use(`${apiVersion}/resources`, resourcesRoutes);
+app.use(`${apiVersion}/opportunities`, opportunitiesRoutes);
+app.use(`${apiVersion}/support`, supportRoutes);
+app.use(`${apiVersion}/content`, contentRoutes);
+app.use(`${apiVersion}/email`, emailServiceRoutes);
+app.use(`${apiVersion}/payment-service`, paymentServiceRoutes);
+app.use(`${apiVersion}/feedback`, feedbackRoutes);
+app.use(`${apiVersion}/notifications`, notificationsRoutes);
+app.use(`${apiVersion}/meetings`, meetingsRoutes);
+app.use(`${apiVersion}/voting`, votingRoutes);
+app.use(`${apiVersion}/communication`, communicationRoutes);
+app.use(`${apiVersion}/analytics`, analyticsRoutes);
+app.use(`${apiVersion}/stats`, statsRoutes);
+app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
+app.use(`${apiVersion}/admin`, adminRoutes);
+
+// Compatibility redirect for stats
+app.get('/api/stats', (req, res) => res.redirect(`${apiVersion}/stats`));
 
 // Serve HTML pages from new structure
 app.get('/', (req, res) => {
@@ -222,6 +313,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'admin', 'admin.html'));
 });
 
+app.get('/complete-registration', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'complete-registration', 'complete-registration.html'));
+});
+
 
 
 app.get('/verify-email', (req, res) => {
@@ -236,16 +331,19 @@ app.get('/cms', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'cms', 'cms.html'));
 });
 
-app.get('/financial', (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'financial', 'financial.html'));
-});
-
 app.get('/complete-profile', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'complete-profile', 'complete-profile.html'));
 });
 
 app.get('/leadership', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'leadership', 'leadership.html'));
+});
+
+app.get('/voting', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'voting', 'voting.html'));
+});
+app.get('/feedback', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'feedback', 'feedback.html'));
 });
 
 
@@ -267,7 +365,7 @@ app.get('/api/websocket/stats', (req, res) => {
 });
 
 // API documentation endpoint
-app.get('/api', (req, res) => {
+app.get(`${apiVersion}`, (req, res) => {
   res.json({
     name: 'JKUAT Clubs Platform API',
     version: '2.0.0-postgresql',
@@ -372,20 +470,20 @@ app.get('/api', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
+
   if (err.code === 'P2002') {
     return res.status(400).json({
       message: 'Duplicate entry. This record already exists.',
       field: err.meta?.target
     });
   }
-  
+
   if (err.code === 'P2025') {
     return res.status(404).json({
       message: 'Record not found'
     });
   }
-  
+
   res.status(500).json({
     message: 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -431,7 +529,6 @@ server.listen(PORT, () => {
   console.log(`🎧 Support: http://localhost:${PORT}/support`);
   console.log(`⚙️ Settings: http://localhost:${PORT}/settings`);
   console.log(`🔧 Admin: http://localhost:${PORT}/admin`);
-  console.log(`💰 Financial: http://localhost:${PORT}/financial`);
   console.log(`📖 API Docs: http://localhost:${PORT}/api`);
   console.log(`❤️ Health: http://localhost:${PORT}/health`);
   console.log(`\n🎯 Environment: ${process.env.NODE_ENV || 'development'}`);

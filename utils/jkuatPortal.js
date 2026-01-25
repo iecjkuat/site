@@ -26,22 +26,38 @@ class JKUATPortalService {
    */
   async validateStudent(registrationNumber, password = null) {
     try {
-      // Mock implementation - replace with actual API call
-      const studentData = await this.mockValidateStudent(registrationNumber, password);
-      
-      if (!studentData) {
-        throw new Error('Student not found in JKUAT portal');
+      // NOTE: This is a placeholder for the actual JKUAT portal API integration.
+      // The endpoint '/validate' is assumed. Replace with the actual endpoint.
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock JKUAT portal validation.');
+        const studentData = await this.mockValidateStudent(registrationNumber, password);
+        if (!studentData) {
+          throw new Error('Student not found in JKUAT portal');
+        }
+        return { isValid: true, studentInfo: studentData };
       }
 
-      return {
-        isValid: true,
-        studentInfo: studentData
-      };
+      const response = await axios.post(`${this.baseURL}/validate`, {
+        registrationNumber,
+        password
+      }, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` },
+        timeout: this.timeout
+      });
+
+      if (response.data && response.data.isValid) {
+        return {
+          isValid: true,
+          studentInfo: response.data.studentInfo
+        };
+      } else {
+        throw new Error('Invalid response from JKUAT portal');
+      }
     } catch (error) {
       console.error('JKUAT Portal validation error:', error.message);
       return {
         isValid: false,
-        error: error.message
+        error: 'Could not connect to JKUAT portal or invalid credentials.'
       };
     }
   }
@@ -53,22 +69,35 @@ class JKUATPortalService {
    */
   async getStudentDetails(registrationNumber) {
     try {
-      // Mock implementation - replace with actual API call
-      const studentData = await this.mockGetStudentDetails(registrationNumber);
-      
-      if (!studentData) {
-        throw new Error('Student details not found');
+      // NOTE: This is a placeholder for the actual JKUAT portal API integration.
+      // The endpoint '/students/{registrationNumber}' is assumed.
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock JKUAT portal getStudentDetails.');
+        const studentData = await this.mockGetStudentDetails(registrationNumber);
+        if (!studentData) {
+          throw new Error('Student details not found');
+        }
+        return { success: true, data: studentData };
       }
 
-      return {
-        success: true,
-        data: studentData
-      };
+      const response = await axios.get(`${this.baseURL}/students/${registrationNumber}`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` },
+        timeout: this.timeout
+      });
+      
+      if (response.data && response.data.success) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      } else {
+        throw new Error('Failed to fetch student details from portal');
+      }
     } catch (error) {
       console.error('Error fetching student details:', error.message);
       return {
         success: false,
-        error: error.message
+        error: 'Could not fetch student details from JKUAT portal.'
       };
     }
   }
@@ -80,20 +109,39 @@ class JKUATPortalService {
    */
   async verifyEnrollmentStatus(registrationNumber) {
     try {
-      // Mock implementation - replace with actual API call
-      const enrollmentData = await this.mockVerifyEnrollment(registrationNumber);
-      
-      return {
-        isEnrolled: enrollmentData.isActive,
-        academicYear: enrollmentData.academicYear,
-        semester: enrollmentData.semester,
-        status: enrollmentData.status
-      };
+      // NOTE: This is a placeholder for the actual JKUAT portal API integration.
+      // The endpoint '/students/{registrationNumber}/enrollment' is assumed.
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Using mock JKUAT portal verifyEnrollmentStatus.');
+        const enrollmentData = await this.mockVerifyEnrollment(registrationNumber);
+        return {
+          isEnrolled: enrollmentData.isActive,
+          academicYear: enrollmentData.academicYear,
+          semester: enrollmentData.semester,
+          status: enrollmentData.status
+        };
+      }
+
+      const response = await axios.get(`${this.baseURL}/students/${registrationNumber}/enrollment`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` },
+        timeout: this.timeout
+      });
+
+      if (response.data) {
+        return {
+          isEnrolled: response.data.isEnrolled,
+          academicYear: response.data.academicYear,
+          semester: response.data.semester,
+          status: response.data.status
+        };
+      } else {
+        throw new Error('Invalid response from JKUAT enrollment endpoint');
+      }
     } catch (error) {
       console.error('Error verifying enrollment:', error.message);
       return {
         isEnrolled: false,
-        error: error.message
+        error: 'Could not verify enrollment status from JKUAT portal.'
       };
     }
   }
@@ -111,7 +159,7 @@ class JKUATPortalService {
       'EN111-0001/2021': {
         registrationNumber: 'EN111-0001/2021',
         name: 'John Doe Kamau',
-        email: 'john.kamau@student.jkuat.ac.ke',
+        email: 'john.kamau@students.jkuat.ac.ke',
         phone: '+254712345678',
         course: 'Bachelor of Science in Computer Science',
         college: 'COETEC',
@@ -125,7 +173,7 @@ class JKUATPortalService {
       'EN111-0002/2022': {
         registrationNumber: 'EN111-0002/2022',
         name: 'Jane Mary Wanjiku',
-        email: 'jane.wanjiku@student.jkuat.ac.ke',
+        email: 'jane.wanjiku@students.jkuat.ac.ke',
         phone: '+254723456789',
         course: 'Bachelor of Science in Information Technology',
         college: 'COETEC',
@@ -139,7 +187,7 @@ class JKUATPortalService {
       'BT111-0003/2023': {
         registrationNumber: 'BT111-0003/2023',
         name: 'Peter Mwangi Kiprotich',
-        email: 'peter.kiprotich@student.jkuat.ac.ke',
+        email: 'peter.kiprotich@students.jkuat.ac.ke',
         phone: '+254734567890',
         course: 'Bachelor of Science in Biotechnology',
         college: 'CONAS',

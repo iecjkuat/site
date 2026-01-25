@@ -123,6 +123,10 @@ body.support-page::before {
     cursor: pointer !important;
 }
 
+.dropdown-toggle.active {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
 .dropdown-arrow {
     margin-left: 0.25rem !important;
     font-size: 0.75rem !important;
@@ -140,8 +144,19 @@ body.support-page::before {
     min-width: 200px !important;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
     display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(-10px) !important;
+    transition: all 0.3s ease !important;
     z-index: 99999 !important;
     isolation: isolate !important;
+}
+
+.dropdown-menu.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
 }
 
 .dropdown-menu[style*="display: block"] {
@@ -181,6 +196,27 @@ body.support-page::before {
     width: 16px !important;
     text-align: center !important;
     color: #8b5cf6 !important;
+}
+
+/* Dropdown Sections */
+.dropdown-section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 0.5rem 0 !important;
+}
+
+.dropdown-section:last-child {
+    border-bottom: none !important;
+}
+
+.dropdown-section-title {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin-bottom: 0.25rem !important;
 }
 
 /* Notification Bell */
@@ -578,6 +614,11 @@ body.support-page::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.faq-header:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .faq-question {
@@ -596,6 +637,13 @@ body.support-page::before {
 .faq-content {
     display: none;
     padding: 0 1.5rem 1.5rem;
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.faq-content.show {
+    display: block !important;
+    opacity: 1 !important;
 }
 
 .faq-answer {

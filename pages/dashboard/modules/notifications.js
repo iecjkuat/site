@@ -24,10 +24,36 @@ class NotificationManager {
         };
     }
 
+    // Security: Prevent XSS attacks
+    escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // Initialize the notifications list
-    loadNotifications() {
+    async loadNotifications() {
         const container = document.getElementById('notificationsList');
         if (!container) return;
+
+        try {
+            // Try API first
+            const response = await fetch('/api/notifications');
+            if (response.ok) {
+                const data = await response.json();
+                this.notifications = data.notifications || [];
+                console.log('✅ Notifications loaded from API:', this.notifications.length);
+            } else {
+                throw new Error('API failed');
+            }
+        } catch (error) {
+            console.log('⚠️ API unavailable, using mock notifications');
+            this.notifications = this.getMockNotifications();
+        }
 
         if (!this.notifications.length) {
             this.showEmptyNotifications(container);
@@ -60,11 +86,10 @@ class NotificationManager {
 
     createNotificationItem(notification) {
         const item = document.createElement('div');
-        item.className = `notification-item p-3 rounded-lg border transition-all cursor-pointer ${
-            notification.read
+        item.className = `notification-item p-3 rounded-lg border transition-all cursor-pointer ${notification.read
                 ? 'bg-white/5 border-white/10 opacity-70'
                 : 'bg-white/10 border-white/20'
-        }`;
+            }`;
 
         if (!notification.read) {
             item.classList.add('border-l-4', this.priorityBorderColors[notification.priority] || 'border-l-blue-500');
@@ -81,20 +106,20 @@ class NotificationManager {
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-start justify-between gap-2 mb-1">
-                        <h4 class="text-white text-sm font-semibold">${notification.title}</h4>
+                        <h4 class="text-white text-sm font-semibold">${this.escapeHtml(notification.title)}</h4>
                         <div class="flex items-center gap-2">
                             ${this.getPriorityBadge(notification.priority)}
                             ${!notification.read ? '<div class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>' : ''}
                         </div>
                     </div>
-                    <p class="text-gray-300 text-xs mb-2 leading-relaxed">${notification.message}</p>
+                    <p class="text-gray-300 text-xs mb-2 leading-relaxed">${this.escapeHtml(notification.message)}</p>
                     <div class="flex items-center justify-between">
                         <span class="text-gray-400 text-xs">${timeAgo}</span>
                         ${notification.actionText ? `
                             <button class="notification-action text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors" 
-                                    data-action-url="${notification.actionUrl || ''}" 
+                                    data-action-url="${this.escapeHtml(notification.actionUrl || '')}" 
                                     data-notification-id="${notification.id}">
-                                ${notification.actionText}
+                                ${this.escapeHtml(notification.actionText)}
                             </button>
                         ` : ''}
                     </div>
@@ -240,6 +265,44 @@ class NotificationManager {
 
         const random = sample[Math.floor(Math.random() * sample.length)];
         this.addNotification(random);
+    }
+
+    getMockNotifications() {
+        return [
+            {
+                id: 'notif-1',
+                type: 'event',
+                priority: 'urgent',
+                title: 'Hackathon Registration Closing Soon',
+                message: 'Only 2 days left to register for the Annual Innovation Hackathon. Don\'t miss out!',
+                createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                read: false,
+                actionText: 'Register Now',
+                actionUrl: '/events'
+            },
+            {
+                id: 'notif-2',
+                type: 'payment',
+                priority: 'warning',
+                title: 'Membership Fee Due',
+                message: 'Your annual membership fee of KSh 1,500 is due in 5 days.',
+                createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+                read: false,
+                actionText: 'Pay Now',
+                actionUrl: '/payment'
+            },
+            {
+                id: 'notif-3',
+                type: 'project',
+                priority: 'info',
+                title: 'Project Submission Approved',
+                message: 'Your project "Smart Campus System" has been approved for the incubation program.',
+                createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                read: true,
+                actionText: 'View Project',
+                actionUrl: '/projects'
+            }
+        ];
     }
 }
 

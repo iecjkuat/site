@@ -61,6 +61,30 @@ router.get('/categories', async (req, res) => {
     }
 });
 
+// Get recent public feedback (Whispers)
+router.get('/public', async (req, res) => {
+    try {
+        const { limit = 6 } = req.query;
+
+        // Fetch recent feedback to display on the wall
+        // We fetching only title, comment, and timestamp
+        const { data: feedback, error } = await supabase
+            .from('event_feedback')
+            .select('id, title, comment, created_at, is_anonymous')
+            .order('created_at', { ascending: false })
+            .limit(parseInt(limit));
+
+        if (error) throw error;
+
+        res.json({
+            feedback: feedback || []
+        });
+    } catch (error) {
+        console.error('Error fetching public feedback:', error);
+        res.status(500).json({ message: 'Failed to fetch public feedback' });
+    }
+});
+
 // Get event feedback (public view)
 router.get('/event/:eventId', [
     param('eventId').isUUID().withMessage('Valid event ID required')
@@ -147,20 +171,18 @@ router.get('/event/:eventId', [
     }
 });
 
-// Submit event feedback
+// Submit event or general feedback
 router.post('/submit', [
-    body('eventId').isUUID().withMessage('Valid event ID required'),
+    body('eventId').optional().isUUID().withMessage('Valid event ID required'),
     body('overallRating').optional().isInt({ min: 1, max: 5 }).withMessage('Overall rating must be 1-5'),
-    body('contentRating').optional().isInt({ min: 1, max: 5 }).withMessage('Content rating must be 1-5'),
-    body('organizationRating').optional().isInt({ min: 1, max: 5 }).withMessage('Organization rating must be 1-5'),
-    body('venueRating').optional().isInt({ min: 1, max: 5 }).withMessage('Venue rating must be 1-5'),
     body('title').optional().isLength({ max: 200 }).withMessage('Title must be 200 characters or less'),
     body('comment').optional().isLength({ max: 2000 }).withMessage('Comment must be 2000 characters or less'),
-    body('suggestions').optional().isLength({ max: 2000 }).withMessage('Suggestions must be 2000 characters or less'),
-    body('isAnonymous').optional().isBoolean().withMessage('Anonymous flag must be boolean'),
-    body('wouldRecommend').optional().isBoolean().withMessage('Recommendation flag must be boolean'),
-    body('categoryRatings').optional().isArray().withMessage('Category ratings must be an array')
+    body('isAnonymous').optional().isBoolean().withMessage('Anonymous flag must be boolean')
 ], async (req, res) => {
+    const fs = require('fs');
+    const logFile = path.resolve(__dirname, '../feedback_debug.log');
+    const log = (msg) => { try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { } };
+    log('--- START REQUEST ---');
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -168,7 +190,7 @@ router.post('/submit', [
         }
 
         const {
-            eventId,
+            eventId = null,
             overallRating,
             contentRating,
             organizationRating,
@@ -184,15 +206,8 @@ router.post('/submit', [
         // Get user ID from auth (if not anonymous)
         const userId = isAnonymous ? null : req.user?.id;
 
-        // Validate that at least one piece of feedback is provided
-        if (!overallRating && !comment && !suggestions) {
-            return res.status(400).json({ 
-                message: 'At least one of overall rating, comment, or suggestions is required' 
-            });
-        }
-
-        // Check if user already submitted feedback for this event (prevent duplicates)
-        if (userId) {
+        // Check if user already submitted feedback for this event (prevent duplicates) - ONLY IF EVENT ID EXISTS
+        if (eventId && userId) {
             const { data: existingFeedback } = await supabase
                 .from('event_feedback')
                 .select('id')
@@ -201,15 +216,15 @@ router.post('/submit', [
                 .single();
 
             if (existingFeedback) {
-                return res.status(400).json({ 
-                    message: 'You have already submitted feedback for this event' 
+                return res.status(400).json({
+                    message: 'You have already submitted feedback for this event'
                 });
             }
         }
 
-        // Verify user attended the event (if not anonymous)
+        // Verify user attended the event (if not anonymous and event exists)
         let attendanceConfirmed = false;
-        if (userId) {
+        if (eventId && userId) {
             const { data: attendance } = await supabase
                 .from('event_attendees')
                 .select('attendance_status')
@@ -220,22 +235,55 @@ router.post('/submit', [
             attendanceConfirmed = attendance?.attendance_status === 'attended';
         }
 
+        // Resolve General Feedback Event if eventId is null
+        let finalEventId = eventId;
+        if (!finalEventId) {
+            try {
+                // Try to find existing 'General Feedback' event
+                const { data: generalEvent } = await supabase
+                    .from('events')
+                    .select('id')
+                    .eq('title', 'General Feedback')
+                    .single();
+
+                if (generalEvent) {
+                    finalEventId = generalEvent.id;
+                } else {
+                    // Create if not exists
+                    const { data: newEvent, error: createError } = await supabase
+                        .from('events')
+                        .insert({
+                            title: 'General Feedback',
+                            description: 'Container for general anonymous feedback/whispers.',
+                            date: '2099-12-31',
+                            start_date: '2099-12-31T00:00:00Z',
+                            end_date: '2099-12-31T23:59:59Z',
+                            location: 'Online',
+                            status: 'published'
+                        })
+                        .select()
+                        .single();
+
+                    if (createError) throw createError;
+                    finalEventId = newEvent.id;
+                }
+            } catch (err) {
+                console.error('Error resolving General Feedback event:', err);
+                return res.status(500).json({ error: 'System configuration error' });
+            }
+        }
+
         // Insert main feedback
         const { data: feedback, error: feedbackError } = await supabase
             .from('event_feedback')
             .insert({
-                event_id: eventId,
-                user_id: userId,
-                overall_rating: overallRating,
-                content_rating: contentRating,
-                organization_rating: organizationRating,
-                venue_rating: venueRating,
-                title: title,
-                comment: comment,
-                suggestions: suggestions,
-                is_anonymous: isAnonymous,
-                attendance_confirmed: attendanceConfirmed,
-                would_recommend: wouldRecommend
+                event_id: finalEventId,
+                user_id: isAnonymous ? null : userId,
+                rating: overallRating || 5, // Map to 'rating'
+                suggestions: comment || suggestions || '', // Map main comment to 'suggestions'
+                // Removed fields that don't exist in live DB:
+                // overall_rating, content_rating, organization_rating, venue_rating, 
+                // title, is_anonymous, attendance_confirmed, would_recommend
             })
             .select()
             .single();
@@ -269,7 +317,8 @@ router.post('/submit', [
 
     } catch (error) {
         console.error('Error submitting feedback:', error);
-        res.status(500).json({ message: 'Failed to submit feedback' });
+        log(`[CATCH] ${error.message}\n${error.stack}`);
+        res.status(500).json({ message: `Failed to submit feedback: ${error.message}` });
     }
 });
 
@@ -499,7 +548,7 @@ router.put('/:feedbackId', [
 
         const updateData = {};
         const allowedFields = [
-            'overallRating', 'contentRating', 'organizationRating', 
+            'overallRating', 'contentRating', 'organizationRating',
             'venueRating', 'title', 'comment', 'suggestions', 'wouldRecommend'
         ];
 
@@ -549,7 +598,7 @@ router.put('/:feedbackId', [
     }
 });
 
-// Delete feedback (only by original author)
+// Delete feedback (only by original author or admin)
 router.delete('/:feedbackId', [
     param('feedbackId').isUUID().withMessage('Valid feedback ID required')
 ], async (req, res) => {
@@ -561,16 +610,23 @@ router.delete('/:feedbackId', [
 
         const { feedbackId } = req.params;
         const userId = req.user?.id;
+        const userRole = req.user?.role;
 
         if (!userId) {
             return res.status(401).json({ message: 'Authentication required' });
         }
 
-        const { error } = await supabase
+        let query = supabase
             .from('event_feedback')
             .delete()
-            .eq('id', feedbackId)
-            .eq('user_id', userId);
+            .eq('id', feedbackId);
+
+        // If not admin, restrict to own feedback
+        if (userRole !== 'admin' && userRole !== 'superadmin') {
+            query = query.eq('user_id', userId);
+        }
+
+        const { error } = await query;
 
         if (error) {
             throw error;

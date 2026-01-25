@@ -20,14 +20,14 @@ class SettingsManager {
     // Tab switching functionality
     initTabs() {
         console.log('🔧 Initializing tabs...');
-        
+
         const tabs = document.querySelectorAll('.settings-tab');
         console.log('Found tabs:', tabs.length);
-        
+
         tabs.forEach((tab, index) => {
             const tabName = tab.getAttribute('data-tab');
             console.log(`Setting up tab ${index}: ${tabName}`);
-            
+
             tab.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -35,7 +35,7 @@ class SettingsManager {
                 this.switchTab(tabName);
             });
         });
-        
+
         // Initialize first tab
         setTimeout(() => {
             this.switchTab('profile');
@@ -45,24 +45,24 @@ class SettingsManager {
 
     switchTab(tabName) {
         console.log('🔄 Switching to:', tabName);
-        
+
         // Hide all sections
         document.querySelectorAll('.settings-section').forEach(section => {
             section.classList.remove('active');
         });
-        
+
         // Remove active from all tabs
         document.querySelectorAll('.settings-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        
+
         // Show target section
         const targetSection = document.getElementById(tabName);
         if (targetSection) {
             targetSection.classList.add('active');
             console.log('✅ Showed section:', tabName);
         }
-        
+
         // Activate clicked tab
         const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
         if (activeTab) {
@@ -74,15 +74,34 @@ class SettingsManager {
     // Load user data
     async loadUserData() {
         try {
-            // Use mock data or create fallback
+            // Try API first
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const response = await fetch('/api/auth/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    this.currentUser = userData.user || userData;
+                    console.log('✅ User data loaded from API');
+                    this.populateUserData();
+                    return;
+                }
+            }
+
+            // Fallback to mock data
+            console.log('⚠️ API unavailable, using mock data');
             if (window.settingsMockData) {
                 this.currentUser = window.settingsMockData.getUserProfile();
             } else {
                 this.currentUser = this.createFallbackUser();
             }
-            
+
             this.populateUserData();
-            console.log('✅ User data loaded');
+            console.log('✅ User data loaded from fallback');
         } catch (error) {
             console.error('❌ Error loading user data:', error);
             this.showToast('Error loading user data', 'error');
@@ -131,9 +150,9 @@ class SettingsManager {
         // Display elements
         this.setTextContent('displayName', this.currentUser.name);
         this.setTextContent('displayEmail', this.currentUser.email);
-        
+
         // Profile initials
-        const initials = this.currentUser.name ? 
+        const initials = this.currentUser.name ?
             this.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'JD';
         this.setTextContent('profileInitials', initials);
     }
@@ -196,7 +215,7 @@ class SettingsManager {
         // Edit profile toggle
         const editProfileBtn = document.getElementById('editProfileBtn');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
-        
+
         if (editProfileBtn) {
             editProfileBtn.addEventListener('click', () => this.toggleEditMode(true));
         }
@@ -207,7 +226,7 @@ class SettingsManager {
         // Profile picture change
         const changePictureBtn = document.getElementById('changePictureBtn');
         const profilePictureInput = document.getElementById('profilePictureInput');
-        
+
         if (changePictureBtn && profilePictureInput) {
             changePictureBtn.addEventListener('click', () => profilePictureInput.click());
             profilePictureInput.addEventListener('change', (e) => this.handleProfilePictureChange(e));
@@ -229,7 +248,7 @@ class SettingsManager {
         const generateCardBtn = document.getElementById('generateCardBtn');
         const renewMembershipBtn = document.getElementById('renewMembershipBtn');
         const payMembershipBtn = document.getElementById('payMembershipBtn');
-        
+
         if (generateCardBtn) {
             generateCardBtn.addEventListener('click', () => this.handleGenerateMembershipCard());
         }
@@ -243,7 +262,7 @@ class SettingsManager {
         // Payment actions
         const exportPaymentsBtn = document.getElementById('exportPaymentsBtn');
         const loadMorePayments = document.getElementById('loadMorePayments');
-        
+
         if (exportPaymentsBtn) {
             exportPaymentsBtn.addEventListener('click', () => this.handleExportPayments());
         }
@@ -261,7 +280,7 @@ class SettingsManager {
         const paymentFilter = document.getElementById('paymentFilter');
         const activityFilter = document.getElementById('activityFilter');
         const activityPeriod = document.getElementById('activityPeriod');
-        
+
         if (paymentFilter) {
             paymentFilter.addEventListener('change', (e) => this.handlePaymentFilter(e.target.value));
         }
@@ -285,13 +304,34 @@ class SettingsManager {
         const profileData = Object.fromEntries(formData);
 
         try {
-            // Update current user data
+            // Try API first
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Profile updated via API');
+                    this.currentUser = { ...this.currentUser, ...profileData };
+                    this.populateUserData();
+                    this.showToast('Profile updated successfully', 'success');
+                    this.toggleEditMode(false);
+                    return;
+                }
+            }
+
+            // Fallback to local update
+            console.log('⚠️ API unavailable, updating locally');
             this.currentUser = { ...this.currentUser, ...profileData };
-            
-            // Update display elements
             this.populateUserData();
-            
-            this.showToast('Profile updated successfully', 'success');
+            this.showToast('Profile updated successfully (local)', 'success');
             this.toggleEditMode(false);
         } catch (error) {
             console.error('❌ Error updating profile:', error);
@@ -350,7 +390,7 @@ class SettingsManager {
 
         const formData = new FormData(e.target);
         const preferences = {};
-        
+
         // Get all checkbox values
         for (let [key, value] of formData.entries()) {
             preferences[key] = value === 'on';
@@ -367,7 +407,7 @@ class SettingsManager {
     async handleAppPreferencesUpdate(e) {
         e.preventDefault();
         console.log('⚙️ Updating app preferences...');
-        
+
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
 
@@ -384,7 +424,7 @@ class SettingsManager {
     async handlePrivacyUpdate(e) {
         e.preventDefault();
         console.log('🔒 Updating privacy settings...');
-        
+
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
 
@@ -399,7 +439,7 @@ class SettingsManager {
             reader.onload = (event) => {
                 const profilePicture = document.getElementById('profilePicture');
                 const profileInitials = document.getElementById('profileInitials');
-                
+
                 if (profilePicture && profileInitials) {
                     profilePicture.style.backgroundImage = `url(${event.target.result})`;
                     profilePicture.style.backgroundSize = 'cover';
@@ -416,14 +456,14 @@ class SettingsManager {
         const form = document.getElementById('profileForm');
         const editBtn = document.getElementById('editProfileBtn');
         const cancelBtn = document.getElementById('cancelEditBtn');
-        
+
         if (form) {
             const inputs = form.querySelectorAll('input, textarea, select');
             inputs.forEach(input => {
                 input.disabled = !enabled;
             });
         }
-        
+
         if (editBtn) editBtn.style.display = enabled ? 'none' : 'inline-flex';
         if (cancelBtn) cancelBtn.style.display = enabled ? 'inline-flex' : 'none';
     }
@@ -431,7 +471,7 @@ class SettingsManager {
     async handleExportData() {
         try {
             console.log('📥 Exporting user data...');
-            
+
             const exportData = {
                 profile: this.currentUser,
                 exportDate: new Date().toISOString(),
@@ -478,19 +518,19 @@ class SettingsManager {
 
         try {
             console.log('🗑️ Starting account deletion process...');
-            
+
             // Step 5: Show deletion progress
             this.showDeletionProgress();
-            
+
             // Step 6: Clear all user data
             await this.clearUserData();
-            
+
             // Step 7: Make API call to delete account (simulated)
             await this.deleteAccountFromServer();
-            
+
             // Step 8: Final cleanup and redirect
             await this.finalizeAccountDeletion();
-            
+
         } catch (error) {
             console.error('❌ Error deleting account:', error);
             this.showToast('Error occurred during account deletion. Please contact support.', 'error');
@@ -735,10 +775,10 @@ class SettingsManager {
         setTimeout(() => {
             // Clear any remaining data
             this.currentUser = null;
-            
+
             // Show goodbye message
             alert('Your account has been successfully deleted. Thank you for being part of the JKUAT Innovation Club. You will now be redirected to the home page.');
-            
+
             // Redirect to home page
             window.location.href = '/';
         }, 2000);
@@ -771,7 +811,7 @@ class SettingsManager {
 
     handleExportPayments() {
         console.log('📥 Exporting payment history...');
-        
+
         const paymentData = {
             payments: [
                 {
@@ -806,7 +846,7 @@ class SettingsManager {
     handleLoadMorePayments() {
         console.log('📄 Loading more payments...');
         this.showToast('Loading more payment records...', 'info');
-        
+
         // Simulate loading more payments
         setTimeout(() => {
             this.showToast('No more payments to load', 'info');
@@ -816,7 +856,7 @@ class SettingsManager {
     handleLoadMoreActivity() {
         console.log('📄 Loading more activity...');
         this.showToast('Loading more activity records...', 'info');
-        
+
         // Simulate loading more activity
         setTimeout(() => {
             this.showToast('No more activity to load', 'info');
@@ -846,11 +886,11 @@ class SettingsManager {
         const generateCardBtn = document.getElementById('generateCardBtn');
         const renewMembershipBtn = document.getElementById('renewMembershipBtn');
         const payMembershipBtn = document.getElementById('payMembershipBtn');
-        
+
         // For active members, show generate card and renew options
         if (generateCardBtn) generateCardBtn.style.display = 'inline-flex';
         if (renewMembershipBtn) renewMembershipBtn.style.display = 'inline-flex';
-        
+
         // Hide pay button for active members (show for pending/expired)
         if (payMembershipBtn) payMembershipBtn.style.display = 'none';
     }
@@ -878,9 +918,9 @@ class SettingsManager {
                 ${message}
             </div>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         // Remove after 3 seconds
         setTimeout(() => {
             toast.remove();
@@ -903,17 +943,17 @@ function debugTabs() {
     console.log('=== TAB DEBUG ===');
     const tabs = document.querySelectorAll('.settings-tab');
     const sections = document.querySelectorAll('.settings-section');
-    
+
     console.log('Tabs found:', tabs.length);
     tabs.forEach((tab, i) => {
         console.log(`Tab ${i}:`, tab.getAttribute('data-tab'), tab.classList.toString());
     });
-    
+
     console.log('Sections found:', sections.length);
     sections.forEach((section, i) => {
         console.log(`Section ${i}:`, section.id, section.classList.toString());
     });
-    
+
     console.log('Current user:', settingsManager?.currentUser);
     console.log('=== END DEBUG ===');
 }
@@ -922,7 +962,7 @@ function debugTabs() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 DOM ready, initializing SettingsManager...');
     settingsManager = new SettingsManager();
-    
+
     // Make sure functions are available globally
     window.settingsManager = settingsManager;
 });
@@ -932,7 +972,7 @@ window.switchTab = switchTab;
 window.debugTabs = debugTabs;
 
 // Global functions for onclick handlers
-window.downloadReceipt = function(paymentId) {
+window.downloadReceipt = function (paymentId) {
     console.log('📄 Downloading receipt for:', paymentId);
     if (settingsManager) {
         settingsManager.showToast('Receipt download started', 'success');

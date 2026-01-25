@@ -40,23 +40,38 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ message: 'Server error' });
     }
 
-    // Get attendee counts for each event
-    const eventsWithStats = await Promise.all(
-      (events || []).map(async (event) => {
-        const { count: attendeeCount } = await supabase
-          .from('event_attendees')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', event.id);
+    let eventsWithStats = events || [];
 
-        return {
-          ...event,
-          stats: {
-            totalAttendees: attendeeCount || 0,
-            spotsRemaining: event.max_attendees ? event.max_attendees - (attendeeCount || 0) : null
-          }
-        };
-      })
-    );
+    if (events && events.length > 0) {
+      const eventIds = events.map(e => e.id);
+
+      // Fetch all attendee counts in a single query
+      const { data: attendeeCounts, error: countError } = await supabase
+        .from('event_attendees')
+        .select('event_id, count:id.count')
+        .in('event_id', eventIds)
+        .groupBy('event_id');
+
+      if (countError) {
+        console.error('Error fetching attendee counts:', countError);
+        // Continue without stats if this fails
+      }
+
+      if (attendeeCounts) {
+        const countsMap = new Map(attendeeCounts.map(c => [c.event_id, c.count]));
+
+        eventsWithStats = events.map(event => {
+          const attendeeCount = countsMap.get(event.id) || 0;
+          return {
+            ...event,
+            stats: {
+              totalAttendees: attendeeCount,
+              spotsRemaining: event.max_attendees ? event.max_attendees - attendeeCount : null
+            }
+          };
+        });
+      }
+    }
 
     res.json({
       events: eventsWithStats,

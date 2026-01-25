@@ -17,11 +17,22 @@ class DashboardPage {
         this.init();
     }
 
+    // Security: Prevent XSS attacks
+    escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     cacheDOMElements() {
         const ids = [
-            'userName','userName2','userEmail','userRole','memberSince',
-            'studentId','course','yearOfStudy','college','myProjects','upcomingEventsGrid',
-            'paymentHistory','recentActivity','miniCalendar','payMembershipBtn','generateCardBtn'
+            'userName', 'userName2', 'userEmail', 'userRole', 'memberSince',
+            'studentId', 'course', 'yearOfStudy', 'college', 'myProjects', 'upcomingEventsGrid',
+            'paymentHistory', 'recentActivity', 'miniCalendar', 'payMembershipBtn', 'generateCardBtn'
         ];
 
         ids.forEach(id => {
@@ -46,9 +57,21 @@ class DashboardPage {
     }
 
     async loadUserData() {
+        console.log('🔍 Loading user data...');
+
         // Wait for auth to be ready
         await this.waitForAuth();
-        this.currentUser = window.dashboardAuth?.getUser() || this.getUserFromStorage();
+
+        // Check what's in localStorage
+        const storageUser = this.getUserFromStorage();
+        console.log('📦 User from localStorage:', storageUser);
+
+        // Check dashboardAuth
+        const authUser = window.dashboardAuth?.getUser();
+        console.log('🔐 User from dashboardAuth:', authUser);
+
+        this.currentUser = authUser || storageUser;
+        console.log('👤 Final currentUser:', this.currentUser);
 
         if (!this.currentUser) {
             console.warn('⚠️ No user data found, using mock for development');
@@ -65,6 +88,7 @@ class DashboardPage {
                 course: 'Computer Science',
                 yearOfStudy: 2
             };
+            console.log('🎭 Using mock user:', this.currentUser);
         }
 
         this.renderUserProfile();
@@ -88,13 +112,16 @@ class DashboardPage {
     renderUserProfile() {
         const user = this.currentUser;
         const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+        
+        // Extract first name for welcome message
+        const firstName = user.firstName || user.name?.split(' ')[0] || displayName.split(' ')[0] || 'User';
 
         // Text fields
-        this.dom.userName && (this.dom.userName.textContent = displayName);
-        this.dom.userName2 && (this.dom.userName2.textContent = displayName);
+        this.dom.userName && (this.dom.userName.textContent = firstName); // Show first name only in welcome
+        this.dom.userName2 && (this.dom.userName2.textContent = displayName); // Show full name in profile card
         this.dom.userEmail && (this.dom.userEmail.textContent = user.email || '');
         this.dom.userRole && (this.dom.userRole.textContent = user.role || 'Member');
-        this.dom.memberSince && (this.dom.memberSince.textContent = new Date(user.created_at).toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'}));
+        this.dom.memberSince && (this.dom.memberSince.textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
         this.dom.studentId && (this.dom.studentId.textContent = user.studentId || 'N/A');
         this.dom.course && (this.dom.course.textContent = user.course || 'N/A');
         this.dom.yearOfStudy && (this.dom.yearOfStudy.textContent = user.yearOfStudy ? `Year ${user.yearOfStudy}` : 'N/A');
@@ -115,41 +142,26 @@ class DashboardPage {
                 if (el.tagName === 'IMG') {
                     el.src = user.profilePicture;
                     el.alt = displayName;
-                    el.style.display = 'block';
+                    el.classList.remove('hidden');
                 } else {
-                    el.style.backgroundImage = `url(${user.profilePicture})`;
-                    el.style.backgroundSize = 'cover';
-                    el.style.backgroundPosition = 'center';
+                    el.classList.add('user-avatar-image');
+                    el.style.backgroundImage = `url(${user.profilePicture})`; // background-image is generally allowed in many CSPs, but let's be safe if needed
                     el.innerHTML = '';
                 }
             } else {
                 const initials = this.getInitials(displayName);
                 if (el.tagName === 'IMG') {
-                    el.style.display = 'none';
+                    el.classList.add('hidden');
                     let initialsEl = el.nextElementSibling;
                     if (!initialsEl || !initialsEl.classList.contains('initials-avatar')) {
                         initialsEl = document.createElement('div');
                         initialsEl.className = 'initials-avatar';
-                        initialsEl.style.cssText = `
-                            width: 100%; height: 100%; 
-                            background: linear-gradient(135deg, #10b981, #059669);
-                            border-radius: 50%; display: flex; 
-                            align-items: center; justify-content: center;
-                            color: white; font-weight: bold;
-                            font-size: 1.2em;
-                        `;
                         el.parentNode.insertBefore(initialsEl, el.nextSibling);
                     }
                     initialsEl.textContent = initials;
                 } else {
                     el.textContent = initials;
-                    el.style.backgroundImage = 'none';
-                    el.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                    el.style.color = 'white';
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.justifyContent = 'center';
-                    el.style.fontWeight = 'bold';
+                    el.classList.add('avatar-bg-green');
                 }
             }
         });
@@ -187,9 +199,9 @@ class DashboardPage {
     // ======= Stats =======
     updateStats() {
         const stats = {
-            eventsAttended: Math.floor(Math.random()*15)+1,
+            eventsAttended: Math.floor(Math.random() * 15) + 1,
             myProjects: this.projectManager.projects.length,
-            accountBalance: Math.floor(Math.random()*5000)
+            accountBalance: Math.floor(Math.random() * 5000)
         };
 
         Object.entries(stats).forEach(([id, value]) => {
@@ -199,26 +211,17 @@ class DashboardPage {
         });
     }
 
-    // ======= Modals =======
     createModal(contentHtml) {
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
-        Object.assign(modal.style, {
-            position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: '9999',
-        });
         modal.innerHTML = contentHtml;
 
+        // Use {once: true} to prevent memory leaks
         modal.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => modal.remove());
+            btn.addEventListener('click', () => modal.remove(), { once: true });
         });
 
-        modal.addEventListener('click', e => e.target === modal && modal.remove());
+        modal.addEventListener('click', e => e.target === modal && modal.remove(), { once: true });
         document.body.appendChild(modal);
 
         return modal;
@@ -226,22 +229,22 @@ class DashboardPage {
 
     showProjectModal() {
         const modalHtml = `
-            <div class="modal-content" style="max-width:500px;width:90%;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-                    <h2 style="color:white;font-weight:700;font-size:1.5rem;margin:0;">Create Project</h2>
+            <div class="modal-content modal-inner">
+                <div class="modal-header-flex">
+                    <h2>Create Project</h2>
                     <button class="btn-glass btn-icon close-modal"><i class="fas fa-times"></i></button>
                 </div>
                 <form id="createProjectForm">
-                    <div style="margin-bottom:1.5rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Project Title *</label>
+                    <div class="form-group-mb">
+                        <label class="form-label-block">Project Title *</label>
                         <input type="text" name="title" class="glass-input" placeholder="Enter project title" required>
                     </div>
-                    <div style="margin-bottom:1.5rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Description *</label>
+                    <div class="form-group-mb">
+                        <label class="form-label-block">Description *</label>
                         <textarea name="description" class="glass-input" rows="3" placeholder="Describe your project..." required></textarea>
                     </div>
-                    <div style="margin-bottom:2rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Category</label>
+                    <div class="form-group-mb">
+                        <label class="form-label-block">Category</label>
                         <select name="category" class="glass-input">
                             <option value="Web Development">Web Development</option>
                             <option value="Mobile App">Mobile App</option>
@@ -250,7 +253,7 @@ class DashboardPage {
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                    <div class="modal-footer-flex">
                         <button type="button" class="btn btn-outline close-modal">Cancel</button>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i>Create Project</button>
                     </div>
@@ -273,35 +276,35 @@ class DashboardPage {
         });
     }
 
-    showMentorRequestModal(project=null) {
-        const projectContext = project ? `for "${project.title}"` : '';
+    showMentorRequestModal(project = null) {
+        const projectContext = project ? `for "${this.escapeHtml(project.title)}"` : '';
         const modalHtml = `
-            <div class="modal-content" style="max-width:500px;width:90%;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-                    <h2 style="color:white;font-weight:700;font-size:1.5rem;margin:0;">Request Mentor ${projectContext}</h2>
+            <div class="modal-content modal-inner">
+                <div class="modal-header-flex">
+                    <h2>Request Mentor ${projectContext}</h2>
                     <button class="btn-glass btn-icon close-modal"><i class="fas fa-times"></i></button>
                 </div>
                 <form id="mentorRequestForm">
-                    <div style="margin-bottom:1.5rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Project/Area *</label>
-                        <input type="text" name="project" class="glass-input" placeholder="What do you need help with?" value="${project?.title||''}" required>
+                    <div class="form-group-mb">
+                        <label class="form-label-block">Project/Area *</label>
+                        <input type="text" name="project" class="glass-input" placeholder="What do you need help with?" value="${this.escapeHtml(project?.title || '')}" required>
                     </div>
-                    <div style="margin-bottom:1.5rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Expertise Needed</label>
+                    <div class="form-group-mb">
+                        <label class="form-label-block">Expertise Needed</label>
                         <select name="expertise" class="glass-input">
-                            <option value="Web Development" ${project?.category==='Web Development'?'selected':''}>Web Development</option>
-                            <option value="Mobile App" ${project?.category==='Mobile App'?'selected':''}>Mobile App</option>
-                            <option value="AI/ML" ${project?.category==='AI/ML'?'selected':''}>AI/ML</option>
-                            <option value="IoT" ${project?.category==='IoT'?'selected':''}>IoT</option>
-                            <option value="Business" ${project?.category==='Business'?'selected':''}>Business</option>
+                            <option value="Web Development" ${project?.category === 'Web Development' ? 'selected' : ''}>Web Development</option>
+                            <option value="Mobile App" ${project?.category === 'Mobile App' ? 'selected' : ''}>Mobile App</option>
+                            <option value="AI/ML" ${project?.category === 'AI/ML' ? 'selected' : ''}>AI/ML</option>
+                            <option value="IoT" ${project?.category === 'IoT' ? 'selected' : ''}>IoT</option>
+                            <option value="Business" ${project?.category === 'Business' ? 'selected' : ''}>Business</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <div style="margin-bottom:2rem;">
-                        <label style="display:block;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:0.5rem;">Additional Details</label>
+                    <div class="form-group-mb-lg">
+                        <label class="form-label-block">Additional Details</label>
                         <textarea name="details" class="glass-input" rows="3" placeholder="Describe your needs..."></textarea>
                     </div>
-                    <div style="display:flex;gap:1rem;justify-content:flex-end;">
+                    <div class="modal-footer-flex">
                         <button type="button" class="btn btn-outline close-modal">Cancel</button>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Request</button>
                     </div>
@@ -363,15 +366,16 @@ class DashboardPage {
     loadMockData() {
         this.notificationManager.loadNotifications();
         this.projectManager.loadProjects();
-        this.loadUpcomingEvents?.();
-        this.loadPaymentHistory?.();
-        this.loadRecentActivity?.();
-        this.loadMiniCalendar?.();
+        // Note: The following methods are not implemented yet
+        // this.loadUpcomingEvents?.();
+        // this.loadPaymentHistory?.();
+        // this.loadRecentActivity?.();
+        // this.loadMiniCalendar?.();
     }
 
     initializeNotificationSystem() {
         this.startNotificationPolling();
-        if (['localhost','127.0.0.1'].includes(window.location.hostname)) this.addDemoNotificationButton();
+        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) this.addDemoNotificationButton();
     }
 
     startNotificationPolling() {
@@ -380,12 +384,8 @@ class DashboardPage {
 
     addDemoNotificationButton() {
         const btn = document.createElement('button');
-        btn.className = 'btn btn-outline btn-sm';
+        btn.className = 'btn btn-outline btn-sm demo-notif-btn';
         btn.innerHTML = '<i class="fas fa-bell"></i> Demo Notification';
-        btn.style.position = 'fixed';
-        btn.style.bottom = '20px';
-        btn.style.right = '20px';
-        btn.style.zIndex = '9999';
         btn.addEventListener('click', () => this.notificationManager.simulateNotification());
         document.body.appendChild(btn);
     }

@@ -50,7 +50,7 @@ class PaymentPage {
     sanitizePhoneNumber(phone) {
         // Remove all non-digits and validate format
         const cleaned = phone.replace(/\D/g, '');
-        
+
         // Handle different input formats
         if (cleaned.length === 10 && cleaned.startsWith('0')) {
             // Convert 0XXXXXXXXX to 254XXXXXXXXX
@@ -96,22 +96,24 @@ class PaymentPage {
                 // Allow digits, spaces, dashes, and plus signs for user convenience
                 value = value.replace(/[^\d\s\-\+]/g, '');
                 e.target.value = value;
-                
+
                 // Update placeholder based on input
                 if (value.length === 0) {
                     e.target.placeholder = '0XXXXXXXXX or 254XXXXXXXXX';
                 }
             });
-            
+
             phoneInput.addEventListener('blur', (e) => {
                 const value = e.target.value.trim();
                 if (value) {
                     try {
                         const sanitized = this.sanitizePhoneNumber(value);
                         e.target.value = sanitized;
-                        e.target.style.borderColor = 'var(--success-color)';
+                        e.target.classList.add('border-success');
+                        e.target.classList.remove('border-error');
                     } catch (error) {
-                        e.target.style.borderColor = 'var(--error-color)';
+                        e.target.classList.add('border-error');
+                        e.target.classList.remove('border-success');
                         this.showMessage(error.message, 'warning');
                     }
                 }
@@ -200,6 +202,14 @@ class PaymentPage {
             }
         });
 
+        // Print receipt button
+        const printBtn = document.getElementById('printReceiptBtn');
+        if (printBtn) {
+            printBtn.addEventListener('click', () => {
+                window.print();
+            });
+        }
+
         // Payment form submission
         const paymentForm = document.getElementById('paymentForm');
         if (paymentForm) {
@@ -215,12 +225,12 @@ class PaymentPage {
             // Load events with timeout
             const eventsController = new AbortController();
             const eventsTimeout = setTimeout(() => eventsController.abort(), 5000);
-            
+
             const eventsResponse = await fetch('/api/events?status=upcoming&limit=10', {
                 signal: eventsController.signal
             });
             clearTimeout(eventsTimeout);
-            
+
             if (eventsResponse.ok) {
                 const eventsData = await eventsResponse.json();
                 this.availableEvents = eventsData.events || [];
@@ -229,12 +239,12 @@ class PaymentPage {
             // Load merchandise with timeout
             const merchController = new AbortController();
             const merchTimeout = setTimeout(() => merchController.abort(), 5000);
-            
+
             const merchResponse = await fetch('/api/merchandise?available=true', {
                 signal: merchController.signal
             });
             clearTimeout(merchTimeout);
-            
+
             if (merchResponse.ok) {
                 const merchData = await merchResponse.json();
                 this.availableMerchandise = merchData.items || [];
@@ -308,27 +318,27 @@ class PaymentPage {
 
     showServiceDetails(serviceType) {
         // Hide service selection
-        document.getElementById('serviceSelection').style.display = 'none';
-        
+        document.getElementById('serviceSelection').classList.add('hidden');
+
         // Show service details
-        document.getElementById('serviceDetails').style.display = 'block';
+        document.getElementById('serviceDetails').classList.remove('hidden');
 
         // Update service header
         this.updateServiceHeader(serviceType);
-        
+
         // Generate service options
         this.generateServiceOptions(serviceType);
-        
+
         // Generate quick amounts
         this.generateQuickAmounts(serviceType);
-        
+
         // Update summary
         this.updateSummary();
     }
 
     updateServiceHeader(serviceType) {
         const serviceConfig = this.getServiceConfig(serviceType);
-        
+
         document.getElementById('selectedServiceIcon').innerHTML = `<i class="${serviceConfig.icon}"></i>`;
         document.getElementById('selectedServiceIcon').className = `selected-service-icon ${serviceType}`;
         document.getElementById('selectedServiceTitle').textContent = serviceConfig.title;
@@ -435,10 +445,10 @@ class PaymentPage {
                 optionsContainer.querySelectorAll('.service-option').forEach(opt => {
                     opt.classList.remove('selected');
                 });
-                
+
                 // Add active class to selected option
                 option.classList.add('selected');
-                
+
                 // Update selected service data
                 this.selectedServiceData = {
                     option: option.dataset.option,
@@ -448,13 +458,13 @@ class PaymentPage {
                     title: option.querySelector('h4').textContent,
                     description: option.querySelector('p').textContent
                 };
-                
+
                 // Update amount if fixed
                 if (this.selectedServiceData.amount > 0) {
                     document.getElementById('paymentAmount').value = this.selectedServiceData.amount;
                     this.updateAmount(this.selectedServiceData.amount);
                 }
-                
+
                 this.updateSummary();
             });
         });
@@ -498,10 +508,10 @@ class PaymentPage {
                 quickAmountsContainer.querySelectorAll('.quick-amount-btn').forEach(b => {
                     b.classList.remove('active');
                 });
-                
+
                 // Add active class to clicked button
                 btn.classList.add('active');
-                
+
                 // Update amount
                 const amount = parseFloat(btn.dataset.amount);
                 document.getElementById('paymentAmount').value = amount;
@@ -517,17 +527,17 @@ class PaymentPage {
 
     updateSummary() {
         const serviceConfig = this.getServiceConfig(this.selectedService);
-        
+
         document.getElementById('summaryService').textContent = serviceConfig.title;
         document.getElementById('summaryItem').textContent = this.selectedServiceData?.title || 'Not selected';
         document.getElementById('summaryTotal').textContent = `KSh ${this.currentAmount.toLocaleString()}`;
-        
+
         // Update button amount
         const btnAmount = document.getElementById('btnAmount');
         if (btnAmount) {
             btnAmount.textContent = `KSh ${this.currentAmount.toLocaleString()}`;
         }
-        
+
         // Update progress and enable/disable payment button
         this.updateProgress();
     }
@@ -536,20 +546,20 @@ class PaymentPage {
         const steps = document.querySelectorAll('.progress-step');
         const paymentBtn = document.getElementById('paymentSubmitBtn');
         const instructions = document.getElementById('instructionsList');
-        
+
         // Reset all steps
         steps.forEach(step => {
             step.classList.remove('completed', 'active');
         });
-        
+
         let currentStep = 1;
         let isComplete = false;
         let nextInstructions = [];
-        
+
         // Step 1: Service selected (always completed when in details view)
         if (steps[0]) steps[0].classList.add('completed');
         currentStep = 2;
-        
+
         // Step 2: Service option selected
         if (this.selectedServiceData) {
             if (steps[1]) steps[1].classList.add('completed');
@@ -558,7 +568,7 @@ class PaymentPage {
             if (steps[1]) steps[1].classList.add('active');
             nextInstructions.push('Select a service option above');
         }
-        
+
         // Step 3: Amount entered
         if (this.currentAmount > 0 && this.selectedServiceData) {
             if (steps[2]) steps[2].classList.add('completed');
@@ -567,7 +577,7 @@ class PaymentPage {
             if (steps[2]) steps[2].classList.add('active');
             nextInstructions.push('Enter the payment amount');
         }
-        
+
         // Step 4: Payment details (check based on selected method)
         let paymentDetailsComplete = false;
         if (this.selectedPaymentMethod === 'mpesa') {
@@ -577,13 +587,13 @@ class PaymentPage {
             const cardNumber = document.getElementById('cardNumber');
             const expiry = document.getElementById('expiryDate');
             const cvv = document.getElementById('cvv');
-            paymentDetailsComplete = cardNumber?.value.length >= 16 && 
-                                   expiry?.value.length >= 5 && 
-                                   cvv?.value.length >= 3;
+            paymentDetailsComplete = cardNumber?.value.length >= 16 &&
+                expiry?.value.length >= 5 &&
+                cvv?.value.length >= 3;
         } else if (this.selectedPaymentMethod === 'bank') {
             paymentDetailsComplete = true; // Bank transfer doesn't require form input
         }
-        
+
         if (paymentDetailsComplete && this.currentAmount > 0 && this.selectedServiceData) {
             if (steps[3]) steps[3].classList.add('completed');
             currentStep = 5;
@@ -595,14 +605,14 @@ class PaymentPage {
                 nextInstructions.push('Fill in your card details');
             }
         }
-        
+
         // Step 5: Ready for payment
         if (paymentDetailsComplete && this.currentAmount > 0 && this.selectedServiceData) {
             if (steps[4]) steps[4].classList.add('active');
             isComplete = true;
             nextInstructions = ['Click the payment button to proceed with STK push'];
         }
-        
+
         // Update payment button
         if (paymentBtn) {
             paymentBtn.disabled = !isComplete;
@@ -612,14 +622,14 @@ class PaymentPage {
                 paymentBtn.querySelector('.btn-text').textContent = 'Complete Steps Above';
             }
         }
-        
+
         // Update instructions
         if (instructions) {
             if (nextInstructions.length === 0) {
                 nextInstructions = ['All steps completed! Ready to process payment.'];
             }
-            
-            instructions.innerHTML = nextInstructions.map(instruction => 
+
+            instructions.innerHTML = nextInstructions.map(instruction =>
                 `<li>${instruction}</li>`
             ).join('');
         }
@@ -636,10 +646,10 @@ class PaymentPage {
 
         // Show/hide payment forms
         document.querySelectorAll('.payment-form').forEach(form => {
-            form.style.display = 'none';
+            form.classList.add('hidden');
         });
-        document.getElementById(`${method}Form`).style.display = 'block';
-        
+        document.getElementById(`${method}Form`).classList.remove('hidden');
+
         // Update progress
         this.updateProgress();
     }
@@ -647,21 +657,21 @@ class PaymentPage {
     // ===== PAYMENT PROCESSING =====
     async handlePayment(e) {
         e.preventDefault();
-        
+
         try {
             // Security checks
             this.checkRateLimit();
-            
+
             if (!this.selectedServiceData) {
                 throw new Error('Please select a service option');
             }
-            
+
             if (this.currentAmount <= 0) {
                 throw new Error('Please enter a valid amount');
             }
 
             const formData = new FormData(e.target);
-            
+
             // Validate based on selected payment method
             let phoneNumber = '';
             if (this.selectedPaymentMethod === 'mpesa') {
@@ -671,9 +681,9 @@ class PaymentPage {
                 }
                 phoneNumber = this.sanitizePhoneNumber(phoneInput);
             }
-            
+
             const amount = this.validateAmount(this.currentAmount);
-            
+
             const paymentData = {
                 service: this.selectedService,
                 serviceData: this.selectedServiceData,
@@ -695,7 +705,7 @@ class PaymentPage {
             this.setPaymentButtonLoading(true);
 
             let response;
-            
+
             if (this.selectedPaymentMethod === 'mpesa') {
                 response = await this.processMpesaPayment(paymentData);
             } else {
@@ -770,15 +780,15 @@ class PaymentPage {
 
     showProcessingSection(paymentData) {
         // Hide service details
-        document.getElementById('serviceDetails').style.display = 'none';
-        
+        document.getElementById('serviceDetails').classList.add('hidden');
+
         // Show processing section
-        document.getElementById('processingSection').style.display = 'block';
-        
+        document.getElementById('processingSection').classList.remove('hidden');
+
         // Update processing details
         document.getElementById('transactionRef').textContent = paymentData.transactionRef || paymentData.checkoutRequestId;
         document.getElementById('processingAmount').textContent = `KSh ${this.currentAmount.toLocaleString()}`;
-        
+
         this.showMessage('M-Pesa prompt sent to your phone!', 'info');
     }
 
@@ -790,14 +800,14 @@ class PaymentPage {
             try {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 10000);
-                
+
                 const response = await fetch(`/api/payment-service/status/${paymentId}`, {
                     signal: controller.signal
                 });
                 clearTimeout(timeout);
-                
+
                 const data = await response.json();
-                
+
                 if (data.status === 'completed') {
                     this.showSuccessSection({
                         transactionId: data.transactionReference,
@@ -832,19 +842,19 @@ class PaymentPage {
 
     showSuccessSection(response) {
         // Hide other sections
-        document.getElementById('serviceDetails').style.display = 'none';
-        document.getElementById('processingSection').style.display = 'none';
-        
+        document.getElementById('serviceDetails').classList.add('hidden');
+        document.getElementById('processingSection').classList.add('hidden');
+
         // Show success section
-        document.getElementById('successSection').style.display = 'block';
-        
+        document.getElementById('successSection').classList.remove('hidden');
+
         // Update success details
         document.getElementById('successTransactionId').textContent = response.transactionId || 'N/A';
         document.getElementById('successAmount').textContent = `KSh ${this.currentAmount.toLocaleString()}`;
         document.getElementById('successService').textContent = this.selectedServiceData?.title || 'Payment';
-        
+
         this.showMessage('Payment successful!', 'success');
-        
+
         // Clear sensitive data after success
         this.clearSensitiveData();
     }
@@ -853,8 +863,8 @@ class PaymentPage {
         const statusIndicator = document.querySelector('.status-indicator');
         if (statusIndicator) {
             statusIndicator.innerHTML = `
-                <i class="fas fa-times-circle" style="color: #ef4444;"></i>
-                <span style="color: #ef4444;">${this.escapeHtml(message)}</span>
+                <i class="fas fa-times-circle text-error"></i>
+                <span class="text-error">${this.escapeHtml(message)}</span>
             `;
         }
         this.showMessage(message, 'error');
@@ -864,8 +874,8 @@ class PaymentPage {
         const statusIndicator = document.querySelector('.status-indicator');
         if (statusIndicator) {
             statusIndicator.innerHTML = `
-                <i class="fas fa-clock" style="color: #f59e0b;"></i>
-                <span style="color: #f59e0b;">Payment verification timed out. Please check your M-Pesa messages.</span>
+                <i class="fas fa-clock text-warning"></i>
+                <span class="text-warning">Payment verification timed out. Please check your M-Pesa messages.</span>
             `;
         }
         this.showMessage('Payment verification timed out', 'warning');
@@ -873,13 +883,13 @@ class PaymentPage {
 
     showServiceSelection() {
         // Show service selection
-        document.getElementById('serviceSelection').style.display = 'block';
-        
+        document.getElementById('serviceSelection').classList.remove('hidden');
+
         // Hide other sections
-        document.getElementById('serviceDetails').style.display = 'none';
-        document.getElementById('processingSection').style.display = 'none';
-        document.getElementById('successSection').style.display = 'none';
-        
+        document.getElementById('serviceDetails').classList.add('hidden');
+        document.getElementById('processingSection').classList.add('hidden');
+        document.getElementById('successSection').classList.add('hidden');
+
         // Reset state
         this.selectedService = null;
         this.selectedServiceData = null;
@@ -908,7 +918,7 @@ class PaymentPage {
     // ===== UTILITY METHODS =====
     generatePaymentDescription() {
         if (!this.selectedServiceData) return 'JKUAT Innovation Club Payment';
-        
+
         return `${this.selectedServiceData.title} - JKUAT Innovation Club`;
     }
 
@@ -917,7 +927,7 @@ class PaymentPage {
         if (window.jkuatApp?.user?.id) {
             return window.jkuatApp.user.id;
         }
-        
+
         // Fallback for development
         return '550e8400-e29b-41d4-a716-446655440000';
     }
@@ -955,7 +965,7 @@ class PaymentPage {
                 icon: 'fas fa-plus-circle'
             }
         };
-        
+
         return configs[serviceType] || configs.custom;
     }
 

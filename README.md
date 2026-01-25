@@ -23,7 +23,7 @@ A comprehensive web platform for the JKUAT Innovation Club, designed to manage m
 - Activity participation logs
 - Notification preferences
 
-### 🏛️ Leadership & Governance
+### 🏛️ Leadership & Meetings
 - Executive Committee directory
 - Meeting management (AGM/SGM)
 - Voting portal for elections
@@ -57,10 +57,10 @@ A comprehensive web platform for the JKUAT Innovation Club, designed to manage m
 
 - **Backend**: Node.js, Express.js
 - **Database**: PostgreSQL (via Supabase)
-- **Frontend**: HTML5, CSS3 (Tailwind CSS), JavaScript
-- **Authentication**: JWT (JSON Web Tokens)
-- **Email**: Nodemailer
-- **Payments**: M-Pesa API integration
+- **Frontend**: HTML5, CSS3, JavaScript (served via `pages` directory)
+- **Authentication**: JWT (JSON Web Tokens), Supabase Auth
+- **Email**: NodeMailer (or other, via `utils/email.js`)
+- **Payments**: M-Pesa API integration (placeholder)
 - **Security**: Helmet, CORS, Rate limiting
 
 ## Installation
@@ -68,7 +68,7 @@ A comprehensive web platform for the JKUAT Innovation Club, designed to manage m
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd jkuat-innovation-club
+   cd IEC
    ```
 
 2. **Install dependencies**
@@ -77,32 +77,39 @@ A comprehensive web platform for the JKUAT Innovation Club, designed to manage m
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file in the root directory:
+   Create a `.env` file in the root directory by copying `.env.example`:
    ```env
-   PORT=3000
-   MONGODB_URI=mongodb://localhost:27017/jkuat-innovation-club
+   # Supabase credentials
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_service_role_key
+
+   # JWT Secret for signing tokens
    JWT_SECRET=your_jwt_secret_key_here
-   EMAIL_HOST=smtp.gmail.com
+   
+   # Server port
+   PORT=3000
+
+   # Other credentials for email, payments, etc.
+   EMAIL_HOST=smtp.example.com
    EMAIL_PORT=587
-   EMAIL_USER=your_email@gmail.com
+   EMAIL_USER=your_email@example.com
    EMAIL_PASS=your_email_password
-   MPESA_CONSUMER_KEY=your_mpesa_consumer_key
-   MPESA_CONSUMER_SECRET=your_mpesa_consumer_secret
-   MPESA_SHORTCODE=your_mpesa_shortcode
-   MPESA_PASSKEY=your_mpesa_passkey
    ```
 
-4. **Start MongoDB**
-   Make sure MongoDB is running on your system.
+4. **Set up Supabase**
+   - Create a new project on [Supabase](https://supabase.com/).
+   - In the SQL Editor, run the schema files located in the `supabase/` directory in numerical order.
+   - Get the Project URL and the `service_role` key from your Supabase project's API settings and add them to your `.env` file.
 
 5. **Run the application**
    ```bash
-   # Development mode
+   # Development mode (if a script is configured, e.g., using nodemon)
    npm run dev
    
    # Production mode
    npm start
    ```
+   If no `dev` script is available, use `npm start`.
 
 6. **Access the application**
    Open your browser and navigate to `http://localhost:3000`
@@ -110,35 +117,25 @@ A comprehensive web platform for the JKUAT Innovation Club, designed to manage m
 ## Project Structure
 
 ```
-jkuat-innovation-club/
-├── models/              # Database models
-│   ├── User.js         # User/Member model
-│   ├── Event.js        # Events model
-│   ├── Idea.js         # Ideas model
-│   ├── Payment.js      # Payments model
-│   ├── Leadership.js   # Leadership positions
-│   └── Notification.js # Notifications model
-├── routes/             # API routes
-│   ├── auth.js         # Authentication routes
-│   ├── members.js      # Member management
-│   ├── events.js       # Event management
-│   ├── ideas.js        # Ideas management
-│   ├── payments.js     # Payment processing
-│   ├── leadership.js   # Leadership management
-│   └── notifications.js # Notification system
-├── middleware/         # Custom middleware
-│   └── auth.js         # Authentication middleware
-├── utils/              # Utility functions
-│   └── email.js        # Email utilities
-├── public/             # Static files
-│   ├── css/           # Stylesheets
-│   ├── js/            # Client-side JavaScript
-│   ├── images/        # Images and assets
-│   ├── index.html     # Landing page
-│   └── dashboard.html # Dashboard page
-├── server.js          # Main server file
-├── package.json       # Dependencies and scripts
-└── README.md          # This file
+IEC/
+├── api/                  # Serverless functions for Vercel
+├── docs/                 # Project documentation
+├── lib/                  # Core libraries (e.g., supabase client)
+├── middleware/           # Express middleware (auth, validation)
+├── pages/                # Frontend HTML, CSS, and JS files
+│   ├── admin/
+│   ├── dashboard/
+│   └── ...
+├── routes/               # Backend API routes for Express
+│   ├── auth.js
+│   ├── events.js
+│   └── ...
+├── scripts/              # Utility and migration scripts
+├── supabase/             # SQL files for database schema
+├── utils/                # Utility functions (email, etc.)
+├── server.js             # Main Express server entry point
+├── package.json          # Dependencies and scripts
+└── README.md             # This file
 ```
 
 ## API Endpoints
@@ -146,34 +143,20 @@ jkuat-innovation-club/
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
-- `GET /api/auth/verify-email/:token` - Verify email
+- `POST /api/auth/verify-email` - Verify email
 - `POST /api/auth/forgot-password` - Request password reset
-- `POST /api/auth/reset-password/:token` - Reset password
-
-### Members
-- `GET /api/members/profile` - Get user profile
-- `PUT /api/members/profile` - Update profile
-- `GET /api/members/directory` - Get member directory
-- `GET /api/members/:id` - Get member by ID
+- `POST /api/auth/reset-password` - Reset password
 
 ### Events
 - `GET /api/events` - Get all events
-- `POST /api/events` - Create new event
+- `POST /api/events` - Create new event (Admin)
 - `GET /api/events/:id` - Get event details
 - `POST /api/events/:id/register` - Register for event
-- `POST /api/events/:id/attendance` - Mark attendance
 
 ### Ideas
 - `GET /api/ideas` - Get all ideas
 - `POST /api/ideas` - Submit new idea
 - `GET /api/ideas/:id` - Get idea details
-- `POST /api/ideas/:id/like` - Like/unlike idea
-- `POST /api/ideas/:id/comments` - Add comment
-
-### Payments
-- `POST /api/payments/mpesa/initiate` - Initiate M-Pesa payment
-- `GET /api/payments/status/:paymentId` - Check payment status
-- `GET /api/payments/history` - Get payment history
 
 ## Features Implementation Status
 
@@ -182,7 +165,6 @@ jkuat-innovation-club/
 - Basic member management
 - Event creation and management
 - Ideas submission and management
-- Payment processing framework
 - Leadership directory
 - Notification system
 - Dashboard interface
@@ -192,11 +174,11 @@ jkuat-innovation-club/
 - Email notification system
 - File upload functionality
 - Advanced search and filtering
+- JKUAT Portal Integration (currently mocked)
 
 ### 📋 Planned
 - Mobile app development
 - Advanced analytics
-- Integration with external APIs
 - Automated testing suite
 
 ## Contributing
@@ -209,36 +191,33 @@ jkuat-innovation-club/
 
 ## Security Considerations
 
-- All passwords are hashed using bcrypt
-- JWT tokens for secure authentication
-- Input validation and sanitization
-- Rate limiting to prevent abuse
-- CORS configuration for cross-origin requests
-- Helmet for security headers
+- All passwords are managed by Supabase Auth.
+- JWT tokens for secure session management.
+- Input validation and sanitization.
+- Rate limiting to prevent abuse.
+- CORS configuration for cross-origin requests.
+- Helmet for security headers.
+- RLS (Row Level Security) in Supabase should be enabled for production.
 
 ## Deployment
 
 ### Environment Setup
-1. Set up MongoDB database
-2. Configure email service (Gmail/SendGrid)
-3. Set up M-Pesa developer account
-4. Configure environment variables
-5. Set up SSL certificates for HTTPS
+1. Set up a Supabase project and run the SQL schema scripts.
+2. Configure environment variables for Supabase, JWT, email, etc.
+3. Ensure all services (like email) are configured for production use.
 
 ### Production Deployment
+The project is configured for deployment on Vercel.
 ```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Deploy to Vercel
+vercel
 ```
+The `vercel.json` file configures the build to use the Node.js runtime for the Express server.
 
 ## Support
 
 For support and questions:
 - Email: info@jkuatinnovation.club
-- Phone: +254 700 000 000
 - GitHub Issues: Create an issue in this repository
 
 ## License

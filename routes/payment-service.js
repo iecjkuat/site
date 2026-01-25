@@ -331,8 +331,19 @@ router.post('/lipana/callback', async (req, res) => {
         console.log('Lipana webhook received:', callbackData);
         console.log('Signature:', signature);
 
-        // TODO: Verify webhook signature for security
-        // You should verify the X-Lipana-Signature header to ensure the webhook is from Lipana
+        // Verify webhook signature for security (if signature is provided)
+        if (signature && process.env.LIPANA_WEBHOOK_SECRET) {
+            const crypto = require('crypto');
+            const expectedSignature = crypto
+                .createHmac('sha256', process.env.LIPANA_WEBHOOK_SECRET)
+                .update(JSON.stringify(callbackData))
+                .digest('hex');
+            
+            if (signature !== expectedSignature) {
+                console.error('Invalid webhook signature');
+                return res.status(401).json({ message: 'Invalid signature' });
+            }
+        }
         
         // Extract payment information from Lipana webhook
         const { event, data } = callbackData;

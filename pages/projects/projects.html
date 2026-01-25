@@ -1,45 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'sha256-zWpgYAIYQbPPXWm2cNN92poH5pezyiyARDiGUjuqbFU=' 'sha256-NDlUvbI0C5AhCY+uu2OxERc8b/zOZ5m/C3vpWbghG1M=' 'sha256-bo9/JAqIUBMiSHL1O4oiO3U5UHaFxqbagFBryI+8mwU='; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
     <title>Projects & Innovation - JKUAT Innovation and Entrepreneurship Club</title>
-    
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
+            crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
     <!-- Stylesheets -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="projects.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
+          crossorigin="anonymous" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="projects.css?v=2025010804" rel="stylesheet">
     
-    <!-- Meta Tags -->
-    <meta name="description" content="Explore active projects, submit new ideas, join hackathons, and access incubation programs at JKUAT Innovation Club.">
+    <!-- Override conflicting navbar styles -->
+    <style>
+        /* Remove conflicting navbar styles to allow global navbar */
+        .glass-nav,
+        .nav-club-header,
+        .nav-club-title,
+        .nav-links-container,
+        .nav-center,
+        .nav-auth,
+        .nav-dropdown,
+        .dropdown-toggle,
+        .dropdown-menu,
+        .dropdown-item,
+        .glass-button,
+        .notification-bell {
+            display: none !important;
+        }
+        
+        /* Ensure body has correct padding for global navbar */
+        body {
+            padding-top: 140px !important;
+        }
+    </style>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Explore active projects, submit new ideas, join hackathons, and access incubation programs at JKUAT Innovation Club.">
     <meta name="keywords" content="JKUAT, projects, innovation, hackathons, incubation, collaboration, startups">
+    <meta name="author" content="JKUAT Innovation Club">
 </head>
+
 <body class="bg-pattern">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+    <!-- Shared navbar will be automatically inserted here -->
 
     <!-- Hero Section -->
-    <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
-        <div class="container" style="text-align: center; max-width: 1200px; margin: 0 auto;">
-            
+    <section class="hero-section-padding">
+        <div class="container hero-content-container">
+
             <!-- Badge -->
-            <div style="display: inline-flex; align-items: center; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50px; padding: 0.5rem 1.5rem; margin-bottom: 2rem; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.05em;">
-                <span class="pulse" style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 0.75rem;"></span>
+            <div class="hero-badge-container">
+                <span class="pulse hero-badge-dot"></span>
                 PROJECTS & INNOVATION
             </div>
-            
+
             <!-- Main Heading -->
             <h1 class="gradient-text hero-heading">
                 Build the <span class="gradient-text accent">Future</span>
             </h1>
-            
+
             <!-- Subtitle -->
             <p class="hero-subtitle">
-                Transform your ideas into reality through <strong style="color: #10b981;">collaborative projects, hackathons, and innovation challenges</strong>
+                Transform your ideas into reality through <strong class="hero-accent-text">collaborative projects,
+                    hackathons, and innovation challenges</strong>
             </p>
-            
+
             <!-- Quick Actions -->
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 3rem;">
+            <div class="quick-actions-container">
                 <button id="submitProjectBtn" class="btn btn-primary btn-lg">
                     <i class="fas fa-lightbulb"></i>Submit Project Idea
                 </button>
@@ -50,23 +97,23 @@
                     <i class="fas fa-trophy"></i>View Hackathons
                 </button>
             </div>
-            
+
             <!-- Stats -->
             <div class="stats-container">
                 <div>
-                    <div id="activeProjectsCount" class="stat-number" style="color: #10b981;">24</div>
+                    <div id="activeProjectsCount" class="stat-number stat-number-active">24</div>
                     <div class="stat-label">Active Projects</div>
                 </div>
                 <div>
-                    <div id="completedProjectsCount" class="stat-number" style="color: #3b82f6;">67</div>
+                    <div id="completedProjectsCount" class="stat-number stat-number-completed">67</div>
                     <div class="stat-label">Completed Projects</div>
                 </div>
                 <div>
-                    <div id="incubationProjectsCount" class="stat-number" style="color: #f59e0b;">8</div>
+                    <div id="incubationProjectsCount" class="stat-number stat-number-incubation">8</div>
                     <div class="stat-label">In Incubation</div>
                 </div>
                 <div>
-                    <div id="hackathonsCount" class="stat-number" style="color: #8b5cf6;">12</div>
+                    <div id="hackathonsCount" class="stat-number stat-number-hackathons">12</div>
                     <div class="stat-label">Hackathons Hosted</div>
                 </div>
             </div>
@@ -74,19 +121,23 @@
     </section>
 
     <!-- Navigation Tabs -->
-    <section class="tab-buttons-section" style="position: relative; z-index: 10;">
+    <section class="tab-buttons-section tab-section-relative">
         <div class="container">
-            <div class="tab-buttons-container">
-                <button class="tab-btn active" data-tab="showcase">
+            <div class="tab-buttons-container" role="tablist" aria-label="Project sections">
+                <button class="tab-btn active" data-tab="showcase" role="tab" aria-selected="true"
+                    aria-controls="showcase-tab" id="tab-showcase">
                     <i class="fas fa-rocket"></i> Project Showcase
                 </button>
-                <button class="tab-btn" data-tab="submit">
+                <button class="tab-btn" data-tab="submit" role="tab" aria-selected="false" aria-controls="submit-tab"
+                    id="tab-submit">
                     <i class="fas fa-plus"></i> Submit Project
                 </button>
-                <button class="tab-btn" data-tab="hackathons">
+                <button class="tab-btn" data-tab="hackathons" role="tab" aria-selected="false"
+                    aria-controls="hackathons-tab" id="tab-hackathons">
                     <i class="fas fa-trophy"></i> Hackathons
                 </button>
-                <button class="tab-btn" data-tab="incubation">
+                <button class="tab-btn" data-tab="incubation" role="tab" aria-selected="false"
+                    aria-controls="incubation-tab" id="tab-incubation">
                     <i class="fas fa-seedling"></i> Incubation
                 </button>
             </div>
@@ -94,26 +145,31 @@
     </section>
 
     <!-- Tab Content -->
-    <section style="padding: 0 0 4rem 0; position: relative; z-index: 10;">
+    <section class="tab-content-section">
         <div class="container">
-            
+
             <!-- Project Showcase Tab -->
-            <div id="showcase-tab" class="tab-content active">
+            <div id="showcase-tab" class="tab-content active" role="tabpanel" aria-labelledby="tab-showcase">
                 <!-- Filters -->
-                <div class="filter-buttons-container">
-                    <button class="filter-btn active" data-filter="all">All Projects</button>
-                    <button class="filter-btn" data-filter="innovation">Innovation</button>
-                    <button class="filter-btn" data-filter="research">Research</button>
-                    <button class="filter-btn" data-filter="startup">Startup</button>
-                    <button class="filter-btn" data-filter="hackathon">Hackathon</button>
+                <div class="filter-buttons-container" role="group" aria-label="Project filters">
+                    <button class="filter-btn active" data-filter="all" aria-label="Filter by all projects">All
+                        Projects</button>
+                    <button class="filter-btn" data-filter="innovation"
+                        aria-label="Filter by innovation projects">Innovation</button>
+                    <button class="filter-btn" data-filter="research"
+                        aria-label="Filter by research projects">Research</button>
+                    <button class="filter-btn" data-filter="startup"
+                        aria-label="Filter by startup projects">Startup</button>
+                    <button class="filter-btn" data-filter="hackathon"
+                        aria-label="Filter by hackathon projects">Hackathon</button>
                 </div>
 
                 <!-- Projects Grid -->
-                <div id="projectsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+                <div id="projectsGrid" class="projects-grid">
                     <!-- Projects will be loaded here -->
-                    <div style="text-align: center; grid-column: 1 / -1;">
-                        <div style="display: inline-flex; align-items: center; gap: 0.75rem; color: rgba(255, 255, 255, 0.8);">
-                            <i class="fas fa-spinner fa-spin" style="color: #10b981;"></i>
+                    <div class="loading-container">
+                        <div class="loading-wrapper">
+                            <i class="fas fa-spinner fa-spin loading-spinner-green"></i>
                             Loading projects...
                         </div>
                     </div>
@@ -121,63 +177,70 @@
             </div>
 
             <!-- Submit Project Tab -->
-            <div id="submit-tab" class="tab-content" style="display: none;">
-                <div style="max-width: 800px; margin: 0 auto;">
-                    <div class="glass-card" style="padding: 3rem;">
-                        <h2 style="color: white; font-weight: 700; font-size: 2rem; margin-bottom: 1rem; text-align: center;">Submit Your Project Idea</h2>
-                        <p style="color: rgba(255, 255, 255, 0.8); text-align: center; margin-bottom: 2rem;">Share your innovative project idea with the community and find collaborators to bring it to life.</p>
-                        
+            <div id="submit-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-submit">
+                <div class="form-max-width">
+                    <div class="glass-card p-12">
+                        <h2 class="form-title-main">Submit Your Project Idea</h2>
+                        <p class="form-subtitle-main">Share your
+                            innovative project idea with the community and find collaborators to bring it to life.</p>
+
                         <!-- Success/Error Messages -->
-                        <div id="submissionMessage" style="display: none; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center;">
+                        <div id="submissionMessage" class="submission-msg-container">
                             <span id="messageText"></span>
                         </div>
-                        
+
                         <form id="projectSubmissionForm">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div class="form-grid-2col">
                                 <div>
-                                    <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Project Title *</label>
-                                    <input type="text" id="projectTitle" required style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;" placeholder="Enter your project title">
+                                    <label class="form-label">Project Title *</label>
+                                    <input type="text" id="projectTitle" required class="glass-input"
+                                        placeholder="Enter your project title">
                                 </div>
                                 <div>
-                                    <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Category *</label>
-                                    <select id="projectCategory" required style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;">
-                                        <option value="" style="background: #1f2937; color: white;">Select Category</option>
-                                        <option value="Innovation" style="background: #1f2937; color: white;">Innovation</option>
-                                        <option value="Research" style="background: #1f2937; color: white;">Research</option>
-                                        <option value="Startup" style="background: #1f2937; color: white;">Startup</option>
-                                        <option value="Hackathon" style="background: #1f2937; color: white;">Hackathon Project</option>
+                                    <label class="form-label">Category *</label>
+                                    <select id="projectCategory" required class="glass-input">
+                                        <option value="" class="select-option-bg">Select Category</option>
+                                        <option value="Innovation" class="select-option-bg">Innovation</option>
+                                        <option value="Research" class="select-option-bg">Research</option>
+                                        <option value="Startup" class="select-option-bg">Startup</option>
+                                        <option value="Hackathon" class="select-option-bg">Hackathon Project</option>
                                     </select>
                                 </div>
                             </div>
-                            
-                            <div style="margin-bottom: 1.5rem;">
-                                <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Project Description *</label>
-                                <textarea id="projectDescription" required rows="4" style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; resize: vertical;" placeholder="Describe your project idea, its purpose, and potential impact..."></textarea>
+
+                            <div class="mb-6">
+                                <label class="form-label">Project Description *</label>
+                                <textarea id="projectDescription" required rows="4"
+                                    class="glass-input form-textarea-resizable"
+                                    placeholder="Describe your project idea, its purpose, and potential impact..."></textarea>
                             </div>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+                            <div class="form-grid-2col">
                                 <div>
-                                    <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Expected Duration</label>
-                                    <input type="text" id="projectDuration" style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;" placeholder="e.g., 3 months">
+                                    <label class="form-label">Expected Duration</label>
+                                    <input type="text" id="projectDuration" class="glass-input"
+                                        placeholder="e.g., 3 months">
                                 </div>
                                 <div>
-                                    <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Budget Estimate (KSh)</label>
-                                    <input type="number" id="projectBudget" style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;" placeholder="0">
+                                    <label class="form-label">Budget Estimate (KSh)</label>
+                                    <input type="number" id="projectBudget" class="glass-input" placeholder="0">
                                 </div>
                             </div>
-                            
-                            <div style="margin-bottom: 1.5rem;">
-                                <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Technologies/Skills Needed</label>
-                                <input type="text" id="projectTechnologies" style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white;" placeholder="e.g., React, Python, Machine Learning, UI/UX Design">
-                                <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">Separate multiple technologies with commas</small>
+
+                            <div class="mb-6">
+                                <label class="form-label">Technologies/Skills Needed</label>
+                                <input type="text" id="projectTechnologies" class="glass-input"
+                                    placeholder="e.g., React, Python, Machine Learning, UI/UX Design">
+                                <small class="form-help-text">Separate multiple technologies with commas</small>
                             </div>
-                            
-                            <div style="margin-bottom: 2rem;">
-                                <label style="color: white; font-weight: 600; margin-bottom: 0.5rem; display: block;">Project Objectives</label>
-                                <textarea id="projectObjectives" rows="3" style="width: 100%; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; resize: vertical;" placeholder="List the main objectives and goals of your project..."></textarea>
+
+                            <div class="mb-8">
+                                <label class="form-label">Project Objectives</label>
+                                <textarea id="projectObjectives" rows="3" class="glass-input form-textarea-resizable"
+                                    placeholder="List the main objectives and goals of your project..."></textarea>
                             </div>
-                            
-                            <div style="text-align: center;">
+
+                            <div class="text-center">
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-paper-plane"></i>Submit Project Idea
                                 </button>
@@ -188,17 +251,18 @@
             </div>
 
             <!-- Hackathons Tab -->
-            <div id="hackathons-tab" class="tab-content" style="display: none;">
-                <div style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="color: white; font-weight: 700; font-size: 2rem; margin-bottom: 1rem;">Upcoming Hackathons & Challenges</h2>
-                    <p style="color: rgba(255, 255, 255, 0.8); max-width: 600px; margin: 0 auto;">Join exciting hackathons and innovation challenges to test your skills and win amazing prizes.</p>
+            <div id="hackathons-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-hackathons">
+                <div class="text-center mb-12">
+                    <h2 class="form-title-main">Upcoming Hackathons & Challenges</h2>
+                    <p class="form-subtitle-main max-w-2xl mx-auto">Join exciting
+                        hackathons and innovation challenges to test your skills and win amazing prizes.</p>
                 </div>
-                
-                <div id="hackathonsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+
+                <div id="hackathonsGrid" class="projects-grid">
                     <!-- Hackathons will be loaded here -->
-                    <div style="text-align: center; grid-column: 1 / -1;">
-                        <div style="display: inline-flex; align-items: center; gap: 0.75rem; color: rgba(255, 255, 255, 0.8);">
-                            <i class="fas fa-spinner fa-spin" style="color: #8b5cf6;"></i>
+                    <div class="loading-container">
+                        <div class="loading-wrapper">
+                            <i class="fas fa-spinner fa-spin loading-spinner-purple"></i>
                             Loading hackathons...
                         </div>
                     </div>
@@ -206,47 +270,51 @@
             </div>
 
             <!-- Incubation Tab -->
-            <div id="incubation-tab" class="tab-content" style="display: none;">
-                <div style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="color: white; font-weight: 700; font-size: 2rem; margin-bottom: 1rem;">Incubation Program</h2>
-                    <p style="color: rgba(255, 255, 255, 0.8); max-width: 600px; margin: 0 auto;">Transform your innovative ideas into viable startups with our comprehensive incubation program.</p>
+            <div id="incubation-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-incubation">
+                <div class="text-center mb-12">
+                    <h2 class="form-title-main">Incubation Program</h2>
+                    <p class="form-subtitle-main max-w-2xl mx-auto">Transform your
+                        innovative ideas into viable startups with our comprehensive incubation program.</p>
                 </div>
-                
+
                 <!-- Incubation Info Cards -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
-                    <div class="glass-card" style="padding: 2rem; text-align: center;">
-                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                            <i class="fas fa-lightbulb" style="font-size: 1.5rem; color: white;"></i>
+                <div class="incubation-info-grid">
+                    <div class="glass-card p-8 text-center">
+                        <div class="incubation-icon-container incubation-icon-idea">
+                            <i class="fas fa-lightbulb text-2xl text-white"></i>
                         </div>
-                        <h3 style="color: white; font-weight: 600; margin-bottom: 1rem;">Idea Validation</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Get expert feedback on your business idea and validate market demand through structured research.</p>
+                        <h3 class="form-label-white mb-4">Idea Validation</h3>
+                        <p class="form-help-text">Get expert feedback on your
+                            business idea and validate market demand through structured research.</p>
                     </div>
-                    
-                    <div class="glass-card" style="padding: 2rem; text-align: center;">
-                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                            <i class="fas fa-users" style="font-size: 1.5rem; color: white;"></i>
+
+                    <div class="glass-card p-8 text-center">
+                        <div class="incubation-icon-container incubation-icon-mentor">
+                            <i class="fas fa-users text-2xl text-white"></i>
                         </div>
-                        <h3 style="color: white; font-weight: 600; margin-bottom: 1rem;">Mentorship</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Connect with experienced entrepreneurs and industry experts for guidance and support.</p>
+                        <h3 class="form-label-white mb-4">Mentorship</h3>
+                        <p class="form-help-text">Connect with experienced
+                            entrepreneurs and industry experts for guidance and support.</p>
                     </div>
-                    
-                    <div class="glass-card" style="padding: 2rem; text-align: center;">
-                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                            <i class="fas fa-rocket" style="font-size: 1.5rem; color: white;"></i>
+
+                    <div class="glass-card p-8 text-center">
+                        <div class="incubation-icon-container incubation-icon-launch">
+                            <i class="fas fa-rocket text-2xl text-white"></i>
                         </div>
-                        <h3 style="color: white; font-weight: 600; margin-bottom: 1rem;">Launch Support</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Access resources, funding opportunities, and launch support to bring your startup to market.</p>
+                        <h3 class="form-label-white mb-4">Launch Support</h3>
+                        <p class="form-help-text">Access resources, funding
+                            opportunities, and launch support to bring your startup to market.</p>
                     </div>
                 </div>
-                
+
                 <!-- Current Incubation Projects -->
                 <div>
-                    <h3 style="color: white; font-weight: 600; font-size: 1.5rem; margin-bottom: 2rem; text-align: center;">Current Incubation Projects</h3>
-                    <div id="incubationProjectsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+                    <h3 class="incubation-title-secondary">Current Incubation Projects</h3>
+                    <div id="incubationProjectsGrid" class="projects-grid">
                         <!-- Incubation projects will be loaded here -->
-                        <div style="text-align: center; grid-column: 1 / -1;">
-                            <div style="display: inline-flex; align-items: center; gap: 0.75rem; color: rgba(255, 255, 255, 0.8);">
-                                <i class="fas fa-spinner fa-spin" style="color: #f59e0b;"></i>
+                        <div class="loading-container">
+                            <div class="loading-wrapper">
+                                <i class="fas fa-spinner fa-spin loading-spinner-orange"></i>
                                 Loading incubation projects...
                             </div>
                         </div>
@@ -260,7 +328,7 @@
     <div id="footer-placeholder"></div>
 
     <!-- Project Details Modal -->
-    <div id="projectModal" class="modal-backdrop" style="display: none;">
+    <div id="projectModal" class="modal-backdrop">
         <div class="modal-content modal-large">
             <div class="modal-header">
                 <h2 id="projectModalTitle">Project Details</h2>
@@ -275,7 +343,7 @@
     </div>
 
     <!-- Collaboration Request Modal -->
-    <div id="collaborationModal" class="modal-backdrop" style="display: none;">
+    <div id="collaborationModal" class="modal-backdrop">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="collaborationModalTitle">Request to Collaborate</h2>
@@ -290,7 +358,7 @@
     </div>
 
     <!-- Collaboration Requests Management Modal -->
-    <div id="collaborationRequestsModal" class="modal-backdrop" style="display: none;">
+    <div id="collaborationRequestsModal" class="modal-backdrop">
         <div class="modal-content modal-large">
             <div class="modal-header">
                 <h2>Collaboration Requests</h2>
@@ -305,10 +373,11 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="/home/supabase-client.js"></script>
+    <script src="/shared/role-ui-controller.js"></script>
     <script src="mock-data.js"></script>
-    <script src="auth.js"></script>
-    <script src="navigation.js"></script>
     <script src="footer.js"></script>
-    <script src="projects.js"></script>
+    <script src="projects.js?v=2025010804"></script>
 </body>
+
 </html>

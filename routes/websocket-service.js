@@ -4,7 +4,7 @@
  */
 
 const WebSocket = require('ws');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin } = require('../lib/supabase');
 
 class WebSocketService {
     constructor(server) {
@@ -87,7 +87,7 @@ class WebSocketService {
     async authenticateClient(clientId, token) {
         try {
             // Verify JWT token and get user info
-            const { data: { user }, error } = await supabase.auth.getUser(token);
+            const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
             
             if (error || !user) {
                 this.sendToClient(clientId, {
@@ -243,7 +243,7 @@ class WebSocketService {
 
     setupDatabaseListeners() {
         // Listen for event updates
-        const eventChannel = supabase
+        const eventChannel = supabaseAdmin
             .channel('events_changes')
             .on('postgres_changes', 
                 { event: '*', schema: 'public', table: 'events' },
@@ -252,7 +252,7 @@ class WebSocketService {
             .subscribe();
 
         // Listen for event registration changes
-        const registrationChannel = supabase
+        const registrationChannel = supabaseAdmin
             .channel('registrations_changes')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'event_attendees' },
@@ -261,7 +261,7 @@ class WebSocketService {
             .subscribe();
 
         // Listen for payment updates
-        const paymentChannel = supabase
+        const paymentChannel = supabaseAdmin
             .channel('payments_changes')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'payments' },
