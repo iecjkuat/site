@@ -1,6 +1,6 @@
 // JKUAT Innovation Club - Notifications Service
 const express = require('express');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 const webpush = require('web-push');
 const nodemailer = require('nodemailer');
 const router = express.Router();

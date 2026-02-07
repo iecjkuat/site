@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - JKUAT Innovation Club</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/auth/auth.css">
+</head>
+<body>
+    <div class="auth-page">
+        <!-- Left Side - Form -->
+        <div class="form-side">
+            <div class="form-content">
+                <div class="logo-section">
+                    <i class="fas fa-rocket logo-icon"></i>
+                </div>
+                
+                <h1 class="page-title">SIGN IN</h1>
+                
+                <form id="signinForm" class="auth-form">
+                    <div id="messageContainer"></div>
+                    
+                    <!-- Email -->
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="email" name="email" placeholder="e-mail" required autocomplete="email">
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" placeholder="password" required autocomplete="current-password">
+                    </div>
+                    
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">Remember me</label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">SIGN IN</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+                
+                <!-- Forgot Password Link -->
+                <div class="switch-auth" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                    <a href="/reset-password" class="link">Forgot password?</a>
+                </div>
+                
+                <!-- Sign Up Link -->
+                <div class="switch-auth">
+                    Don't have an account? <a href="/signup" class="link">Sign Up</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Image -->
+        <div class="image-side">
+            <div class="image-overlay">
+                <h2 class="brand-title">JKUAT INNOVATION</h2>
+                <p class="brand-subtitle">& ENTREPRENEURSHIP CLUB</p>
+                <p class="brand-tagline">Welcome back, innovator!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"></script>
+    <script src="/auth/signin.js"></script>
+</body>
+</html>

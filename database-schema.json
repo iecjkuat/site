@@ -1,0 +1,154 @@
+{
+  "users": {
+    "columns": [],
+    "row_count": null
+  },
+  "events": {
+    "columns": [],
+    "row_count": null
+  },
+  "event_attendees": {
+    "columns": [],
+    "row_count": null
+  },
+  "payments": {
+    "columns": [],
+    "row_count": null
+  },
+  "ideas": {
+    "columns": [],
+    "row_count": null
+  },
+  "idea_votes": {
+    "columns": [],
+    "row_count": null
+  },
+  "messages": {
+    "columns": [],
+    "row_count": null
+  },
+  "resources": {
+    "columns": [],
+    "row_count": null
+  },
+  "opportunities": {
+    "columns": [],
+    "row_count": null
+  },
+  "support_tickets": {
+    "columns": [],
+    "row_count": null
+  },
+  "articles": {
+    "columns": [],
+    "row_count": null
+  },
+  "media_files": {
+    "columns": [],
+    "row_count": null
+  },
+  "executive_committee": {
+    "columns": [],
+    "row_count": null
+  },
+  "club_patrons": {
+    "columns": [],
+    "row_count": null
+  },
+  "profiles": {
+    "columns": [],
+    "row_count": null
+  },
+  "testimonials": {
+    "columns": [],
+    "row_count": null
+  },
+  "projects": {
+    "columns": [],
+    "row_count": null
+  },
+  "project_collaborations": {
+    "columns": [],
+    "row_count": null
+  },
+  "notifications": {
+    "columns": [],
+    "row_count": null
+  },
+  "meetings": {
+    "columns": [],
+    "row_count": null
+  },
+  "meeting_attendees": {
+    "columns": [],
+    "row_count": null
+  },
+  "meeting_minutes": {
+    "columns": [],
+    "row_count": null
+  },
+  "elections": {
+    "columns": [],
+    "row_count": null
+  },
+  "election_candidates": {
+    "columns": [],
+    "row_count": null
+  },
+  "election_votes": {
+    "columns": [],
+    "row_count": null
+  },
+  "feedback": {
+    "columns": [],
+    "row_count": null
+  },
+  "chat_groups": {
+    "columns": [],
+    "row_count": null
+  },
+  "chat_group_members": {
+    "columns": [],
+    "row_count": null
+  },
+  "announcements": {
+    "columns": [],
+    "row_count": null
+  },
+  "financial_transactions": {
+    "columns": [],
+    "row_count": null
+  },
+  "budget_categories": {
+    "columns": [],
+    "row_count": null
+  },
+  "annual_budgets": {
+    "columns": [],
+    "row_count": null
+  },
+  "donations_sponsorships": {
+    "columns": [],
+    "row_count": null
+  },
+  "opportunity_applications": {
+    "columns": [],
+    "row_count": null
+  },
+  "opportunity_bookmarks": {
+    "columns": [],
+    "row_count": null
+  },
+  "resource_downloads": {
+    "columns": [],
+    "row_count": null
+  },
+  "activity_logs": {
+    "columns": [],
+    "row_count": null
+  },
+  "communication_logs": {
+    "columns": [],
+    "row_count": null
+  }
+}

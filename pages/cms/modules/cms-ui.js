@@ -23,24 +23,23 @@ export class CMSUI {
         if (!dateString) return 'Unknown time';
         
         const date = new Date(dateString);
-        const now = new Date();
-        
         if (isNaN(date.getTime())) return 'Invalid date';
         
-        const diffTime = Math.abs(now - date);
-        const diffMinutes = Math.floor(diffTime / (1000 * 60));
-        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffMinutes < 1) {
-            return 'Just now';
-        } else if (diffMinutes < 60) {
-            return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-        } else if (diffHours < 24) {
-            return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        } else {
-            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        }
+        const now = new Date();
+        const diffMs = date - now; // positive = future
+        const past = diffMs < 0;
+        const diff = Math.abs(diffMs);
+        
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        const suffix = past ? 'ago' : 'from now';
+        
+        if (minutes < 1) return past ? 'Just now' : 'Any moment now';
+        if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ${suffix}`;
+        if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ${suffix}`;
+        return `${days} day${days !== 1 ? 's' : ''} ${suffix}`;
     }
 
     static formatFileSize(bytes) {
@@ -155,7 +154,7 @@ export class CMSUI {
         
         // Sanitize and validate icon (whitelist approach)
         const safeIcon = /^[a-z0-9-]+$/i.test(item.icon ?? '') ? item.icon : 'info-circle';
-        const safeType = CMSSecurity.escapeHtml(item.type ?? '');
+        const safeType = this.text(item.type, '');
         
         // Create icon container
         const iconContainer = document.createElement('div');
@@ -180,7 +179,7 @@ export class CMSUI {
         
         const titleEl = document.createElement('p');
         titleEl.style.cssText = 'color: white; font-weight: 600; margin: 0; font-size: 0.875rem;';
-        titleEl.textContent = CMSSecurity.escapeHtml(item.title);
+        titleEl.textContent = this.text(item.title);
         
         const metaEl = document.createElement('p');
         metaEl.style.cssText = 'color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin: 0;';
@@ -248,6 +247,14 @@ export class CMSUI {
     /**
      * Security helper functions for safe content rendering
      */
+    
+    // For textContent / setAttribute - just convert to string safely (no escaping needed)
+    static text(value, fallback = '') {
+        const s = String(value ?? fallback);
+        return s;
+    }
+    
+    // For innerHTML *only* (ideally rare) - HTML escape
     static escapeHtml(s) {
         return CMSSecurity.escapeHtml(String(s ?? ''));
     }
@@ -264,9 +271,11 @@ export class CMSUI {
         return CMSSecurity.isSafeHttpUrl(raw) ? raw : '';
     }
 
-    // Lock down data-* attributes to prevent breaking out of quotes
+    // Lock down data-* attributes with whitelist (not HTML escaping)
     static safeAttr(value, max = 80) {
-        return this.escapeHtml(String(value ?? '').slice(0, max));
+        const raw = String(value ?? '').slice(0, max);
+        // Allow ids/uuids/slugs: letters, numbers, _ - : .
+        return raw.replace(/[^a-z0-9_\-:.]/gi, '');
     }
 
     // Accept only safe hex colors, otherwise fallback
@@ -290,8 +299,9 @@ export class CMSUI {
             const action = button.dataset.action;
             const id = button.dataset.id;
 
-            // Validate that the ID matches the data ID for security
-            if (id !== String(data.id)) {
+            // Validate that the ID matches the data ID for security (compare sanitized versions)
+            const expected = this.safeAttr(data.id);
+            if (id !== expected) {
                 console.warn('Action button ID mismatch - potential security issue');
                 return;
             }
@@ -323,11 +333,26 @@ export class CMSUI {
             case 'events':
             case 'event':
                 return this.createSecureEventCard(data);
+            case 'projects':
+            case 'project':
+                return this.createSecureProjectCard(data);
             case 'opportunities':
             case 'opportunity':
                 return this.createSecureOpportunityCard(data);
             case 'media':
                 return this.createSecureMediaCard(data);
+            case 'ideas':
+            case 'idea':
+                return this.createSecureIdeaCard(data);
+            case 'challenges':
+            case 'challenge':
+                return this.createSecureChallengeCard(data);
+            case 'messages':
+            case 'message':
+                return this.createSecureMessageCard(data);
+            case 'members':
+            case 'member':
+                return this.createSecureMemberCard(data);
             default:
                 return this.createSecureGenericCard(data, type);
         }
@@ -344,12 +369,12 @@ export class CMSUI {
             year: 'numeric'
         });
 
-        // Sanitize all data
+        // Sanitize all data - use text() for textContent, no escaping needed
         const id = this.safeAttr(article.id);
-        const title = this.escapeHtml(article.title);
-        const category = this.escapeHtml(article.category || 'General');
+        const title = this.text(article.title, 'Untitled');
+        const category = this.text(article.category, 'General');
         const imageUrl = this.safeUrl(article.featured_image);
-        const status = this.escapeHtml(article.status ? String(article.status).toUpperCase() : 'DRAFT');
+        const status = this.text(article.status ? String(article.status).toUpperCase() : 'DRAFT');
         const statusColor = this.safeColor(article.status === 'published' ? '#10b981' : 
                                           article.status === 'draft' ? '#f59e0b' : '#6b7280');
 
@@ -359,7 +384,7 @@ export class CMSUI {
 
         // Create article element
         const articleEl = document.createElement('article');
-        articleEl.className = 'website-article-card ig-content-item';
+        articleEl.className = 'cms-content-card';
         articleEl.dataset.id = id;
         articleEl.dataset.type = 'article';
 
@@ -409,7 +434,7 @@ export class CMSUI {
             imageDiv.className = 'article-image';
             const img = document.createElement('img');
             img.src = imageUrl;
-            img.alt = title;
+            img.alt = title; // alt should be human-readable, not escaped
             img.loading = 'lazy';
             imageDiv.appendChild(img);
             articleEl.appendChild(header);
@@ -447,7 +472,7 @@ export class CMSUI {
             tags.forEach(tag => {
                 const tagSpan = document.createElement('span');
                 tagSpan.className = 'tag';
-                tagSpan.textContent = '#' + this.escapeHtml(tag);
+                tagSpan.textContent = '#' + this.text(tag); // No escaping for textContent
                 tagsDiv.appendChild(tagSpan);
             });
             content.appendChild(tagsDiv);
@@ -477,12 +502,12 @@ export class CMSUI {
             hour12: true
         });
 
-        // Sanitize all data
+        // Sanitize all data - use text() for textContent, no escaping needed
         const id = this.safeAttr(event.id);
-        const title = this.escapeHtml(event.title);
-        const location = this.escapeHtml(event.location || 'TBD');
+        const title = this.text(event.title, 'Untitled Event');
+        const location = this.text(event.location, 'TBD');
         const imageUrl = this.safeUrl(event.banner_image);
-        const status = this.escapeHtml(event.status ? String(event.status).toUpperCase() : 'DRAFT');
+        const status = this.text(event.status ? String(event.status).toUpperCase() : 'DRAFT');
         const statusColor = this.safeColor(event.status === 'published' ? '#10b981' : 
                                           event.status === 'draft' ? '#f59e0b' : '#6b7280');
 
@@ -503,7 +528,7 @@ export class CMSUI {
 
         // Create event element
         const eventEl = document.createElement('article');
-        eventEl.className = 'website-event-card instagram-event-card ig-content-item';
+        eventEl.className = 'event-card instagram-style';
         eventEl.dataset.id = id;
         eventEl.dataset.type = 'event';
 
@@ -654,12 +679,188 @@ export class CMSUI {
         content.appendChild(actionsBar);
         content.appendChild(eventInfo);
 
+        // Add engagement metrics (Instagram-style)
+        const engagement = document.createElement('div');
+        engagement.className = 'event-engagement';
+
+        const likes = document.createElement('button');
+        likes.className = 'engagement-btn';
+        likes.innerHTML = '<i class="far fa-heart"></i>';
+        likes.appendChild(document.createTextNode(' ' + (event.likes_count || 0)));
+
+        const comments = document.createElement('button');
+        comments.className = 'engagement-btn';
+        comments.innerHTML = '<i class="far fa-comment"></i>';
+        comments.appendChild(document.createTextNode(' ' + (event.comments_count || 0)));
+
+        const shares = document.createElement('button');
+        shares.className = 'engagement-btn';
+        shares.innerHTML = '<i class="far fa-share-square"></i>';
+        shares.appendChild(document.createTextNode(' ' + (event.shares_count || 0)));
+
+        const bookmark = document.createElement('button');
+        bookmark.className = 'engagement-btn bookmark';
+        bookmark.innerHTML = '<i class="far fa-bookmark"></i>';
+
+        engagement.appendChild(likes);
+        engagement.appendChild(comments);
+        engagement.appendChild(shares);
+        engagement.appendChild(bookmark);
+
+        content.appendChild(engagement);
+
         // Assemble event card
         eventEl.appendChild(header);
         eventEl.appendChild(mediaContainer);
         eventEl.appendChild(content);
 
         return eventEl;
+    }
+
+    /**
+     * Create project card using secure DOM building (matches public project page style)
+     */
+    static createSecureProjectCard(project) {
+        const id = this.safeAttr(project.id);
+        const title = this.text(project.title, 'Untitled Project');
+        const description = project.description ? 
+            (project.description.length > 150 ? project.description.slice(0, 150) + '...' : project.description) : 
+            'No description available';
+        const category = this.text(project.category, 'General');
+        const status = this.text(project.status ? String(project.status).toUpperCase() : 'PLANNING');
+        const progress = Number.isFinite(+project.progress_percentage) ? +project.progress_percentage : 0;
+        
+        const createdDate = new Date(project.created_at || Date.now());
+        const dateStr = createdDate.toLocaleDateString('en-US', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        const projectEl = document.createElement('div');
+        projectEl.className = 'project-card';
+        projectEl.dataset.id = id;
+        projectEl.dataset.type = 'project';
+
+        // Progress bar at the top
+        const progressBar = document.createElement('div');
+        progressBar.className = 'project-progress-bar';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress-fill';
+        progressFill.style.width = `${progress}%`;
+        progressBar.appendChild(progressFill);
+
+        // Header with title
+        const header = document.createElement('div');
+        header.className = 'project-header';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'project-title';
+        titleEl.textContent = title;
+
+        header.appendChild(titleEl);
+
+        // Status badges
+        const badges = document.createElement('div');
+        badges.className = 'project-badges';
+
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'project-badge status-badge';
+        statusBadge.textContent = status;
+
+        const categoryBadge = document.createElement('span');
+        categoryBadge.className = 'project-badge category-badge';
+        categoryBadge.textContent = category;
+
+        badges.appendChild(statusBadge);
+        badges.appendChild(categoryBadge);
+
+        // Description
+        const desc = document.createElement('p');
+        desc.className = 'project-description';
+        desc.textContent = description;
+
+        // Technology tags
+        const techTags = document.createElement('div');
+        techTags.className = 'project-tech-tags';
+
+        const technologies = project.technologies || [];
+        const visibleTechs = technologies.slice(0, 3);
+        const remainingCount = technologies.length - 3;
+
+        visibleTechs.forEach(tech => {
+            const tag = document.createElement('span');
+            tag.className = 'tech-tag';
+            tag.textContent = tech;
+            techTags.appendChild(tag);
+        });
+
+        if (remainingCount > 0) {
+            const moreTag = document.createElement('span');
+            moreTag.className = 'tech-tag more';
+            moreTag.textContent = `+${remainingCount} more`;
+            techTags.appendChild(moreTag);
+        }
+
+        // Footer with creator and date
+        const footer = document.createElement('div');
+        footer.className = 'project-footer';
+
+        const creator = document.createElement('div');
+        creator.className = 'project-creator';
+        const creatorIcon = document.createElement('i');
+        creatorIcon.className = 'fas fa-user';
+        creator.appendChild(creatorIcon);
+        const creatorName = document.createElement('span');
+        creatorName.textContent = project.project_lead?.name || 'Unknown';
+        creator.appendChild(creatorName);
+
+        const date = document.createElement('div');
+        date.className = 'project-date';
+        const dateIcon = document.createElement('i');
+        dateIcon.className = 'fas fa-calendar';
+        date.appendChild(dateIcon);
+        const dateText = document.createElement('span');
+        dateText.textContent = dateStr;
+        date.appendChild(dateText);
+
+        footer.appendChild(creator);
+        footer.appendChild(date);
+
+        // Action buttons
+        const actions = document.createElement('div');
+        actions.className = 'project-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'project-btn view-btn';
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+        viewBtn.dataset.action = 'view';
+        viewBtn.dataset.id = id;
+
+        const joinBtn = document.createElement('button');
+        joinBtn.className = 'project-btn join-btn';
+        joinBtn.innerHTML = '<i class="fas fa-plus"></i> Join';
+        joinBtn.dataset.action = 'join';
+        joinBtn.dataset.id = id;
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(joinBtn);
+
+        // CMS action buttons (edit/delete) - positioned absolutely
+        const cmsActions = this.createSecureActions(id, 'project');
+        cmsActions.className = 'cms-actions-overlay';
+
+        // Assemble project card
+        projectEl.appendChild(progressBar);
+        projectEl.appendChild(header);
+        projectEl.appendChild(badges);
+        projectEl.appendChild(desc);
+        projectEl.appendChild(techTags);
+        projectEl.appendChild(footer);
+        projectEl.appendChild(actions);
+        projectEl.appendChild(cmsActions);
+
+        return projectEl;
     }
 
     /**
@@ -673,13 +874,13 @@ export class CMSUI {
             year: 'numeric'
         }) : 'No deadline';
 
-        // Sanitize all data
+        // Sanitize all data - use text() for textContent, no escaping needed
         const id = this.safeAttr(opportunity.id);
-        const title = this.escapeHtml(opportunity.title);
-        const company = this.escapeHtml(opportunity.company || opportunity.organization || 'Unknown Organization');
-        const location = this.escapeHtml(opportunity.location || 'Remote');
-        const salary = this.escapeHtml(opportunity.salary || '');
-        const status = this.escapeHtml(opportunity.status ? String(opportunity.status).toUpperCase() : 'DRAFT');
+        const title = this.text(opportunity.title, 'Untitled Opportunity');
+        const company = this.text(opportunity.company || opportunity.organization, 'Unknown Organization');
+        const location = this.text(opportunity.location, 'Remote');
+        const salary = this.text(opportunity.salary, '');
+        const status = this.text(opportunity.status ? String(opportunity.status).toUpperCase() : 'DRAFT');
         const statusColor = this.safeColor(opportunity.status === 'published' ? '#10b981' : 
                                           opportunity.status === 'draft' ? '#f59e0b' : '#6b7280');
 
@@ -696,7 +897,7 @@ export class CMSUI {
 
         // Create opportunity element
         const oppEl = document.createElement('div');
-        oppEl.className = 'website-opportunity-card glass-card ig-content-item';
+        oppEl.className = 'opportunity-card glass-card';
         oppEl.dataset.id = id;
         oppEl.dataset.type = 'opportunity';
 
@@ -801,9 +1002,9 @@ export class CMSUI {
             year: 'numeric'
         });
 
-        // Sanitize all data
+        // Sanitize all data - use text() for textContent, no escaping needed
         const id = this.safeAttr(media.id);
-        const name = this.escapeHtml(media.name);
+        const name = this.text(media.name, 'Unnamed File');
         const url = this.safeUrl(media.url);
         const thumbnailUrl = this.safeUrl(media.thumbnail);
         const fileSize = media.size ? this.formatFileSize(media.size) : 'Unknown size';
@@ -812,7 +1013,7 @@ export class CMSUI {
 
         // Create media element
         const mediaEl = document.createElement('div');
-        mediaEl.className = 'website-media-card ig-content-item';
+        mediaEl.className = 'cms-content-card';
         mediaEl.dataset.id = id;
         mediaEl.dataset.type = 'media';
 
@@ -892,10 +1093,10 @@ export class CMSUI {
      */
     static createSecureGenericCard(data, type) {
         const id = this.safeAttr(data.id);
-        const title = this.escapeHtml(data.title || data.name || 'Untitled');
+        const title = this.text(data.title || data.name, 'Untitled');
 
         const item = document.createElement('div');
-        item.className = 'ig-content-item';
+        item.className = 'cms-content-card';
         item.dataset.id = id;
         item.dataset.type = type;
 
@@ -912,7 +1113,7 @@ export class CMSUI {
         const meta = document.createElement('div');
         meta.className = 'ig-content-meta';
         meta.innerHTML = '<i class="fas fa-tag"></i>';
-        meta.appendChild(document.createTextNode(' ' + this.escapeHtml(type)));
+        meta.appendChild(document.createTextNode(' ' + this.text(type)));
 
         info.appendChild(titleEl);
         info.appendChild(meta);
@@ -924,6 +1125,662 @@ export class CMSUI {
         item.appendChild(header);
 
         return item;
+    }
+
+    /**
+     * Create idea card using secure DOM building
+     */
+    static createSecureIdeaCard(idea) {
+        const submitDate = new Date(idea.created_at || Date.now());
+        const dateStr = submitDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        const id = this.safeAttr(idea.id);
+        const title = this.text(idea.title, 'Untitled Idea');
+        const category = this.text(idea.category, 'General');
+        const status = this.text(idea.status ? String(idea.status).toUpperCase() : 'PENDING');
+        const statusColor = this.safeColor(
+            idea.status === 'approved' ? '#10b981' : 
+            idea.status === 'rejected' ? '#ef4444' : 
+            idea.status === 'implemented' ? '#3b82f6' : '#f59e0b'
+        );
+
+        const shortDescription = idea.description ? 
+            (idea.description.length > 120 ? idea.description.slice(0, 120) + '...' : idea.description) : 
+            'No description available';
+
+        const ideaEl = document.createElement('div');
+        ideaEl.className = 'idea-card glass-card';
+        ideaEl.dataset.id = id;
+        ideaEl.dataset.type = 'idea';
+
+        const header = document.createElement('div');
+        header.className = 'idea-header';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'idea-title';
+        titleEl.textContent = title;
+
+        const meta = document.createElement('div');
+        meta.className = 'idea-meta';
+
+        const categoryEl = document.createElement('span');
+        categoryEl.className = 'idea-category';
+        categoryEl.innerHTML = '<i class="fas fa-tag"></i>';
+        categoryEl.appendChild(document.createTextNode(' ' + category));
+
+        const statusEl = document.createElement('span');
+        statusEl.className = 'idea-status';
+        statusEl.style.color = statusColor;
+        statusEl.innerHTML = '<i class="fas fa-circle"></i>';
+        statusEl.appendChild(document.createTextNode(' ' + status));
+
+        meta.appendChild(categoryEl);
+        meta.appendChild(statusEl);
+
+        const content = document.createElement('div');
+        content.className = 'idea-content';
+
+        const description = document.createElement('p');
+        description.className = 'idea-description';
+        description.textContent = shortDescription;
+
+        const stats = document.createElement('div');
+        stats.className = 'idea-stats';
+
+        const votes = document.createElement('span');
+        votes.className = 'idea-votes';
+        votes.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+        votes.appendChild(document.createTextNode(' ' + (idea.votes || 0)));
+
+        const comments = document.createElement('span');
+        comments.className = 'idea-comments';
+        comments.innerHTML = '<i class="fas fa-comments"></i>';
+        comments.appendChild(document.createTextNode(' ' + (idea.comments_count || 0)));
+
+        stats.appendChild(votes);
+        stats.appendChild(comments);
+
+        content.appendChild(description);
+        content.appendChild(stats);
+
+        const footer = document.createElement('div');
+        footer.className = 'idea-footer';
+
+        const submitter = document.createElement('span');
+        submitter.className = 'idea-submitter';
+        submitter.textContent = 'By ' + this.text(idea.submitter_name, 'Anonymous');
+
+        const date = document.createElement('span');
+        date.className = 'idea-date';
+        date.textContent = dateStr;
+
+        footer.appendChild(submitter);
+        footer.appendChild(date);
+
+        const actions = this.createIdeaActions(id);
+
+        header.appendChild(titleEl);
+        header.appendChild(meta);
+        ideaEl.appendChild(header);
+        ideaEl.appendChild(content);
+        ideaEl.appendChild(footer);
+        ideaEl.appendChild(actions);
+
+        return ideaEl;
+    }
+
+    /**
+     * Create challenge card using secure DOM building
+     */
+    static createSecureChallengeCard(challenge) {
+        const startDate = new Date(challenge.start_date || Date.now());
+        const endDate = new Date(challenge.end_date || Date.now());
+        const dateStr = startDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        }) + ' - ' + endDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        const id = this.safeAttr(challenge.id);
+        const title = this.text(challenge.title, 'Untitled Challenge');
+        const category = this.text(challenge.category, 'General');
+        const status = this.text(challenge.status ? String(challenge.status).toUpperCase() : 'DRAFT');
+        const statusColor = this.safeColor(
+            challenge.status === 'active' ? '#10b981' : 
+            challenge.status === 'completed' ? '#3b82f6' : 
+            challenge.status === 'cancelled' ? '#ef4444' : '#f59e0b'
+        );
+
+        const shortDescription = challenge.description ? 
+            (challenge.description.length > 150 ? challenge.description.slice(0, 150) + '...' : challenge.description) : 
+            'No description available';
+
+        const challengeEl = document.createElement('div');
+        challengeEl.className = 'challenge-card glass-card';
+        challengeEl.dataset.id = id;
+        challengeEl.dataset.type = 'challenge';
+
+        const header = document.createElement('div');
+        header.className = 'challenge-header';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'challenge-title';
+        titleEl.textContent = title;
+
+        const meta = document.createElement('div');
+        meta.className = 'challenge-meta';
+
+        const categoryEl = document.createElement('span');
+        categoryEl.className = 'challenge-category';
+        categoryEl.innerHTML = '<i class="fas fa-trophy"></i>';
+        categoryEl.appendChild(document.createTextNode(' ' + category));
+
+        const statusEl = document.createElement('span');
+        statusEl.className = 'challenge-status';
+        statusEl.style.color = statusColor;
+        statusEl.innerHTML = '<i class="fas fa-circle"></i>';
+        statusEl.appendChild(document.createTextNode(' ' + status));
+
+        meta.appendChild(categoryEl);
+        meta.appendChild(statusEl);
+
+        const content = document.createElement('div');
+        content.className = 'challenge-content';
+
+        const description = document.createElement('p');
+        description.className = 'challenge-description';
+        description.textContent = shortDescription;
+
+        const details = document.createElement('div');
+        details.className = 'challenge-details';
+
+        const duration = document.createElement('span');
+        duration.className = 'challenge-duration';
+        duration.innerHTML = '<i class="fas fa-calendar"></i>';
+        duration.appendChild(document.createTextNode(' ' + dateStr));
+
+        const prize = document.createElement('span');
+        prize.className = 'challenge-prize';
+        prize.innerHTML = '<i class="fas fa-gift"></i>';
+        prize.appendChild(document.createTextNode(' ' + this.text(challenge.prize, 'No prize')));
+
+        details.appendChild(duration);
+        details.appendChild(prize);
+
+        const stats = document.createElement('div');
+        stats.className = 'challenge-stats';
+
+        const participants = document.createElement('span');
+        participants.className = 'challenge-participants';
+        participants.innerHTML = '<i class="fas fa-users"></i>';
+        participants.appendChild(document.createTextNode(' ' + (challenge.participants_count || 0) + ' participants'));
+
+        const submissions = document.createElement('span');
+        submissions.className = 'challenge-submissions';
+        submissions.innerHTML = '<i class="fas fa-file-alt"></i>';
+        submissions.appendChild(document.createTextNode(' ' + (challenge.submissions_count || 0) + ' submissions'));
+
+        stats.appendChild(participants);
+        stats.appendChild(submissions);
+
+        content.appendChild(description);
+        content.appendChild(details);
+        content.appendChild(stats);
+
+        const footer = document.createElement('div');
+        footer.className = 'challenge-footer';
+
+        const creator = document.createElement('span');
+        creator.className = 'challenge-creator';
+        creator.textContent = 'By ' + this.text(challenge.creator_name, 'Unknown');
+
+        footer.appendChild(creator);
+
+        const actions = this.createSecureActions(id, 'challenge');
+
+        header.appendChild(titleEl);
+        header.appendChild(meta);
+        challengeEl.appendChild(header);
+        challengeEl.appendChild(content);
+        challengeEl.appendChild(footer);
+        challengeEl.appendChild(actions);
+
+        return challengeEl;
+    }
+
+    /**
+     * Create message card using secure DOM building
+     */
+    static createSecureMessageCard(message) {
+        const sentDate = new Date(message.sent_at || Date.now());
+        const dateStr = sentDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const id = this.safeAttr(message.id);
+        const subject = this.text(message.subject, 'No Subject');
+        const type = this.text(message.type, 'message');
+        const priority = this.text(message.priority, 'normal');
+        const priorityColor = this.safeColor(
+            message.priority === 'urgent' ? '#ef4444' : 
+            message.priority === 'high' ? '#f59e0b' : '#10b981'
+        );
+
+        const shortContent = message.content ? 
+            (message.content.length > 120 ? message.content.slice(0, 120) + '...' : message.content) : 
+            'No content';
+
+        const messageEl = document.createElement('div');
+        messageEl.className = 'cms-content-card';
+        messageEl.dataset.id = id;
+        messageEl.dataset.type = 'message';
+
+        const header = document.createElement('div');
+        header.className = 'message-header';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'message-subject';
+        titleEl.textContent = subject;
+
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
+
+        const typeEl = document.createElement('span');
+        typeEl.className = 'message-type';
+        typeEl.innerHTML = '<i class="fas fa-envelope"></i>';
+        typeEl.appendChild(document.createTextNode(' ' + type));
+
+        const priorityEl = document.createElement('span');
+        priorityEl.className = 'message-priority';
+        priorityEl.style.color = priorityColor;
+        priorityEl.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+        priorityEl.appendChild(document.createTextNode(' ' + priority));
+
+        meta.appendChild(typeEl);
+        meta.appendChild(priorityEl);
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+
+        const contentText = document.createElement('p');
+        contentText.className = 'message-text';
+        contentText.textContent = shortContent;
+
+        const stats = document.createElement('div');
+        stats.className = 'message-stats';
+
+        const recipients = document.createElement('span');
+        recipients.className = 'message-recipients';
+        recipients.innerHTML = '<i class="fas fa-users"></i>';
+        recipients.appendChild(document.createTextNode(' ' + (message.recipients_count || 0) + ' recipients'));
+
+        const opened = document.createElement('span');
+        opened.className = 'message-opened';
+        opened.innerHTML = '<i class="fas fa-eye"></i>';
+        opened.appendChild(document.createTextNode(' ' + (message.opened_count || 0) + ' opened'));
+
+        stats.appendChild(recipients);
+        stats.appendChild(opened);
+
+        content.appendChild(contentText);
+        content.appendChild(stats);
+
+        const footer = document.createElement('div');
+        footer.className = 'message-footer';
+
+        const sender = document.createElement('span');
+        sender.className = 'message-sender';
+        sender.textContent = 'From ' + this.text(message.sender_name, 'Unknown');
+
+        const date = document.createElement('span');
+        date.className = 'message-date';
+        date.textContent = dateStr;
+
+        footer.appendChild(sender);
+        footer.appendChild(date);
+
+        const actions = this.createMessageActions(id);
+
+        header.appendChild(titleEl);
+        header.appendChild(meta);
+        messageEl.appendChild(header);
+        messageEl.appendChild(content);
+        messageEl.appendChild(footer);
+        messageEl.appendChild(actions);
+
+        return messageEl;
+    }
+
+    /**
+     * Create member card using secure DOM building
+     */
+    static createSecureMemberCard(member) {
+        const joinDate = new Date(member.created_at || Date.now());
+        const dateStr = joinDate.toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric'
+        });
+
+        const id = this.safeAttr(member.id);
+        const name = this.text(member.name, 'Unknown Member');
+        const email = this.text(member.email, '');
+        const role = this.text(member.role, 'member');
+        const college = this.text(member.college, 'Unknown');
+        const roleColor = this.safeColor(
+            member.role === 'admin' ? '#ef4444' : 
+            member.role === 'executive' ? '#3b82f6' : '#10b981'
+        );
+
+        const shortBio = member.bio ? 
+            (member.bio.length > 100 ? member.bio.slice(0, 100) + '...' : member.bio) : 
+            'No bio available';
+
+        const memberEl = document.createElement('div');
+        memberEl.className = 'cms-content-card';
+        memberEl.dataset.id = id;
+        memberEl.dataset.type = 'member';
+
+        const header = document.createElement('div');
+        header.className = 'member-header';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'member-avatar';
+        avatar.innerHTML = '<i class="fas fa-user"></i>';
+
+        const info = document.createElement('div');
+        info.className = 'member-info';
+
+        const nameEl = document.createElement('h3');
+        nameEl.className = 'member-name';
+        nameEl.textContent = name;
+
+        const emailEl = document.createElement('p');
+        emailEl.className = 'member-email';
+        emailEl.textContent = email;
+
+        info.appendChild(nameEl);
+        info.appendChild(emailEl);
+
+        const meta = document.createElement('div');
+        meta.className = 'member-meta';
+
+        const roleEl = document.createElement('span');
+        roleEl.className = 'member-role';
+        roleEl.style.color = roleColor;
+        roleEl.innerHTML = '<i class="fas fa-user-tag"></i>';
+        roleEl.appendChild(document.createTextNode(' ' + role));
+
+        const collegeEl = document.createElement('span');
+        collegeEl.className = 'member-college';
+        collegeEl.innerHTML = '<i class="fas fa-graduation-cap"></i>';
+        collegeEl.appendChild(document.createTextNode(' ' + college));
+
+        meta.appendChild(roleEl);
+        meta.appendChild(collegeEl);
+
+        const content = document.createElement('div');
+        content.className = 'member-content';
+
+        const bio = document.createElement('p');
+        bio.className = 'member-bio';
+        bio.textContent = shortBio;
+
+        const stats = document.createElement('div');
+        stats.className = 'member-stats';
+
+        const events = document.createElement('span');
+        events.className = 'member-events';
+        events.innerHTML = '<i class="fas fa-calendar"></i>';
+        events.appendChild(document.createTextNode(' ' + (member.events_attended || 0) + ' events'));
+
+        const projects = document.createElement('span');
+        projects.className = 'member-projects';
+        projects.innerHTML = '<i class="fas fa-project-diagram"></i>';
+        projects.appendChild(document.createTextNode(' ' + (member.projects_completed || 0) + ' projects'));
+
+        stats.appendChild(events);
+        stats.appendChild(projects);
+
+        content.appendChild(bio);
+        content.appendChild(stats);
+
+        const footer = document.createElement('div');
+        footer.className = 'member-footer';
+
+        const joinedEl = document.createElement('span');
+        joinedEl.className = 'member-joined';
+        joinedEl.textContent = 'Joined ' + dateStr;
+
+        const lastActive = document.createElement('span');
+        lastActive.className = 'member-active';
+        lastActive.textContent = 'Active ' + this.formatTimeAgo(member.last_active);
+
+        footer.appendChild(joinedEl);
+        footer.appendChild(lastActive);
+
+        const actions = this.createMemberActions(id);
+
+        header.appendChild(avatar);
+        header.appendChild(info);
+        memberEl.appendChild(header);
+        memberEl.appendChild(meta);
+        memberEl.appendChild(content);
+        memberEl.appendChild(footer);
+        memberEl.appendChild(actions);
+
+        return memberEl;
+    }
+
+    /**
+     * Create specialized action buttons for different content types
+     */
+    static createIdeaActions(id) {
+        const actions = document.createElement('div');
+        actions.className = 'ig-content-actions';
+
+        const approveBtn = document.createElement('button');
+        approveBtn.className = 'ig-btn ig-btn-success';
+        approveBtn.dataset.action = 'approve-idea';
+        approveBtn.dataset.id = id;
+        approveBtn.innerHTML = '<i class="fas fa-check"></i> Approve';
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'ig-btn ig-btn-danger';
+        rejectBtn.dataset.action = 'reject-idea';
+        rejectBtn.dataset.id = id;
+        rejectBtn.innerHTML = '<i class="fas fa-times"></i> Reject';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'ig-btn ig-btn-view';
+        viewBtn.dataset.action = 'view-idea';
+        viewBtn.dataset.id = id;
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+
+        actions.appendChild(approveBtn);
+        actions.appendChild(rejectBtn);
+        actions.appendChild(viewBtn);
+
+        return actions;
+    }
+
+    static createMessageActions(id) {
+        const actions = document.createElement('div');
+        actions.className = 'ig-content-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'ig-btn ig-btn-view';
+        viewBtn.dataset.action = 'view-message';
+        viewBtn.dataset.id = id;
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+
+        const resendBtn = document.createElement('button');
+        resendBtn.className = 'ig-btn ig-btn-primary';
+        resendBtn.dataset.action = 'resend-message';
+        resendBtn.dataset.id = id;
+        resendBtn.innerHTML = '<i class="fas fa-redo"></i> Resend';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'ig-btn ig-btn-danger';
+        deleteBtn.dataset.action = 'delete-message';
+        deleteBtn.dataset.id = id;
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(resendBtn);
+        actions.appendChild(deleteBtn);
+
+        return actions;
+    }
+
+    static createMemberActions(id) {
+        const actions = document.createElement('div');
+        actions.className = 'ig-content-actions';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'ig-btn ig-btn-view';
+        viewBtn.dataset.action = 'view-member';
+        viewBtn.dataset.id = id;
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+
+        const messageBtn = document.createElement('button');
+        messageBtn.className = 'ig-btn ig-btn-primary';
+        messageBtn.dataset.action = 'message-member';
+        messageBtn.dataset.id = id;
+        messageBtn.innerHTML = '<i class="fas fa-envelope"></i> Message';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'ig-btn ig-btn-edit';
+        editBtn.dataset.action = 'edit-member';
+        editBtn.dataset.id = id;
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(messageBtn);
+        actions.appendChild(editBtn);
+
+        return actions;
+    }
+
+    /**
+     * Create member modal for detailed view
+     */
+    static createMemberModal(member) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; padding: 1rem;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: #1f2937; border: 2px solid #374151; border-radius: 12px;
+            padding: 2rem; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+        `;
+
+        const title = document.createElement('h2');
+        title.style.cssText = 'color: white; margin-bottom: 1.5rem; text-align: center;';
+        title.textContent = this.text(member.name, 'Unknown Member');
+
+        const details = document.createElement('div');
+        details.style.cssText = 'color: rgba(255, 255, 255, 0.9); line-height: 1.6;';
+
+        const info = [
+            { label: 'Email', value: member.email, icon: 'envelope' },
+            { label: 'Student ID', value: member.student_id, icon: 'id-card' },
+            { label: 'Role', value: member.role, icon: 'user-tag' },
+            { label: 'College', value: member.college, icon: 'graduation-cap' },
+            { label: 'Year of Study', value: member.year_of_study, icon: 'calendar' },
+            { label: 'Phone', value: member.phone, icon: 'phone' },
+            { label: 'Events Attended', value: member.events_attended || 0, icon: 'calendar-check' },
+            { label: 'Projects Completed', value: member.projects_completed || 0, icon: 'project-diagram' }
+        ];
+
+        info.forEach(item => {
+            if (item.value) {
+                const row = document.createElement('div');
+                row.style.cssText = 'margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;';
+                
+                const icon = document.createElement('i');
+                icon.className = `fas fa-${item.icon}`;
+                icon.style.cssText = 'color: var(--ig-info); width: 20px;';
+                
+                const label = document.createElement('strong');
+                label.textContent = item.label + ': ';
+                
+                const value = document.createElement('span');
+                value.textContent = this.text(String(item.value));
+                
+                row.appendChild(icon);
+                row.appendChild(label);
+                row.appendChild(value);
+                details.appendChild(row);
+            }
+        });
+
+        if (member.bio) {
+            const bioSection = document.createElement('div');
+            bioSection.style.cssText = 'margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #374151;';
+            
+            const bioLabel = document.createElement('h3');
+            bioLabel.style.cssText = 'color: white; margin-bottom: 0.5rem;';
+            bioLabel.textContent = 'Bio';
+            
+            const bioText = document.createElement('p');
+            bioText.style.cssText = 'color: rgba(255, 255, 255, 0.8);';
+            bioText.textContent = this.text(member.bio, '');
+            
+            bioSection.appendChild(bioLabel);
+            bioSection.appendChild(bioText);
+            details.appendChild(bioSection);
+        }
+
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.cssText = `
+            margin-top: 1.5rem; padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
+            background: var(--ig-info); color: white; cursor: pointer; font-weight: 600; width: 100%;
+        `;
+
+        modalContent.appendChild(title);
+        modalContent.appendChild(details);
+        modalContent.appendChild(closeButton);
+        modal.appendChild(modalContent);
+
+        // Cleanup function to remove modal and event listener
+        const cleanup = () => {
+            document.removeEventListener('keydown', onKeydown);
+            modal.remove();
+        };
+
+        // Keydown handler
+        const onKeydown = (e) => {
+            if (e.key === 'Escape') cleanup();
+        };
+
+        // Setup event listeners
+        document.addEventListener('keydown', onKeydown);
+        closeButton.addEventListener('click', cleanup);
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) cleanup();
+        });
+
+        return modal;
     }
 
     /**
@@ -1470,7 +2327,7 @@ export class CMSUI {
 
         const title = document.createElement('div');
         title.className = 'ig-modal-title';
-        title.textContent = this.escapeHtml(data.title);
+        title.textContent = this.text(data.title, 'Untitled');
 
         const closeBtn = document.createElement('button');
         closeBtn.className = 'ig-modal-close';
@@ -1491,19 +2348,19 @@ export class CMSUI {
             // Create safe DOM structure instead of innerHTML
             const categoryLabel = document.createElement('strong');
             categoryLabel.textContent = 'Category: ';
-            const categoryValue = document.createTextNode(this.escapeHtml(data.category || 'Uncategorized'));
+            const categoryValue = document.createTextNode(this.text(data.category, 'Uncategorized'));
             
             const separator1 = document.createTextNode(' | ');
             
             const statusLabel = document.createElement('strong');
             statusLabel.textContent = 'Status: ';
-            const statusValue = document.createTextNode(this.escapeHtml(data.status || 'draft'));
+            const statusValue = document.createTextNode(this.text(data.status, 'draft'));
             
             const separator2 = document.createTextNode(' | ');
             
             const authorLabel = document.createElement('strong');
             authorLabel.textContent = 'Author: ';
-            const authorValue = document.createTextNode(this.escapeHtml(data.author_name || 'Unknown'));
+            const authorValue = document.createTextNode(this.text(data.author_name, 'Unknown'));
             
             categoryDiv.appendChild(categoryLabel);
             categoryDiv.appendChild(categoryValue);
@@ -1534,7 +2391,7 @@ export class CMSUI {
             // Create safe DOM structure
             const typeLabel = document.createElement('strong');
             typeLabel.textContent = 'Type: ';
-            const typeValue = document.createTextNode(this.escapeHtml(data.type || 'Event'));
+            const typeValue = document.createTextNode(this.text(data.type, 'Event'));
             
             const separator1 = document.createTextNode(' | ');
             
@@ -1546,7 +2403,7 @@ export class CMSUI {
             
             const locationLabel = document.createElement('strong');
             locationLabel.textContent = 'Location: ';
-            const locationValue = document.createTextNode(this.escapeHtml(data.location || 'TBD'));
+            const locationValue = document.createTextNode(this.text(data.location, 'TBD'));
             
             typeDiv.appendChild(typeLabel);
             typeDiv.appendChild(typeValue);
@@ -1606,19 +2463,19 @@ export class CMSUI {
             // Create safe DOM structure
             const companyLabel = document.createElement('strong');
             companyLabel.textContent = 'Company: ';
-            const companyValue = document.createTextNode(this.escapeHtml(data.company || data.organization || 'Unknown'));
+            const companyValue = document.createTextNode(this.text(data.company || data.organization, 'Unknown'));
             
             const sep1 = document.createTextNode(' | ');
             
             const typeLabel = document.createElement('strong');
             typeLabel.textContent = 'Type: ';
-            const typeValue = document.createTextNode(this.escapeHtml(data.type || 'Opportunity'));
+            const typeValue = document.createTextNode(this.text(data.type, 'Opportunity'));
             
             const sep2 = document.createTextNode(' | ');
             
             const locationLabel = document.createElement('strong');
             locationLabel.textContent = 'Location: ';
-            const locationValue = document.createTextNode(this.escapeHtml(data.location || 'Remote'));
+            const locationValue = document.createTextNode(this.text(data.location, 'Remote'));
             
             companyDiv.appendChild(companyLabel);
             companyDiv.appendChild(companyValue);
@@ -1748,7 +2605,7 @@ export class CMSUI {
 
         // Validate and sanitize file URL
         const safeUrl = this.safeUrl(file.url);
-        const safeName = this.escapeHtml(file.name);
+        const safeName = this.text(file.name, 'Unnamed File');
 
         if (file.type && file.type.startsWith('image/') && safeUrl) {
             const img = document.createElement('img');
@@ -1862,8 +2719,81 @@ export class CMSUI {
     }
 
     static createContentForm(type, onSubmit) {
-        // This would create a comprehensive form modal
-        // For now, returning a simple implementation
+        // For new content types, show the appropriate existing modal
+        switch (type) {
+            case 'challenge':
+                return this.showExistingModal('createChallengeModal', onSubmit);
+            case 'announcement':
+                return this.showExistingModal('sendAnnouncementModal', onSubmit);
+            default:
+                // For existing types (article, event, opportunity), use existing modals
+                return this.createGenericModal(type, onSubmit);
+        }
+    }
+
+    static showExistingModal(modalId, onSubmit) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            console.error(`Modal ${modalId} not found`);
+            return this.createGenericModal('content', onSubmit);
+        }
+
+        // Show the modal
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+
+        // Find the form inside the modal
+        const form = modal.querySelector('form');
+        if (form) {
+            // Remove existing listeners to prevent duplicates
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+
+            // Add new submit listener
+            newForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(newForm);
+                const data = {};
+                
+                // Convert FormData to object
+                for (const [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+
+                try {
+                    await onSubmit(data);
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                } catch (error) {
+                    console.error('Form submission error:', error);
+                    // Don't close modal on error
+                }
+            });
+        }
+
+        // Setup close handlers
+        const closeButtons = modal.querySelectorAll('[id*="close"], [id*="Close"]');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            });
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        });
+
+        return modal;
+    }
+
+    static createGenericModal(type, onSubmit) {
+        // Fallback for content types that don't have dedicated modals
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
         modal.setAttribute('role', 'dialog');
@@ -1905,16 +2835,58 @@ export class CMSUI {
         title.style.cssText = 'color: white; margin-bottom: 1.5rem;';
         title.textContent = `Create ${type.charAt(0).toUpperCase() + type.slice(1)}`;
         
-        const description = document.createElement('p');
-        description.style.cssText = 'color: rgba(255, 255, 255, 0.8);';
-        description.textContent = 'Form creation functionality will be implemented here.';
+        const form = document.createElement('form');
+        form.style.cssText = 'display: flex; flex-direction: column; gap: 1rem;';
+        
+        // Basic form fields
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.name = 'title';
+        titleInput.placeholder = 'Enter title...';
+        titleInput.required = true;
+        titleInput.className = 'glass-input';
+        
+        const contentTextarea = document.createElement('textarea');
+        contentTextarea.name = 'content';
+        contentTextarea.placeholder = 'Enter content...';
+        contentTextarea.rows = 6;
+        contentTextarea.className = 'glass-input';
+        
+        const submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        submitButton.className = 'glass-button primary';
+        submitButton.textContent = `Create ${type}`;
+        
+        form.appendChild(titleInput);
+        form.appendChild(contentTextarea);
+        form.appendChild(submitButton);
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                await onSubmit(data);
+                modal.remove();
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
+        });
         
         modalContent.appendChild(closeButton);
         modalContent.appendChild(title);
-        modalContent.appendChild(description);
+        modalContent.appendChild(form);
         modal.appendChild(modalContent);
         
         return modal;
+    }
+
+    /**
+     * Create member item component (alias for createSecureMemberCard for consistency)
+     */
+    static createMemberItem(member, handlers = {}) {
+        return this.createSecureMemberCard(member, handlers);
     }
 
     // Enhanced Search and Filtering Components
@@ -2111,7 +3083,9 @@ export class CMSUI {
         return select;
     }
 
-    static createSortSelect(sortOptions) {
+    static createSortSelect(sortConfig) {
+        const { options = [], onChange } = sortConfig || {};
+        
         const select = document.createElement('select');
         select.className = 'sort-select';
         select.style.cssText = `
@@ -2125,7 +3099,7 @@ export class CMSUI {
             min-width: 140px;
         `;
 
-        sortOptions.forEach(option => {
+        options.forEach(option => {
             const optionEl = document.createElement('option');
             optionEl.value = option.value;
             optionEl.textContent = option.label;
@@ -2135,11 +3109,7 @@ export class CMSUI {
             select.appendChild(optionEl);
         });
 
-        select.addEventListener('change', (e) => {
-            if (sortOptions.onChange) {
-                sortOptions.onChange(e.target.value);
-            }
-        });
+        select.addEventListener('change', (e) => onChange?.(e.target.value));
 
         return select;
     }
@@ -2283,17 +3253,21 @@ export class CMSUI {
     }
 
     static stripHtml(html) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || '';
+        try {
+            const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+            return doc.body?.textContent || '';
+        } catch {
+            return '';
+        }
     }
 
-    static formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    static stripHtml(html) {
+        try {
+            const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+            return doc.body?.textContent || '';
+        } catch {
+            return '';
+        }
     }
 
     // Pagination Component

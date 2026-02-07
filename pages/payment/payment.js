@@ -9,35 +9,20 @@ class PaymentPage {
         this.currentAmount = 0;
         this.availableEvents = [];
         this.availableMerchandise = [];
-        this.csrfToken = null;
         this.paymentAttempts = 0;
         this.maxPaymentAttempts = 5;
         this.init();
     }
 
     init() {
-        console.log('🚀 Initializing Enhanced Payment Page with Security...');
-        this.generateCSRFToken();
+        console.log('🚀 Initializing Enhanced Payment Page...');
         this.bindEvents();
         this.loadAvailableServices();
         this.initializeSecurityFeatures();
     }
 
     // ===== SECURITY ENHANCEMENTS =====
-    generateCSRFToken() {
-        // Generate a simple CSRF token for client-side validation
-        this.csrfToken = this.generateRandomToken();
-        const csrfInput = document.getElementById('csrfToken');
-        if (csrfInput) {
-            csrfInput.value = this.csrfToken;
-        }
-    }
-
-    generateRandomToken() {
-        return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-    }
+    // Note: Real CSRF protection must be server-side with session-bound tokens
 
     validateAmount(amount) {
         const numAmount = parseFloat(amount);
@@ -67,6 +52,7 @@ class PaymentPage {
     }
 
     checkRateLimit() {
+        // Note: This is client-side UX throttling only. Real rate limiting must be server-side.
         if (this.paymentAttempts >= this.maxPaymentAttempts) {
             throw new Error('Too many payment attempts. Please wait before trying again.');
         }
@@ -74,11 +60,6 @@ class PaymentPage {
     }
 
     initializeSecurityFeatures() {
-        // Disable right-click on sensitive elements
-        document.querySelectorAll('.glass-input').forEach(input => {
-            input.addEventListener('contextmenu', (e) => e.preventDefault());
-        });
-
         // Clear sensitive data on page unload
         window.addEventListener('beforeunload', () => {
             this.clearSensitiveData();
@@ -144,12 +125,14 @@ class PaymentPage {
 
     // ===== EVENT BINDING =====
     bindEvents() {
-        // Service selection
+        // Service selection - single clean handler
         document.querySelectorAll('.select-service-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const serviceCard = e.target.closest('.service-card');
-                const service = serviceCard.dataset.service;
-                this.selectService(service);
+                e.preventDefault();
+                e.stopPropagation();
+                const card = e.currentTarget.closest('.service-card');
+                if (!card) return;
+                this.selectService(card.dataset.service);
             });
         });
 
@@ -161,11 +144,20 @@ class PaymentPage {
             });
         }
 
-        // Payment method selection
+        // Payment method selection with keyboard support
         document.querySelectorAll('.payment-method').forEach(method => {
             method.addEventListener('click', (e) => {
                 const methodType = e.currentTarget.dataset.method;
                 this.selectPaymentMethod(methodType);
+            });
+            
+            // Keyboard support for accessibility
+            method.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const methodType = e.currentTarget.dataset.method;
+                    this.selectPaymentMethod(methodType);
+                }
             });
         });
 
@@ -256,14 +248,20 @@ class PaymentPage {
     }
 
     loadFallbackServices() {
-        // Fallback events data
+        // Fallback events data with relative dates
+        const today = new Date();
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(today.getMonth() + 1);
+        const twoMonths = new Date(today);
+        twoMonths.setMonth(today.getMonth() + 2);
+        
         this.availableEvents = [
             {
                 id: 'event-1',
-                title: 'Innovation Workshop 2024',
+                title: 'Innovation Workshop',
                 description: 'Learn design thinking and innovation methodologies',
                 fee: 500,
-                start_date: '2024-02-15',
+                start_date: nextMonth.toISOString().split('T')[0],
                 category: 'Workshop'
             },
             {
@@ -271,7 +269,7 @@ class PaymentPage {
                 title: 'Tech Hackathon',
                 description: '48-hour coding competition with prizes',
                 fee: 1000,
-                start_date: '2024-03-01',
+                start_date: twoMonths.toISOString().split('T')[0],
                 category: 'Competition'
             },
             {
@@ -279,7 +277,7 @@ class PaymentPage {
                 title: 'Entrepreneurship Bootcamp',
                 description: 'Intensive business development program',
                 fee: 1500,
-                start_date: '2024-03-15',
+                start_date: twoMonths.toISOString().split('T')[0],
                 category: 'Bootcamp'
             }
         ];
@@ -339,8 +337,15 @@ class PaymentPage {
     updateServiceHeader(serviceType) {
         const serviceConfig = this.getServiceConfig(serviceType);
 
-        document.getElementById('selectedServiceIcon').innerHTML = `<i class="${serviceConfig.icon}"></i>`;
-        document.getElementById('selectedServiceIcon').className = `selected-service-icon ${serviceType}`;
+        // SECURITY FIX: Use safe DOM manipulation instead of innerHTML
+        const iconContainer = document.getElementById('selectedServiceIcon');
+        iconContainer.innerHTML = ''; // Clear existing content
+        const icon = document.createElement('i');
+        icon.className = serviceConfig.icon;
+        iconContainer.appendChild(icon);
+        iconContainer.className = `selected-service-icon ${serviceType}`;
+        
+        // Safe text content updates
         document.getElementById('selectedServiceTitle').textContent = serviceConfig.title;
         document.getElementById('selectedServiceDescription').textContent = serviceConfig.description;
     }
@@ -582,7 +587,11 @@ class PaymentPage {
         let paymentDetailsComplete = false;
         if (this.selectedPaymentMethod === 'mpesa') {
             const phoneInput = document.getElementById('phoneNumber');
-            paymentDetailsComplete = phoneInput && phoneInput.value.trim().length >= 9;
+            try {
+                paymentDetailsComplete = !!phoneInput?.value && this.sanitizePhoneNumber(phoneInput.value).length === 12;
+            } catch {
+                paymentDetailsComplete = false;
+            }
         } else if (this.selectedPaymentMethod === 'card') {
             const cardNumber = document.getElementById('cardNumber');
             const expiry = document.getElementById('expiryDate');
@@ -629,20 +638,26 @@ class PaymentPage {
                 nextInstructions = ['All steps completed! Ready to process payment.'];
             }
 
-            instructions.innerHTML = nextInstructions.map(instruction =>
-                `<li>${instruction}</li>`
-            ).join('');
+            // Safe DOM manipulation without HTML parsing
+            instructions.replaceChildren(
+                ...nextInstructions.map(text => {
+                    const li = document.createElement('li');
+                    li.textContent = text;
+                    return li;
+                })
+            );
         }
     }
 
     selectPaymentMethod(method) {
         this.selectedPaymentMethod = method;
 
-        // Update UI
+        // Update UI and accessibility attributes
         document.querySelectorAll('.payment-method').forEach(m => {
-            m.classList.remove('active');
+            const isSelected = m.dataset.method === method;
+            m.classList.toggle('active', isSelected);
+            m.setAttribute('aria-checked', isSelected.toString());
         });
-        document.querySelector(`[data-method="${method}"]`).classList.add('active');
 
         // Show/hide payment forms
         document.querySelectorAll('.payment-form').forEach(form => {
@@ -692,7 +707,6 @@ class PaymentPage {
                 phoneNumber: phoneNumber,
                 userId: this.getCurrentUserId(),
                 description: this.generatePaymentDescription(),
-                csrfToken: this.csrfToken,
                 timestamp: Date.now()
             };
 
@@ -739,8 +753,7 @@ class PaymentPage {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-                    'X-CSRF-Token': this.csrfToken
+                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
                 },
                 body: JSON.stringify(paymentData),
                 signal: controller.signal
@@ -763,8 +776,7 @@ class PaymentPage {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-                    'X-CSRF-Token': this.csrfToken
+                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
                 },
                 body: JSON.stringify(paymentData),
                 signal: controller.signal

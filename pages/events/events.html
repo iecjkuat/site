@@ -1,281 +1,1885 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events - JKUAT Innovation and Entrepreneurship Club</title>
-
+    <title>Events - JKUAT Innovation Club</title>
+    
     <!-- Security Meta Tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
-
-    <!-- Debug Script - Remove after fixing modal issue -->
-    <script>
-        console.log('🔍 Modal Debug Script Loaded');
-        
-        // Override modal display functions temporarily
-        const originalShowEventDetails = window.showEventDetails;
-        window.showEventDetails = function(...args) {
-            console.error('🚫 BLOCKED: showEventDetails called with args:', args);
-            console.trace('Call stack:');
-            return false;
-        };
-        
-        // Monitor for any modal display changes
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                    const target = mutation.target;
-                    if (target.id === 'eventModal' || target.id === 'createEventModal') {
-                        if (target.style.display === 'flex' || target.style.display === 'block') {
-                            console.error('🚨 MODAL DISPLAY DETECTED:', target.id, 'Display:', target.style.display);
-                            console.trace('What triggered this modal display:');
-                            // Force hide it
-                            target.style.display = 'none';
-                            target.style.visibility = 'hidden';
-                            target.style.opacity = '0';
-                            document.body.style.overflow = '';
-                        }
-                    }
-                }
-            });
-        });
-        
-        // Start observing after DOM loads
-        document.addEventListener('DOMContentLoaded', function() {
-            const eventModal = document.getElementById('eventModal');
-            const createModal = document.getElementById('createEventModal');
-            
-            if (eventModal) {
-                observer.observe(eventModal, { attributes: true, attributeFilter: ['style'] });
-                console.log('👀 Monitoring eventModal for display changes');
-                
-                // Force hide immediately
-                eventModal.style.display = 'none';
-                eventModal.style.visibility = 'hidden';
-                eventModal.style.opacity = '0';
-            }
-            if (createModal) {
-                observer.observe(createModal, { attributes: true, attributeFilter: ['style'] });
-                console.log('👀 Monitoring createEventModal for display changes');
-                
-                // Force hide immediately
-                createModal.style.display = 'none';
-                createModal.style.visibility = 'hidden';
-                createModal.style.opacity = '0';
-            }
-            
-            // Additional safety: check every 100ms for the first 5 seconds
-            let checkCount = 0;
-            const intervalId = setInterval(function() {
-                checkCount++;
-                if (checkCount > 50) { // 5 seconds
-                    clearInterval(intervalId);
-                    return;
-                }
-                
-                const modals = document.querySelectorAll('#eventModal, #createEventModal');
-                modals.forEach(modal => {
-                    if (modal.style.display !== 'none') {
-                        console.warn('🚨 Modal found visible, forcing hide:', modal.id);
-                        modal.style.display = 'none';
-                        modal.style.visibility = 'hidden';
-                        modal.style.opacity = '0';
-                        document.body.style.overflow = '';
-                    }
-                });
-            }, 100);
-        });
-    </script>
-
-    <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
     
-    <!-- Events Page Navbar Initialization -->
-    <!-- Stylesheets -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-          crossorigin="anonymous" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    <link href="events.css?v=2025012201" rel="stylesheet">
+    <!-- Favicon -->
+    <link rel="icon" href="/shared/assets/favicon.ico" type="image/x-icon">
     
-    <!-- Aggressive Modal Prevention CSS -->
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/shared/core/base.css">
+    <link rel="stylesheet" href="/shared/core/theme.css">
+    <link rel="stylesheet" href="/shared/global-navbar.css">
+    <link rel="stylesheet" href="events.css">
+    
+    <!-- Force Dark Theme Override -->
     <style>
-        /* Completely prevent modal display */
-        #eventModal, #createEventModal, .modal-backdrop {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-            position: fixed !important;
-            top: -9999px !important;
-            left: -9999px !important;
-            z-index: -1 !important;
-        }
-        
-        /* Ensure body scroll is never locked */
+        /* Immediate CSS test */
         body {
-            overflow: auto !important;
-        }
-        
-        /* Hide any elements that might trigger modals */
-        .details-btn, .view-details-btn, [data-action="details"] {
-            pointer-events: none !important;
-            opacity: 0.5 !important;
-        }
-        
-        /* Ensure proper spacing for navbar */
-        body {
+            background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            color: #f9fafb !important;
             padding-top: 140px !important;
         }
+        .global-bg {
+            display: none !important;
+        }
+        
+        /* Embed critical CSS directly */
+        .events-page {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            line-height: 1.6 !important;
+            color: #f9fafb !important;
+            min-height: 100vh !important;
+            position: relative !important;
+            overflow-x: hidden !important;
+        }
+        
+        /* Complete Navbar Styling - Match Ideas Page */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1000 !important;
+            padding: 1rem 0 !important;
+        }
+        
+        .glass-nav .container {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 0 2rem !important;
+        }
+        
+        .nav-club-header {
+            text-align: center !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        .nav-club-title {
+            color: white !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            margin: 0 !important;
+        }
+        
+        .nav-links-container {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 2rem !important;
+        }
+        
+        .nav-center {
+            display: flex !important;
+            gap: 0.5rem !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+        }
+        
+        .nav-auth {
+            display: flex !important;
+            gap: 0.5rem !important;
+            align-items: center !important;
+        }
+        
+        /* Glass Buttons for Navigation */
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            padding: 0.5rem 1rem !important;
+            color: white !important;
+            text-decoration: none !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            white-space: nowrap !important;
+            cursor: pointer !important;
+        }
+        
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            transform: translateY(-1px) !important;
+            color: white !important;
+            text-decoration: none !important;
+        }
+        
+        .notification-bell {
+            position: relative !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            padding: 0.5rem !important;
+            color: white !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 40px !important;
+            height: 40px !important;
+        }
+        
+        .notification-bell:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        /* Dropdown Styles */
+        .nav-dropdown {
+            position: relative !important;
+            display: inline-block !important;
+        }
+        
+        .dropdown-toggle {
+            position: relative !important;
+            cursor: pointer !important;
+        }
+        
+        .dropdown-toggle.active {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+        
+        .dropdown-arrow {
+            margin-left: 0.25rem !important;
+            font-size: 0.75rem !important;
+            transition: transform 0.3s ease !important;
+        }
+        
+        .dropdown-toggle.active .dropdown-arrow {
+            transform: rotate(180deg) !important;
+        }
+        
+        .dropdown-menu {
+            position: absolute !important;
+            top: calc(100% + 0.5rem) !important;
+            left: 0 !important;
+            background: rgba(0, 0, 0, 0.9) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            min-width: 200px !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transform: translateY(-10px) !important;
+            transition: all 0.3s ease !important;
+            z-index: 9999 !important;
+        }
+        
+        .dropdown-menu.show {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transform: translateY(0) !important;
+        }
+        
+        .dropdown-item {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 0.75rem !important;
+            padding: 0.75rem 1rem !important;
+            color: white !important;
+            text-decoration: none !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .dropdown-item:last-child {
+            border-bottom: none !important;
+        }
+        
+        .dropdown-item:hover {
+            background: rgba(59, 130, 246, 0.2) !important;
+            color: white !important;
+            text-decoration: none !important;
+            transform: translateX(5px) !important;
+        }
+        
+        .dropdown-item i {
+            width: 16px !important;
+            text-align: center !important;
+            color: #3b82f6 !important;
+        }
+        
+        /* Responsive Navigation */
+        @media (max-width: 768px) {
+            .nav-links-container {
+                flex-direction: column !important;
+                gap: 1rem !important;
+            }
+            
+            .nav-center {
+                order: 2 !important;
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            .nav-auth {
+                order: 1 !important;
+                justify-content: center !important;
+            }
+            
+            .nav-club-title {
+                font-size: 1.125rem !important;
+            }
+            
+            .glass-nav {
+                padding: 0.75rem 0 !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .nav-center {
+                gap: 0.25rem !important;
+            }
+            
+            .glass-button {
+                padding: 0.375rem 0.5rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            .glass-button i {
+                display: none !important;
+            }
+            
+            .nav-club-title {
+                font-size: 1rem !important;
+            }
+            
+            .glass-nav .container {
+                padding: 0 1rem !important;
+            }
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 16px !important;
+            padding: 2rem !important;
+            margin: 2rem !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .header-title {
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+            color: white !important;
+            margin: 0 !important;
+        }
+        
+        .stats-bar {
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 20px !important;
+            padding: 2rem 1rem !important;
+            margin: 2rem !important;
+            display: flex !important;
+            justify-content: space-around !important;
+            text-align: center !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .stat-value {
+            font-size: 2rem !important;
+            font-weight: 800 !important;
+            color: #3b82f6 !important;
+            display: block !important;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem !important;
+            color: rgba(255, 255, 255, 0.9) !important;
+            margin-top: 0.5rem !important;
+            font-weight: 600 !important;
+        }
+        
+        .filter-tabs {
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            padding: 1rem !important;
+            margin: 2rem !important;
+            display: flex !important;
+            gap: 0.75rem !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .filter-tab {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 25px !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            color: rgba(255, 255, 255, 0.8) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        .filter-tab.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: white !important;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3) !important;
+        }
+        
+        .loading-skeleton {
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            padding: 3rem !important;
+            margin: 2rem !important;
+            text-align: center !important;
+            color: white !important;
+        }
+        
+        #eventsGrid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
+            gap: 2rem !important;
+            margin: 2rem !important;
+        }
+        
+        .event-card {
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Instagram-Style Media Gallery Styles */
+        .media-carousel {
+            position: relative !important;
+        }
+
+        .media-item {
+            transition: opacity 0.3s ease !important;
+        }
+
+        .media-nav-btn:hover {
+            opacity: 1 !important;
+            transform: translateY(-50%) scale(1.1) !important;
+        }
+
+        .media-dot {
+            transition: all 0.3s ease !important;
+        }
+
+        .media-dot:hover {
+            transform: scale(1.2) !important;
+        }
+
+        /* Instagram-Style Interaction Buttons */
+        .interaction-btn {
+            transition: all 0.3s ease !important;
+        }
+
+        .interaction-btn:hover {
+            transform: scale(1.1) !important;
+        }
+
+        .interaction-btn.liked {
+            color: #ef4444 !important;
+            animation: heartBeat 0.6s ease-in-out !important;
+        }
+
+        .save-btn.saved {
+            color: #f59e0b !important;
+            animation: bookmarkSave 0.4s ease-in-out !important;
+        }
+
+        /* Heart Animation */
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.3); }
+            50% { transform: scale(1.1); }
+            75% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+
+        /* Bookmark Save Animation */
+        @keyframes bookmarkSave {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* Floating Heart Animation */
+        .floating-heart {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            font-size: 3rem !important;
+            pointer-events: none !important;
+            animation: floatHeart 1s ease-out forwards !important;
+            z-index: 10 !important;
+        }
+
+        @keyframes floatHeart {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0);
+            }
+            15% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -80%) scale(0.8);
+            }
+        }
+
+        /* Comments Section Styles */
+        .comments-section {
+            transition: all 0.3s ease !important;
+        }
+
+        .comments-section.expanded {
+            animation: expandComments 0.3s ease-out !important;
+        }
+
+        @keyframes expandComments {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .comment-input:focus {
+            border-color: rgba(59, 130, 246, 0.5) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        .post-comment-btn:hover {
+            transform: translateY(-50%) scale(1.05) !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        /* Upload Button Styles */
+        .upload-media-btn:hover {
+            background: rgba(0, 0, 0, 0.9) !important;
+            transform: scale(1.1) !important;
+        }
+
+        /* Registration Button Styles */
+        .register-btn:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4) !important;
+        }
+
+        .register-btn:disabled {
+            opacity: 0.7 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+
+        /* Mobile Responsive Adjustments */
+        @media (max-width: 768px) {
+            .event-media {
+                height: 250px !important;
+            }
+            
+            .media-nav-btn {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 0.75rem !important;
+            }
+            
+            .interaction-stats {
+                gap: 1rem !important;
+            }
+            
+            .interaction-btn {
+                font-size: 1.25rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .event-media {
+                height: 200px !important;
+            }
+            
+            .event-content {
+                padding: 1rem !important;
+            }
+            
+            .comments-container {
+                padding: 1rem !important;
+            }
+        }
     </style>
-
-    <!-- SEO Meta Tags -->
-    <meta name="description"
-        content="Discover upcoming innovation events, workshops, hackathons, and networking opportunities at JKUAT Innovation Club.">
-    <meta name="keywords" content="JKUAT, events, workshops, hackathons, innovation, entrepreneurship, technology">
 </head>
-
-<body class="bg-pattern">
-    <!-- Shared navbar will be automatically inserted here -->
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container hero-container">
-
-            <!-- Badge -->
-            <div class="hero-badge">
-                <span class="pulse"></span>
-                INNOVATION EVENTS
-            </div>
-
-            <!-- Main Heading -->
-            <h1 class="hero-title gradient-text">
-                Transform Ideas into<br>
-                <span class="gradient-text accent">Reality</span>
-            </h1>
-
-            <!-- Subtitle -->
-            <p class="hero-subtitle">
-                Join our exciting lineup of <strong>workshops, hackathons, seminars</strong>, and networking events
-                designed to accelerate your innovation journey.
-            </p>
-
-            <!-- Stats Preview -->
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <div id="totalEventsCount" class="stat-number total">17</div>
-                    <div class="stat-label">Total Events</div>
-                </div>
-                <div class="stat-item">
-                    <div id="upcomingEventsCount" class="stat-number upcoming">8</div>
-                    <div class="stat-label">Upcoming</div>
-                </div>
-                <div class="stat-item">
-                    <div id="totalAttendeesCount" class="stat-number attendees">150+</div>
-                    <div class="stat-label">Attendees</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Events Section -->
-    <section class="events-section">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-badge">
-                    UPCOMING EVENTS
-                </div>
-                <h2 class="section-title">
-                    Join Our <span class="gradient-text accent">Innovation</span> Community
-                </h2>
-                <p class="section-description">
-                    Discover opportunities to learn, network, and grow with fellow innovators and industry experts.
-                </p>
-
-                <!-- Admin Actions -->
-                <div id="adminActions" class="admin-actions">
-                    <button id="createEventBtn" class="admin-btn">
-                        <i class="fas fa-plus"></i>Create New Event
+<body class="events-page bg-pattern">
+    <!-- Global Navbar Mount Point -->
+    <div id="global-navbar-mount"></div>
+    
+    <!-- Main Events Page -->
+    <main id="eventsPage" class="events-page">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="header-title">Events</h1>
+                <div class="header-actions">
+                    <button class="header-btn" title="Search">
+                        <i class="fas fa-search"></i>
                     </button>
-                    <button id="manageEventsBtn" class="admin-btn secondary">
-                        <i class="fas fa-cog"></i>Manage Events
+                    <button class="header-btn" title="Notifications">
+                        <i class="fas fa-bell"></i>
                     </button>
-                    <a href="admin-media.html" class="admin-btn secondary">
-                        <i class="fas fa-images"></i>Media Management
-                    </a>
+                    <button class="header-btn" title="Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <!-- Event Filters -->
-            <div class="filters-container">
-                <button class="filter-btn active" data-filter="all">
-                    All Events
-                </button>
-                <button class="filter-btn" data-filter="workshop">
-                    Workshops
-                </button>
-                <button class="filter-btn" data-filter="seminar">
-                    Seminars
-                </button>
-                <button class="filter-btn" data-filter="competition">
-                    Competitions
-                </button>
-                <button class="filter-btn" data-filter="social">
-                    Social Events
-                </button>
+        <!-- Stats Bar -->
+        <section class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-value" id="totalEventsCount">0</span>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="upcomingEventsCount">0</span>
+                <div class="stat-label">Upcoming</div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="totalAttendeesCount">0</span>
+                <div class="stat-label">Attendees</div>
+            </div>
+        </section>
+
+        <!-- Filter Tabs -->
+        <nav class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="upcoming">Upcoming</button>
+            <button class="filter-tab" data-filter="live">Live</button>
+            <button class="filter-tab" data-filter="completed">Completed</button>
+            <button class="filter-tab" data-filter="workshop">Workshops</button>
+            <button class="filter-tab" data-filter="seminar">Seminars</button>
+            <button class="filter-tab" data-filter="competition">Competitions</button>
+        </nav>
+
+        <!-- Events Container -->
+        <section class="events-container">
+            <!-- Loading State -->
+            <div class="loading-skeleton" id="eventsLoading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading events...</p>
             </div>
 
             <!-- Events Grid -->
-            <div id="eventsGrid" class="events-grid">
-                <!-- Events will be loaded here -->
-            </div>
-
-            <!-- Loading State -->
-            <div id="eventsLoading" class="loading-container">
-                <div class="glass-card loading-card">
-                    <div class="spinner"></div>
-                    <p class="loading-text">Loading Events...</p>
+            <div id="eventsGrid">
+                <!-- Fallback content for debugging -->
+                <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 16px; color: white; text-align: center; margin: 2rem 0;">
+                    <h3>🔧 Debug Mode</h3>
+                    <p>If you see this, JavaScript hasn't loaded yet.</p>
+                    <p>Check the browser console for errors.</p>
                 </div>
             </div>
 
-            <!-- No Events Message -->
-            <div id="noEventsMessage" class="no-events-container">
-                <div class="glass-card no-events-card">
-                    <div class="no-events-icon">
-                        <i class="fas fa-calendar-times"></i>
+            <!-- No Events State -->
+            <div class="no-events" id="noEventsMessage" style="display: none;">
+                <div class="no-events-icon">🎪</div>
+                <h3>No events found</h3>
+                <p>Check back later for exciting events!</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Scripts -->
+    <script>
+        // Immediate test script
+        console.log('🧪 Immediate script test - JavaScript is working');
+        console.log('🧪 Document ready state:', document.readyState);
+        console.log('🧪 Body classes:', document.body.className);
+        
+        // Test if elements exist
+        setTimeout(() => {
+            console.log('🧪 Testing elements after 100ms:');
+            console.log('  - eventsPage:', document.getElementById('eventsPage') ? 'EXISTS' : 'MISSING');
+            console.log('  - eventsGrid:', document.getElementById('eventsGrid') ? 'EXISTS' : 'MISSING');
+            console.log('  - eventsLoading:', document.getElementById('eventsLoading') ? 'EXISTS' : 'MISSING');
+        }, 100);
+        
+        // Dropdown functionality
+        document.addEventListener('click', function(e) {
+            // Handle dropdown toggles
+            if (e.target.closest('.dropdown-toggle')) {
+                e.preventDefault();
+                const toggle = e.target.closest('.dropdown-toggle');
+                const dropdownType = toggle.dataset.dropdown;
+                const dropdown = document.getElementById(`${dropdownType}-dropdown`);
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== dropdown) {
+                        menu.classList.remove('show');
+                        menu.previousElementSibling.classList.remove('active');
+                    }
+                });
+                
+                // Toggle current dropdown
+                if (dropdown) {
+                    dropdown.classList.toggle('show');
+                    toggle.classList.toggle('active');
+                }
+            }
+            // Close dropdowns when clicking outside
+            else if (!e.target.closest('.nav-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                    menu.previousElementSibling.classList.remove('active');
+                });
+            }
+        });
+        
+        // Logout function
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear any stored auth data
+                localStorage.removeItem('supabase.auth.token');
+                sessionStorage.clear();
+                
+                // Redirect to home
+                window.location.href = '/home/';
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    
+    <!-- Embed Events JavaScript directly -->
+    <script>
+        /**
+         * Events Page Manager - Dark Theme with Glass Morphism
+         * Matching Ideas Page Design System
+         */
+
+        console.log('🎪 Events Manager script loaded');
+
+        class EventsManager {
+            constructor() {
+                console.log('🔧 EventsManager constructor called');
+                
+                this.events = [];
+                this.expandedComments = new Set();
+                this.userLikes = new Set();
+                this.userSaves = new Set();
+                
+                // Scoped root element to prevent ID conflicts
+                this.root = document.getElementById('eventsPage');
+                console.log('📍 Root element:', this.root ? 'FOUND' : 'NOT FOUND');
+                
+                if (!this.root) {
+                    console.error('❌ Events page root element not found');
+                    throw new Error('Events page root element not found');
+                }
+                
+                // Bind methods once for better performance and cleanup
+                this.handleClick = this.handleClick.bind(this);
+                this.handleInput = this.handleInput.bind(this);
+                this.handleKeydown = this.handleKeydown.bind(this);
+                
+                console.log('🔧 EventsManager constructor completed, calling init...');
+                this.init();
+            }
+
+            // Scoped element queries to prevent ID conflicts
+            querySelector(selector) {
+                return this.root?.querySelector(selector);
+            }
+
+            querySelectorAll(selector) {
+                return this.root?.querySelectorAll(selector) || [];
+            }
+
+            async init() {
+                console.log('🎪 Events Manager: Initializing...');
+                console.log('📍 Root element found:', this.root ? 'YES' : 'NO');
+                
+                try {
+                    console.log('🔧 Setting up event listeners...');
+                    this.setupEventListeners();
+                    
+                    console.log('📊 Loading events...');
+                    await this.loadEvents();
+                    console.log('📊 Events loaded:', this.events.length);
+                    console.log('📊 Sample events:', this.events.map(e => e.title));
+                    
+                    console.log('🎨 Rendering events...');
+                    this.renderEvents();
+                    
+                    console.log('📈 Updating stats...');
+                    this.updateStats();
+                    
+                    console.log('✅ Events Manager initialized successfully');
+                } catch (error) {
+                    console.error('❌ Error in init():', error);
+                    throw error;
+                }
+            }
+
+            setupEventListeners() {
+                // Single event delegation for all interactions
+                document.addEventListener('click', this.handleClick);
+                document.addEventListener('input', this.handleInput);
+                document.addEventListener('keydown', this.handleKeydown);
+
+                // Initialize filter tabs immediately (not in DOMContentLoaded)
+                this.initFilterTabs();
+                
+                // Double-tap to like (mobile)
+                this.setupDoubleTapLike();
+            }
+
+            initFilterTabs() {
+                const filterTabs = this.querySelectorAll('.filter-tab');
+                
+                filterTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        // Update active tab
+                        filterTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Apply filter
+                        const filter = tab.dataset.filter;
+                        this.applyFilter(filter);
+                    });
+                });
+            }
+
+            async loadEvents() {
+                console.log('📊 loadEvents() called');
+                
+                // Skip API call for now and go directly to sample data
+                console.log('🎭 Using sample data directly...');
+                this.events = this.getSampleEvents();
+                console.log('✅ Sample events loaded:', this.events.length);
+                console.log('📋 Sample events titles:', this.events.map(e => e.title));
+                
+                console.log('📊 Final events array:', this.events);
+            }
+
+            renderEvents() {
+                console.log('🎨 renderEvents() called');
+                const container = this.querySelector('#eventsGrid');
+                console.log('📦 Events container found:', container ? 'YES' : 'NO');
+                console.log('📦 Container element:', container);
+                
+                if (!container) {
+                    console.error('❌ Events grid container not found!');
+                    return;
+                }
+
+                // Hide loading with scoped query
+                const loading = this.querySelector('#eventsLoading');
+                if (loading) {
+                    loading.style.display = 'none';
+                    console.log('🔄 Loading hidden');
+                } else {
+                    console.log('⚠️ Loading element not found');
+                }
+
+                console.log('🎨 Creating event cards for', this.events.length, 'events');
+                const eventsHTML = this.events.map((event, index) => {
+                    console.log(`🎨 Creating card ${index + 1}:`, event.title);
+                    return this.createEventCard(event);
+                }).join('');
+                
+                console.log('🎨 Generated HTML length:', eventsHTML.length);
+                console.log('🎨 First 200 chars of HTML:', eventsHTML.substring(0, 200));
+                
+                container.innerHTML = eventsHTML;
+                console.log('✅ Events rendered to container');
+                console.log('📦 Container innerHTML length after render:', container.innerHTML.length);
+            }
+
+            createEventCard(event) {
+                const eventId = this.normalizeId(event.id);
+                const isLiked = this.userLikes.has(eventId);
+                const isSaved = this.userSaves.has(eventId);
+                const commentsExpanded = this.expandedComments.has(eventId);
+                
+                const startDate = new Date(event.event_date || event.start_date);
+                const now = new Date();
+                const isCompleted = event.status === 'completed' || startDate < now;
+                const safeStatus = this.safeStatus(event.status);
+
+                return `
+                    <article class="event-card instagram-style" data-event-id="${eventId}" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; overflow: hidden; transition: all 0.3s ease; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+                        <!-- Event Header -->
+                        <header class="event-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div class="event-profile" style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="profile-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div class="profile-info">
+                                    <h3 style="font-size: 0.9rem; font-weight: 600; margin: 0; color: white;">JKUAT Innovation Club</h3>
+                                    <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        ${this.escapeHTML(event.location)}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="event-date-badge" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                ${this.formatDate(event.event_date || event.start_date)}
+                            </div>
+                        </header>
+
+                        <!-- Instagram-Style Media Gallery -->
+                        <div class="event-media" style="position: relative; width: 100%; height: 300px; overflow: hidden; background: rgba(0, 0, 0, 0.3);">
+                            ${this.renderMediaGallery(event, eventId)}
+                            
+                            <!-- Event Status Badge -->
+                            <div class="event-status-badge ${safeStatus}" style="position: absolute; top: 1rem; left: 1rem; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; backdrop-filter: blur(10px); z-index: 3; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(59, 130, 246, 0.9); color: white;">
+                                ${this.getStatusText(safeStatus)}
+                            </div>
+
+                            <!-- Media Upload Button (for admins/organizers) -->
+                            <div class="media-upload-btn" style="position: absolute; top: 1rem; right: 1rem; z-index: 3;">
+                                <button class="upload-media-btn" data-action="upload-media" data-event-id="${eventId}" style="background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 50%; width: 40px; height: 40px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;" title="Upload Photo/Video">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Instagram-Style Interaction Bar -->
+                        <div class="event-interactions" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div class="interaction-stats" style="display: flex; gap: 1.5rem;">
+                                <button class="interaction-btn like-btn ${isLiked ? 'liked' : ''}" data-action="like" data-event-id="${eventId}" style="background: none; border: none; color: ${isLiked ? '#ef4444' : 'rgba(255, 255, 255, 0.8)'}; font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-heart"></i>
+                                    <span class="like-count" style="font-size: 0.9rem; font-weight: 600;">${event.likes || 0}</span>
+                                </button>
+                                
+                                <button class="interaction-btn comment-btn" data-action="toggle-comments" data-event-id="${eventId}" style="background: none; border: none; color: rgba(255, 255, 255, 0.8); font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-comment"></i>
+                                    <span class="comment-count" style="font-size: 0.9rem; font-weight: 600;">${(event.comments || []).length}</span>
+                                </button>
+                                
+                                <button class="interaction-btn share-btn" data-action="share" data-event-id="${eventId}" style="background: none; border: none; color: rgba(255, 255, 255, 0.8); font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-share"></i>
+                                    <span class="share-count" style="font-size: 0.9rem; font-weight: 600;">${event.shares || 0}</span>
+                                </button>
+                            </div>
+                            
+                            <div class="interaction-actions" style="display: flex; gap: 0.5rem;">
+                                <button class="save-btn ${isSaved ? 'saved' : ''}" data-action="save" data-event-id="${eventId}" style="background: none; border: none; color: ${isSaved ? '#f59e0b' : 'rgba(255, 255, 255, 0.8)'}; font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease;">
+                                    <i class="fas fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Event Content -->
+                        <div class="event-content" style="padding: 1.5rem;">
+                            <h4 class="event-title" style="font-size: 1.25rem; margin: 0 0 0.75rem 0; line-height: 1.4; font-weight: 700; color: white;">
+                                <strong style="color: #3b82f6;">jkuat_innovation</strong> ${this.escapeHTML(event.title)}
+                            </h4>
+                            <p class="event-description" style="color: rgba(255, 255, 255, 0.8); line-height: 1.6; margin: 0 0 1.5rem 0; font-size: 0.875rem;">${this.escapeHTML(event.description)}</p>
+                            
+                            <div class="event-details" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; justify-content: space-between;">
+                                <div class="detail-item" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                    <i class="fas fa-clock" style="color: #3b82f6; width: 16px;"></i>
+                                    <span>${this.formatTime(event.event_date || event.start_date)}</span>
+                                </div>
+                                <div class="detail-item" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                    <i class="fas fa-tag" style="color: #3b82f6; width: 16px;"></i>
+                                    <span>${event.fee ? `KSh ${event.fee}` : 'Free'}</span>
+                                </div>
+                                <div class="detail-item" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                    <i class="fas fa-users" style="color: #3b82f6; width: 16px;"></i>
+                                    <span>${event.current_attendees || 0}/${event.max_attendees} registered</span>
+                                </div>
+                            </div>
+
+                            ${event.hashtags ? `
+                                <div class="event-hashtags" style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    ${event.hashtags.map(tag => `<span class="hashtag" style="color: #3b82f6; font-size: 0.85rem; cursor: pointer; background: rgba(59, 130, 246, 0.1); padding: 0.25rem 0.75rem; border-radius: 15px; border: 1px solid rgba(59, 130, 246, 0.2);">${this.escapeHTML(tag)}</span>`).join(' ')}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div class="comments-section ${commentsExpanded ? 'expanded' : ''}" id="comments-${eventId}" style="border-top: 1px solid rgba(255, 255, 255, 0.1); ${commentsExpanded ? '' : 'display: none;'}">
+                            ${this.renderComments(event, eventId)}
+                        </div>
+
+                        <!-- Registration Button -->
+                        <div class="event-registration" style="padding: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <button class="register-btn" data-action="register" data-event-id="${eventId}" style="width: 100%; padding: 0.875rem 1.5rem; border: none; border-radius: 25px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                                <i class="fas fa-calendar-plus"></i>
+                                Register Now
+                            </button>
+                        </div>
+                    </article>
+                `;
+            }
+
+            updateStats() {
+                const totalEvents = this.events.length;
+                const upcomingEvents = this.events.filter(event => {
+                    const startDate = new Date(event.event_date || event.start_date);
+                    return startDate > new Date();
+                }).length;
+                const totalAttendees = this.events.reduce((sum, event) => {
+                    return sum + (event.current_attendees || 0);
+                }, 0);
+
+                // Update stats in the UI with scoped queries
+                const totalEl = this.querySelector('#totalEventsCount');
+                const upcomingEl = this.querySelector('#upcomingEventsCount');
+                const attendeesEl = this.querySelector('#totalAttendeesCount');
+
+                if (totalEl) totalEl.textContent = totalEvents.toString();
+                if (upcomingEl) upcomingEl.textContent = upcomingEvents.toString();
+                if (attendeesEl) attendeesEl.textContent = totalAttendees + '+';
+            }
+
+            getSampleEvents() {
+                console.log('🎭 getSampleEvents() called');
+                const sampleEvents = [
+                    {
+                        id: '1',
+                        title: 'AI & Machine Learning Workshop',
+                        description: 'Join us for an intensive workshop on artificial intelligence and machine learning. Learn the fundamentals of AI, explore popular ML algorithms, and build your first neural network.',
+                        event_type: 'workshop',
+                        event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                        location: 'JKUAT Innovation Lab',
+                        max_attendees: 50,
+                        current_attendees: 23,
+                        fee: 0,
+                        status: 'active',
+                        likes: 42,
+                        shares: 12,
+                        hashtags: ['#AI', '#MachineLearning', '#Workshop', '#JKUAT'],
+                        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        id: '2',
+                        title: 'Blockchain Workshop - Completed',
+                        description: 'An intensive workshop covering blockchain technology, cryptocurrency fundamentals, and smart contract development.',
+                        event_type: 'workshop',
+                        event_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        end_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
+                        location: 'JKUAT Blockchain Lab',
+                        max_attendees: 40,
+                        current_attendees: 38,
+                        fee: 800,
+                        status: 'completed',
+                        likes: 124,
+                        shares: 28,
+                        hashtags: ['#Blockchain', '#Cryptocurrency', '#SmartContracts', '#JKUAT'],
+                        created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        id: '3',
+                        title: 'Innovation Pitch Competition',
+                        description: 'Present your innovative ideas to a panel of industry experts and investors. Win cash prizes, mentorship opportunities, and potential funding for your startup.',
+                        event_type: 'competition',
+                        event_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+                        end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
+                        location: 'JKUAT Main Auditorium',
+                        max_attendees: 200,
+                        current_attendees: 87,
+                        fee: 0,
+                        status: 'active',
+                        likes: 156,
+                        shares: 45,
+                        hashtags: ['#Innovation', '#Pitch', '#Competition', '#Startup', '#JKUAT'],
+                        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+                    }
+                ];
+                
+                console.log('🎭 Sample events created:', sampleEvents.length);
+                console.log('🎭 Sample event titles:', sampleEvents.map(e => e.title));
+                return sampleEvents;
+            }
+
+            // Helper methods
+            normalizeId(id) {
+                return String(id || '');
+            }
+
+            escapeHTML(str) {
+                return String(str ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            safeStatus(status) {
+                return ['upcoming', 'live', 'completed', 'active'].includes(status) ? status : 'upcoming';
+            }
+
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            formatTime(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+
+            handleClick(e) {
+                const target = e.target.closest('[data-action]');
+                if (!target) return;
+
+                const action = target.dataset.action;
+                const eventId = this.normalizeId(target.dataset.eventId);
+                const commentId = this.normalizeId(target.dataset.commentId);
+                const mediaIndex = target.dataset.index;
+
+                switch (action) {
+                    case 'like':
+                        this.toggleLike(eventId, target);
+                        break;
+                    case 'toggle-comments':
+                        this.toggleComments(eventId);
+                        break;
+                    case 'share':
+                        this.shareEvent(eventId);
+                        break;
+                    case 'save':
+                        this.toggleSave(eventId, target);
+                        break;
+                    case 'register':
+                        this.handleRegistration(eventId, target);
+                        break;
+                    case 'upload-media':
+                        this.handleMediaUpload(eventId);
+                        break;
+                    case 'media-nav':
+                        this.navigateToMedia(eventId, parseInt(mediaIndex));
+                        break;
+                    case 'media-prev':
+                        this.navigateMediaPrev(eventId);
+                        break;
+                    case 'media-next':
+                        this.navigateMediaNext(eventId);
+                        break;
+                    case 'post-comment':
+                        this.postComment(eventId);
+                        break;
+                    case 'like-comment':
+                        this.likeComment(commentId);
+                        break;
+                    case 'reply-comment':
+                        this.replyToComment(commentId);
+                        break;
+                }
+            }
+
+            handleInput(e) {
+                if (e.target.classList.contains('comment-input')) {
+                    this.handleCommentInput(e.target);
+                }
+            }
+
+            handleKeydown(e) {
+                if (e.target.classList.contains('comment-input') && e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const eventCard = e.target.closest('.event-card');
+                    if (eventCard) {
+                        const eventId = this.normalizeId(eventCard.dataset.eventId);
+                        this.postComment(eventId);
+                    }
+                }
+            }
+
+            setupDoubleTapLike() {
+                let lastTap = 0;
+                document.addEventListener('touchend', (e) => {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    
+                    if (tapLength < 500 && tapLength > 0) {
+                        const mediaContainer = e.target.closest('.event-media');
+                        if (mediaContainer) {
+                            const card = mediaContainer.closest('.event-card');
+                            const eventId = this.normalizeId(card?.dataset.eventId);
+                            const likeBtn = card?.querySelector('[data-action="like"]');
+                            
+                            if (likeBtn && eventId) {
+                                this.toggleLike(eventId, likeBtn);
+                                this.showHeartAnimation(mediaContainer);
+                                e.preventDefault();
+                            }
+                        }
+                    }
+                    lastTap = currentTime;
+                });
+            }
+
+            applyFilter(filter) {
+                const events = this.events;
+                const now = new Date();
+                
+                let filteredEvents = events;
+                
+                switch (filter) {
+                    case 'upcoming':
+                        filteredEvents = events.filter(event => {
+                            const startDate = new Date(event.event_date || event.start_date);
+                            return startDate > now && event.status !== 'completed';
+                        });
+                        break;
+                    case 'live':
+                        filteredEvents = events.filter(event => {
+                            const startDate = new Date(event.event_date || event.start_date);
+                            const endDate = new Date(event.end_date);
+                            return startDate <= now && endDate >= now;
+                        });
+                        break;
+                    case 'completed':
+                        filteredEvents = events.filter(event => {
+                            return event.status === 'completed' || new Date(event.end_date) < now;
+                        });
+                        break;
+                    case 'workshop':
+                        filteredEvents = events.filter(event => 
+                            event.event_type === 'workshop' || 
+                            (event.hashtags && event.hashtags.some(tag => tag.toLowerCase().includes('workshop')))
+                        );
+                        break;
+                    case 'seminar':
+                        filteredEvents = events.filter(event => 
+                            event.event_type === 'seminar' ||
+                            (event.hashtags && event.hashtags.some(tag => tag.toLowerCase().includes('seminar')))
+                        );
+                        break;
+                    case 'competition':
+                        filteredEvents = events.filter(event => 
+                            event.event_type === 'competition' ||
+                            (event.hashtags && event.hashtags.some(tag => tag.toLowerCase().includes('competition')))
+                        );
+                        break;
+                    default:
+                        filteredEvents = events;
+                }
+                
+                // Update the display with scoped queries
+                const container = this.querySelector('#eventsGrid');
+                const noEventsMsg = this.querySelector('#noEventsMessage');
+                
+                if (container) {
+                    if (filteredEvents.length === 0) {
+                        container.innerHTML = '';
+                        if (noEventsMsg) noEventsMsg.style.display = 'block';
+                    } else {
+                        if (noEventsMsg) noEventsMsg.style.display = 'none';
+                        container.innerHTML = filteredEvents.map(event => this.createEventCard(event)).join('');
+                    }
+                }
+            }
+
+            toggleLike(eventId, button) {
+                const event = this.events.find(e => this.normalizeId(e.id) === eventId);
+                if (!event) return;
+
+                const isLiked = this.userLikes.has(eventId);
+                
+                if (isLiked) {
+                    this.userLikes.delete(eventId);
+                    event.likes = Math.max(0, (event.likes || 0) - 1);
+                } else {
+                    this.userLikes.add(eventId);
+                    event.likes = (event.likes || 0) + 1;
+                    this.showHeartAnimation(button.closest('.event-card'));
+                }
+
+                // Update UI
+                button.classList.toggle('liked');
+                const iconEl = button.querySelector('.icon');
+                const countEl = button.querySelector('.count');
+                if (iconEl) iconEl.textContent = isLiked ? '🤍' : '❤️';
+                if (countEl) countEl.textContent = event.likes;
+
+                this.showToast(isLiked ? 'Removed from interested' : 'Added to interested!', 
+                              isLiked ? 'info' : 'success');
+            }
+
+            toggleSave(eventId, button) {
+                const isSaved = this.userSaves.has(eventId);
+                
+                if (isSaved) {
+                    this.userSaves.delete(eventId);
+                    button.textContent = '📌';
+                    button.classList.remove('saved');
+                    this.showToast('Removed from saved events', 'info');
+                } else {
+                    this.userSaves.add(eventId);
+                    button.textContent = '🔖';
+                    button.classList.add('saved');
+                    this.showToast('Event saved!', 'success');
+                }
+            }
+
+            shareEvent(eventId) {
+                const event = this.events.find(e => this.normalizeId(e.id) === eventId);
+                if (!event) return;
+
+                const shareData = {
+                    title: `${event.title} - JKUAT Innovation Club`,
+                    text: `Join us for ${event.title}! ${event.description.substring(0, 100)}...`,
+                    url: `${window.location.origin}/events#${eventId}`
+                };
+
+                if (navigator.share) {
+                    navigator.share(shareData)
+                        .then(() => {
+                            this.showToast('Event shared!', 'success');
+                            event.shares = (event.shares || 0) + 1;
+                            const shareBtn = document.querySelector(`[data-event-id="${eventId}"][data-action="share"]`);
+                            if (shareBtn) {
+                                const countEl = shareBtn.querySelector('.count');
+                                if (countEl) countEl.textContent = event.shares;
+                            }
+                        })
+                        .catch(() => {
+                            this.showToast('Share cancelled', 'info');
+                        });
+                } else {
+                    navigator.clipboard.writeText(shareData.url).then(() => {
+                        this.showToast('Link copied to clipboard!', 'success');
+                    }).catch(() => {
+                        this.showToast('Unable to copy link', 'error');
+                    });
+                }
+            }
+
+            showHeartAnimation(targetEl) {
+                const media = targetEl?.classList.contains('event-media')
+                    ? targetEl
+                    : targetEl?.querySelector('.event-media');
+                
+                if (!media) return;
+                
+                const heart = document.createElement('div');
+                heart.className = 'floating-heart';
+                heart.textContent = '❤️';
+                
+                media.style.position = 'relative';
+                media.appendChild(heart);
+                
+                setTimeout(() => heart.remove(), 1000);
+            }
+
+            showToast(message, type = 'info') {
+                const colors = {
+                    success: '#10b981',
+                    error: '#ef4444',
+                    info: '#3b82f6'
+                };
+
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${colors[type]};
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 1000;
+                    font-weight: 600;
+                    transform: translateX(100%);
+                    transition: transform 0.3s ease;
+                `;
+                
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // Instagram-Style Media Gallery Renderer
+            renderMediaGallery(event, eventId) {
+                // Sample media for demonstration - in real app this would come from event.media
+                const sampleMedia = [
+                    {
+                        type: 'image',
+                        url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                        alt: 'Innovation Workshop'
+                    },
+                    {
+                        type: 'image', 
+                        url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                        alt: 'Team Collaboration'
+                    },
+                    {
+                        type: 'image',
+                        url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                        alt: 'Technology Event'
+                    }
+                ];
+
+                const media = event.media || sampleMedia.slice(0, Math.floor(Math.random() * 3) + 1);
+                
+                if (media.length === 0) {
+                    return `
+                        <div class="no-media-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%; background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(29, 78, 216, 0.3)); color: rgba(255, 255, 255, 0.8);">
+                            <div style="text-align: center;">
+                                <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                                <p style="margin: 0; font-size: 0.9rem;">No media available</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const currentIndex = 0; // Default to first image
+                
+                return `
+                    <div class="media-carousel" data-event-id="${eventId}" style="position: relative; width: 100%; height: 100%;">
+                        <!-- Media Container -->
+                        <div class="media-container" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
+                            ${media.map((item, index) => `
+                                <div class="media-item ${index === currentIndex ? 'active' : ''}" 
+                                     data-index="${index}" 
+                                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: ${index === currentIndex ? '1' : '0'}; transition: opacity 0.3s ease;">
+                                    ${item.type === 'video' ? `
+                                        <video 
+                                            src="${this.escapeHTML(item.url)}" 
+                                            style="width: 100%; height: 100%; object-fit: cover;" 
+                                            controls 
+                                            preload="metadata"
+                                            poster="${this.escapeHTML(item.thumbnail || '')}"
+                                        ></video>
+                                    ` : `
+                                        <img 
+                                            src="${this.escapeHTML(item.url)}" 
+                                            alt="${this.escapeHTML(item.alt || 'Event media')}" 
+                                            style="width: 100%; height: 100%; object-fit: cover;"
+                                            loading="lazy"
+                                        />
+                                    `}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Navigation Dots (if multiple media) -->
+                        ${media.length > 1 ? `
+                            <div class="media-dots" style="position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; z-index: 2;">
+                                ${media.map((_, index) => `
+                                    <button 
+                                        class="media-dot ${index === currentIndex ? 'active' : ''}" 
+                                        data-action="media-nav" 
+                                        data-event-id="${eventId}" 
+                                        data-index="${index}"
+                                        style="width: 8px; height: 8px; border-radius: 50%; border: none; background: ${index === currentIndex ? 'white' : 'rgba(255, 255, 255, 0.5)'}; cursor: pointer; transition: all 0.3s ease;"
+                                    ></button>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        <!-- Navigation Arrows (if multiple media) -->
+                        ${media.length > 1 ? `
+                            <button 
+                                class="media-nav-btn prev" 
+                                data-action="media-prev" 
+                                data-event-id="${eventId}"
+                                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.5); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; transition: all 0.3s ease; opacity: 0.7;"
+                                onmouseover="this.style.opacity='1'"
+                                onmouseout="this.style.opacity='0.7'"
+                            >
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button 
+                                class="media-nav-btn next" 
+                                data-action="media-next" 
+                                data-event-id="${eventId}"
+                                style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.5); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; transition: all 0.3s ease; opacity: 0.7;"
+                                onmouseover="this.style.opacity='1'"
+                                onmouseout="this.style.opacity='0.7'"
+                            >
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        ` : ''}
                     </div>
-                    <h3 class="no-events-title">No Events Found</h3>
-                    <p class="no-events-text">No events match your current filter. Try selecting a different category or
-                        check back later for new events.</p>
-                    <button onclick="resetFilters()" class="reset-btn">
-                        <i class="fas fa-refresh"></i>
-                        Reset Filters
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
+                `;
+            }
 
-    <!-- Footer -->
-    <div id="footer-placeholder"></div>
+            // Get Status Text with Proper Formatting
+            getStatusText(status) {
+                const statusMap = {
+                    'upcoming': '📅 Upcoming',
+                    'live': '🔴 Live Now',
+                    'completed': '✅ Completed',
+                    'active': '🟢 Active'
+                };
+                return statusMap[status] || '📅 Upcoming';
+            }
 
-    <!-- JavaScript -->
-    <script src="/shared/role-ui-controller.js"></script>
-    <script src="mock-data.js"></script>
-    <script src="media-config.js"></script>
-    <script src="media-manager.js"></script>
-    <script src="footer.js"></script>
-    <script src="events.js?v=2025012201"></script>
+            // Instagram-Style Comments Renderer
+            renderComments(event, eventId) {
+                const comments = event.comments || [
+                    {
+                        id: '1',
+                        user: 'john_doe',
+                        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+                        text: 'This looks amazing! Can\'t wait to attend 🚀',
+                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                        likes: 5
+                    },
+                    {
+                        id: '2', 
+                        user: 'sarah_tech',
+                        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+                        text: 'Great initiative by JKUAT! 👏',
+                        timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+                        likes: 3
+                    }
+                ];
+
+                return `
+                    <div class="comments-container" style="padding: 1.5rem;">
+                        <!-- Comments Header -->
+                        <div class="comments-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <h4 style="margin: 0; color: white; font-size: 1rem; font-weight: 600;">
+                                Comments (${comments.length})
+                            </h4>
+                            <button 
+                                class="collapse-comments-btn" 
+                                data-action="toggle-comments" 
+                                data-event-id="${eventId}"
+                                style="background: none; border: none; color: rgba(255, 255, 255, 0.6); cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem; border-radius: 4px; transition: all 0.3s ease;"
+                                onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                                onmouseout="this.style.background='none'"
+                            >
+                                <i class="fas fa-chevron-up"></i> Hide
+                            </button>
+                        </div>
+
+                        <!-- Comments List -->
+                        <div class="comments-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">
+                            ${comments.map(comment => `
+                                <div class="comment-item" data-comment-id="${comment.id}" style="display: flex; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <div class="comment-avatar" style="flex-shrink: 0;">
+                                        <img 
+                                            src="${this.escapeHTML(comment.avatar)}" 
+                                            alt="${this.escapeHTML(comment.user)}"
+                                            style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(59, 130, 246, 0.3);"
+                                        />
+                                    </div>
+                                    <div class="comment-content" style="flex: 1; min-width: 0;">
+                                        <div class="comment-header" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                            <span class="comment-username" style="font-weight: 600; color: white; font-size: 0.875rem;">
+                                                ${this.escapeHTML(comment.user)}
+                                            </span>
+                                            <span class="comment-time" style="color: rgba(255, 255, 255, 0.5); font-size: 0.75rem;">
+                                                ${this.formatTimeAgo(comment.timestamp)}
+                                            </span>
+                                        </div>
+                                        <p class="comment-text" style="margin: 0 0 0.5rem 0; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; line-height: 1.4; word-wrap: break-word;">
+                                            ${this.escapeHTML(comment.text)}
+                                        </p>
+                                        <div class="comment-actions" style="display: flex; align-items: center; gap: 1rem;">
+                                            <button 
+                                                class="comment-like-btn" 
+                                                data-action="like-comment" 
+                                                data-comment-id="${comment.id}"
+                                                style="background: none; border: none; color: rgba(255, 255, 255, 0.6); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0; transition: all 0.3s ease;"
+                                                onmouseover="this.style.color='#ef4444'"
+                                                onmouseout="this.style.color='rgba(255,255,255,0.6)'"
+                                            >
+                                                <i class="fas fa-heart"></i>
+                                                <span>${comment.likes || 0}</span>
+                                            </button>
+                                            <button 
+                                                class="comment-reply-btn" 
+                                                data-action="reply-comment" 
+                                                data-comment-id="${comment.id}"
+                                                style="background: none; border: none; color: rgba(255, 255, 255, 0.6); cursor: pointer; font-size: 0.75rem; padding: 0.25rem 0; transition: all 0.3s ease;"
+                                                onmouseover="this.style.color='white'"
+                                                onmouseout="this.style.color='rgba(255,255,255,0.6)'"
+                                            >
+                                                Reply
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Add Comment Form -->
+                        <div class="add-comment-form" style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                            <div class="current-user-avatar" style="flex-shrink: 0;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; font-weight: 600;">
+                                    U
+                                </div>
+                            </div>
+                            <div class="comment-input-wrapper" style="flex: 1; position: relative;">
+                                <textarea 
+                                    class="comment-input" 
+                                    data-event-id="${eventId}"
+                                    placeholder="Add a comment..."
+                                    style="width: 100%; min-height: 40px; max-height: 120px; padding: 0.75rem 3rem 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; color: white; font-size: 0.875rem; resize: none; outline: none; transition: all 0.3s ease;"
+                                    onfocus="this.style.borderColor='rgba(59, 130, 246, 0.5)'; this.style.background='rgba(255, 255, 255, 0.15)'"
+                                    onblur="this.style.borderColor='rgba(255, 255, 255, 0.2)'; this.style.background='rgba(255, 255, 255, 0.1)'"
+                                ></textarea>
+                                <button 
+                                    class="post-comment-btn" 
+                                    data-action="post-comment" 
+                                    data-event-id="${eventId}"
+                                    style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; border-radius: 50%; width: 32px; height: 32px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; transition: all 0.3s ease; opacity: 0.7;"
+                                    onmouseover="this.style.opacity='1'; this.style.transform='translateY(-50%) scale(1.05)'"
+                                    onmouseout="this.style.opacity='0.7'; this.style.transform='translateY(-50%) scale(1)'"
+                                    title="Post comment"
+                                >
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Format time ago (Instagram-style)
+            formatTimeAgo(timestamp) {
+                const now = new Date();
+                const time = new Date(timestamp);
+                const diffInSeconds = Math.floor((now - time) / 1000);
+
+                if (diffInSeconds < 60) return `${diffInSeconds}s`;
+                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+                if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+                return `${Math.floor(diffInSeconds / 604800)}w`;
+            }
+
+            // Toggle Comments Section
+            toggleComments(eventId) {
+                const commentsSection = document.getElementById(`comments-${eventId}`);
+                const isExpanded = this.expandedComments.has(eventId);
+                
+                if (isExpanded) {
+                    this.expandedComments.delete(eventId);
+                    if (commentsSection) {
+                        commentsSection.style.display = 'none';
+                        commentsSection.classList.remove('expanded');
+                    }
+                } else {
+                    this.expandedComments.add(eventId);
+                    if (commentsSection) {
+                        commentsSection.style.display = 'block';
+                        commentsSection.classList.add('expanded');
+                    }
+                }
+            }
+
+            // Handle Media Upload
+            handleMediaUpload(eventId) {
+                // Create file input
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*,video/*';
+                fileInput.multiple = true;
+                
+                fileInput.onchange = (e) => {
+                    const files = Array.from(e.target.files);
+                    if (files.length === 0) return;
+                    
+                    // Show upload progress
+                    this.showToast(`Uploading ${files.length} file(s)...`, 'info');
+                    
+                    // Simulate upload process
+                    setTimeout(() => {
+                        this.showToast('Media uploaded successfully!', 'success');
+                        // In real app, would update event media and re-render
+                    }, 2000);
+                };
+                
+                fileInput.click();
+            }
+
+            // Navigate to specific media item
+            navigateToMedia(eventId, index) {
+                const carousel = document.querySelector(`[data-event-id="${eventId}"] .media-carousel`);
+                if (!carousel) return;
+                
+                const mediaItems = carousel.querySelectorAll('.media-item');
+                const dots = carousel.querySelectorAll('.media-dot');
+                
+                // Hide all media items
+                mediaItems.forEach((item, i) => {
+                    item.style.opacity = i === index ? '1' : '0';
+                    item.classList.toggle('active', i === index);
+                });
+                
+                // Update dots
+                dots.forEach((dot, i) => {
+                    dot.style.background = i === index ? 'white' : 'rgba(255, 255, 255, 0.5)';
+                    dot.classList.toggle('active', i === index);
+                });
+            }
+
+            // Navigate to previous media
+            navigateMediaPrev(eventId) {
+                const carousel = document.querySelector(`[data-event-id="${eventId}"] .media-carousel`);
+                if (!carousel) return;
+                
+                const activeItem = carousel.querySelector('.media-item.active');
+                const currentIndex = parseInt(activeItem?.dataset.index || '0');
+                const mediaItems = carousel.querySelectorAll('.media-item');
+                const newIndex = currentIndex > 0 ? currentIndex - 1 : mediaItems.length - 1;
+                
+                this.navigateToMedia(eventId, newIndex);
+            }
+
+            // Navigate to next media
+            navigateMediaNext(eventId) {
+                const carousel = document.querySelector(`[data-event-id="${eventId}"] .media-carousel`);
+                if (!carousel) return;
+                
+                const activeItem = carousel.querySelector('.media-item.active');
+                const currentIndex = parseInt(activeItem?.dataset.index || '0');
+                const mediaItems = carousel.querySelectorAll('.media-item');
+                const newIndex = currentIndex < mediaItems.length - 1 ? currentIndex + 1 : 0;
+                
+                this.navigateToMedia(eventId, newIndex);
+            }
+
+            // Post Comment
+            postComment(eventId) {
+                const commentInput = document.querySelector(`[data-event-id="${eventId}"] .comment-input`);
+                if (!commentInput) return;
+                
+                const text = commentInput.value.trim();
+                if (!text) return;
+                
+                // Find the event and add comment
+                const event = this.events.find(e => this.normalizeId(e.id) === eventId);
+                if (!event) return;
+                
+                if (!event.comments) event.comments = [];
+                
+                const newComment = {
+                    id: Date.now().toString(),
+                    user: 'current_user',
+                    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+                    text: text,
+                    timestamp: new Date().toISOString(),
+                    likes: 0
+                };
+                
+                event.comments.unshift(newComment);
+                commentInput.value = '';
+                
+                // Re-render the comments section
+                const commentsSection = document.getElementById(`comments-${eventId}`);
+                if (commentsSection) {
+                    commentsSection.innerHTML = this.renderComments(event, eventId);
+                }
+                
+                this.showToast('Comment posted!', 'success');
+            }
+
+            // Like Comment
+            likeComment(commentId) {
+                // Find comment across all events
+                let comment = null;
+                for (const event of this.events) {
+                    if (event.comments) {
+                        comment = event.comments.find(c => c.id === commentId);
+                        if (comment) break;
+                    }
+                }
+                
+                if (!comment) return;
+                
+                comment.likes = (comment.likes || 0) + 1;
+                
+                // Update UI
+                const likeBtn = document.querySelector(`[data-comment-id="${commentId}"][data-action="like-comment"]`);
+                if (likeBtn) {
+                    const countSpan = likeBtn.querySelector('span');
+                    if (countSpan) countSpan.textContent = comment.likes;
+                }
+                
+                this.showToast('Comment liked!', 'success');
+            }
+
+            // Reply to Comment
+            replyToComment(commentId) {
+                // Find the comment input for this event
+                const commentBtn = document.querySelector(`[data-comment-id="${commentId}"][data-action="reply-comment"]`);
+                const eventCard = commentBtn?.closest('.event-card');
+                const commentInput = eventCard?.querySelector('.comment-input');
+                
+                if (commentInput) {
+                    // Find the username to reply to
+                    const commentItem = commentBtn.closest('.comment-item');
+                    const username = commentItem?.querySelector('.comment-username')?.textContent;
+                    
+                    if (username) {
+                        commentInput.value = `@${username} `;
+                        commentInput.focus();
+                    }
+                }
+            }
+
+            // Handle Registration
+            handleRegistration(eventId, button) {
+                const event = this.events.find(e => this.normalizeId(e.id) === eventId);
+                if (!event) return;
+                
+                // Check if event is full
+                if (event.current_attendees >= event.max_attendees) {
+                    this.showToast('Event is full!', 'error');
+                    return;
+                }
+                
+                // Simulate registration
+                event.current_attendees = (event.current_attendees || 0) + 1;
+                
+                // Update button
+                button.innerHTML = '<i class="fas fa-check"></i> Registered';
+                button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                button.disabled = true;
+                
+                // Update attendee count in the card
+                const eventCard = button.closest('.event-card');
+                const attendeeInfo = eventCard?.querySelector('.detail-item:last-child span');
+                if (attendeeInfo) {
+                    attendeeInfo.textContent = `${event.current_attendees}/${event.max_attendees} registered`;
+                }
+                
+                this.showToast('Successfully registered for event!', 'success');
+                this.updateStats();
+            }
+
+            initFilterTabs() {
+                const filterTabs = this.querySelectorAll('.filter-tab');
+                
+                filterTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        // Update active tab
+                        filterTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Apply filter
+                        const filter = tab.dataset.filter;
+                        this.applyFilter(filter);
+                    });
+                });
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOM loaded, initializing Events Manager...');
+            console.log('📍 Current URL:', window.location.href);
+            console.log('📍 Document body classes:', document.body.className);
+            
+            // Force apply events page classes
+            document.body.classList.add('events-page', 'bg-pattern');
+            console.log('✅ Events page classes applied:', document.body.className);
+            
+            // Check if elements exist
+            const eventsPage = document.getElementById('eventsPage');
+            const eventsGrid = document.getElementById('eventsGrid');
+            const eventsLoading = document.getElementById('eventsLoading');
+            
+            console.log('📍 Elements check:');
+            console.log('  - eventsPage:', eventsPage ? 'EXISTS' : 'MISSING');
+            console.log('  - eventsGrid:', eventsGrid ? 'EXISTS' : 'MISSING');
+            console.log('  - eventsLoading:', eventsLoading ? 'EXISTS' : 'MISSING');
+            
+            if (!eventsPage) {
+                console.error('❌ Events page element not found!');
+                return;
+            }
+            
+            // Initialize the manager
+            try {
+                console.log('🔧 Creating EventsManager instance...');
+                window.eventsManager = new EventsManager();
+                console.log('✅ Events Manager initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing Events Manager:', error);
+                console.error('❌ Error stack:', error.stack);
+                
+                // Show error message to user
+                const container = document.getElementById('eventsGrid');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; text-align: center; padding: 2rem; color: white; margin: 2rem;">
+                            <h3>⚠️ Error Loading Events</h3>
+                            <p>There was a problem initializing the events system.</p>
+                            <p style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Error: ${error.message}</p>
+                            <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 25px; cursor: pointer; margin-top: 1rem;">
+                                Reload Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        });
+    </script>
 </body>
-
 </html>

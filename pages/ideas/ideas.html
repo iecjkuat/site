@@ -15,22 +15,28 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
 
     <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"
+        defer></script>
+    <script src="/shared/auth.js" defer></script>
+    <script src="/shared/global-navbar.js" defer></script>
+    <script src="/shared/supabase-client.js" defer></script>
 
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-          crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous" rel="stylesheet">
+    <link href="/shared/core/base.css" rel="stylesheet">
+    <link href="/shared/core/theme.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
     <link href="/home/home.css" rel="stylesheet">
-    <link href="ideas.css" rel="stylesheet">
-    
+    <link href="/ideas/ideas.css?v=2025010803" rel="stylesheet">
+
     <!-- Override conflicting navbar styles -->
     <style>
-        body { padding-top: 140px !important; }
+        body {
+            padding-top: 140px !important;
+        }
     </style>
 
     <!-- SEO Meta Tags -->
@@ -39,8 +45,9 @@
     <meta name="keywords" content="JKUAT, ideas, innovation, collaboration, entrepreneurship, technology, creativity">
 </head>
 
-<body class="bg-pattern">
-    <!-- Shared navbar will be automatically inserted here -->
+<body class="ideas-page bg-pattern">
+    <!-- Navigation -->
+    <div id="navigation-placeholder"></div>
 
     <!-- Hero Section -->
     <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
@@ -133,8 +140,15 @@
                     </div>
 
                     <!-- Ideas Grid -->
-                    <div id="ideasGrid"
-                        style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 2rem !important; margin-bottom: 3rem !important;">
+                    <div id="ideasGrid" class="ideas-grid">
+                        <!-- Loading state -->
+                        <div id="ideasLoading" class="loading-container">
+                            <div class="loading-card">
+                                <div class="spinner"></div>
+                                <div class="loading-title">Loading Ideas...</div>
+                                <div class="loading-subtitle">Discovering innovative concepts</div>
+                            </div>
+                        </div>
                         <!-- Ideas will be loaded dynamically -->
                     </div>
 
@@ -271,8 +285,7 @@
                             popular and engaging ideas in our community.</p>
                     </div>
 
-                    <div id="trendingGrid"
-                        style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 2rem !important;">
+                    <div id="trendingGrid" class="ideas-grid">
                         <!-- Trending ideas will be loaded here -->
                     </div>
                 </div>
@@ -392,55 +405,43 @@
     </div>
 
     <!-- Comments Modal - Authentic TikTok Style -->
-    <div id="commentsModal" class="comments-modal-backdrop" style="display: none;">
-        <div class="comments-modal-overlay"></div>
+    <div id="commentsModal" class="comments-modal-backdrop">
         <div class="comments-modal-container">
             <!-- Handle Bar -->
-            <div class="modal-handle"></div>
+            <div class="modal-handle-bar"></div>
 
             <!-- Header -->
             <div class="comments-header">
+                <h3 id="commentModalIdeaTitle">Idea Title</h3>
                 <span id="commentsCount" class="comments-count">0 comments</span>
             </div>
 
             <!-- Comments List -->
-            <div id="commentsList" class="comments-list">
+            <div id="commentsList" class="comments-scroll-area">
                 <!-- Comments will be loaded here -->
             </div>
 
+            <!-- Replying to banner -->
+            <div id="replyingToBanner" class="replying-to-banner">
+                <span id="replyingToText">Replying to username</span>
+                <span class="cancel-reply-btn" id="cancelReplyBtn">&times;</span>
+            </div>
+
             <!-- Comment Input - TikTok Style -->
-            <div class="comment-input-container">
+            <div class="comment-input-area">
                 <form id="addCommentForm" class="comment-input-form">
-                    <div class="comment-input-wrapper">
-                        <input type="text" name="commentText" placeholder="Add comment..." class="comment-input"
-                            required />
-                        <div class="comment-actions">
-                            <button type="button" class="comment-action-btn mention-btn">
-                                <span>@</span>
-                            </button>
-                            <button type="button" class="comment-action-btn emoji-btn">
-                                <span>😊</span>
-                            </button>
-                            <button type="submit" class="post-btn">Post</button>
-                        </div>
-                    </div>
+                    <input type="text" name="commentText" placeholder="Add a comment..." class="comment-input-field"
+                        required autocomplete="off" />
+                    <button type="submit" class="post-comment-btn">Post</button>
                 </form>
             </div>
         </div>
     </div>
 
     <!-- JavaScript -->
-    <script src="mock-data.js"></script>
-    <script src="../shared/components/navigation.js"></script>
-    <script src="footer.js"></script>
-    <script src="ideas.js"></script>
-    
-    <!-- Initialize Navigation -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            new Navigation();
-        });
-    </script>
+    <script src="/ideas/mock-data.js"></script>
+    <script src="/ideas/footer.js"></script>
+    <script src="/ideas/ideas.js"></script>
 </body>
 
 </html>

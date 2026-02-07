@@ -16,6 +16,7 @@ class ComponentsManager {
         // Initialize components with delay to ensure all scripts are loaded
         setTimeout(() => {
             this.initTestimonials();
+            this.initSuccessStories();
             this.initUpcomingEvents();
             this.initPartners();
         }, 500);
@@ -98,6 +99,132 @@ class ComponentsManager {
         });
 
         console.log('✅ Testimonials loaded');
+    }
+
+    async initSuccessStories() {
+        const storiesContainer = document.getElementById('storiesContainer');
+        if (!storiesContainer) return;
+
+        console.log('🏆 Initializing success stories...');
+
+        try {
+            // Try API first
+            const response = await fetch('/api/testimonials?featured=true&limit=4');
+
+            if (response.ok) {
+                const data = await response.json();
+                const stories = data.testimonials || [];
+                console.log('✅ Success stories loaded from API:', stories.length);
+                this.renderSuccessStories(stories, storiesContainer);
+                return;
+            }
+        } catch (error) {
+            console.log('⚠️ API failed, using mock success stories:', error.message);
+        }
+
+        // Fallback to mock data
+        const stories = [
+            {
+                id: 1,
+                name: "Alex Mwangi",
+                title: "Software Engineer at Safaricom",
+                content: "The Innovation Club transformed my university experience. Through the mentorship program and hackathons, I developed the skills that landed me my dream job at Safaricom.",
+                course: "Computer Science",
+                year: "2023 Graduate",
+                rating: 5,
+                is_featured: true,
+                achievement: "Landed job at Safaricom",
+                impact: "Built 3 mobile apps used by 10K+ users"
+            },
+            {
+                id: 2,
+                name: "Grace Wanjiku",
+                title: "Founder, EcoTech Solutions",
+                content: "Starting my green technology startup seemed impossible until I joined the club. The entrepreneurship workshops and investor connections made it a reality.",
+                course: "Environmental Engineering",
+                year: "2022 Graduate",
+                rating: 5,
+                is_featured: true,
+                achievement: "Founded successful startup",
+                impact: "Raised KSh 5M in seed funding"
+            },
+            {
+                id: 3,
+                name: "David Kimani",
+                title: "AI Research Scientist",
+                content: "The research opportunities and industry partnerships opened doors I never knew existed. Now I'm working on cutting-edge AI projects that impact millions.",
+                course: "Electrical Engineering",
+                year: "2021 Graduate",
+                rating: 5,
+                is_featured: true,
+                achievement: "Published 5 research papers",
+                impact: "AI model deployed in 20+ countries"
+            },
+            {
+                id: 4,
+                name: "Sarah Mutua",
+                title: "Product Manager at Microsoft",
+                content: "The leadership roles and project management experience I gained prepared me for my current position at Microsoft. The network I built is invaluable.",
+                course: "Business Information Technology",
+                year: "2023 Graduate",
+                rating: 5,
+                is_featured: true,
+                achievement: "Product Manager at Microsoft",
+                impact: "Managing products used by 100M+ users"
+            }
+        ];
+
+        console.log('📋 Using mock success stories');
+        this.renderSuccessStories(stories, storiesContainer);
+    }
+
+    renderSuccessStories(stories, container) {
+        container.innerHTML = '';
+
+        stories.forEach((story, index) => {
+            const card = document.createElement('div');
+            card.className = 'success-story-card';
+            card.innerHTML = `
+                <div class="story-header">
+                    <div class="story-avatar avatar-${(index % 4) + 1}">
+                        ${this.escapeHtml(story.name.split(' ').map(n => n[0]).join(''))}
+                    </div>
+                    <div class="story-info">
+                        <h4>${this.escapeHtml(story.name)}</h4>
+                        <p class="story-title">${this.escapeHtml(story.title)}</p>
+                        <p class="story-course">${this.escapeHtml(story.course)} • ${this.escapeHtml(story.year)}</p>
+                    </div>
+                    <div class="story-rating">
+                        ${Array(story.rating).fill('<span class="star">★</span>').join('')}
+                    </div>
+                </div>
+                
+                <div class="story-content">
+                    <p class="story-text">"${this.escapeHtml(story.content)}"</p>
+                    
+                    <div class="story-achievements">
+                        <div class="achievement-item">
+                            <i class="fas fa-trophy"></i>
+                            <span>${this.escapeHtml(story.achievement || 'Key Achievement')}</span>
+                        </div>
+                        <div class="achievement-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>${this.escapeHtml(story.impact || 'Making an impact')}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="story-footer">
+                    <button class="story-cta" onclick="window.location.href='/testimonials'">
+                        <i class="fas fa-external-link-alt"></i>
+                        Read Full Story
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        console.log('✅ Success stories loaded');
     }
 
     async initUpcomingEvents() {
@@ -245,6 +372,7 @@ class ComponentsManager {
     refreshComponents() {
         console.log('🔄 Refreshing home page components...');
         this.initTestimonials();
+        this.initSuccessStories();
         this.initUpcomingEvents();
         this.initPartners();
         console.log('✅ Components refresh completed');

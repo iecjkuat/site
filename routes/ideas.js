@@ -7,7 +7,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { body, validationResult, param } = require('express-validator');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 
 const router = express.Router();
 

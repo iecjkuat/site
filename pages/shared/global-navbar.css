@@ -1,0 +1,537 @@
+/**
+ * JKUAT Innovation Club - Global Navbar Styles
+ * Universal navbar styling for all pages (Dashboard style)
+ */
+
+/* =========================
+   Global Navbar Override Styles
+   ========================= */
+/* Completely override global navbar to look like a proper navbar */
+#global-navbar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(25px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    padding: 0.75rem 0 !important;
+    width: 100% !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Global navbar container */
+.global-navbar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(25px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.75rem 0;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.global-navbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Auth buttons container */
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Override the main navbar container to be horizontal */
+#global-navbar > div:first-child {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: static !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 0 1rem !important;
+}
+
+/* Club title styling */
+#global-navbar div[style*="text-align: center"] {
+    margin-bottom: 0.75rem !important;
+}
+
+#global-navbar div[style*="color: white"] {
+    color: white !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    margin: 0 !important;
+}
+
+/* Main navigation container - make it horizontal */
+#global-navbar div[style*="justify-content: space-between"] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 1rem !important;
+}
+
+/* Nav links container class */
+.nav-links-container {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 1rem !important;
+}
+
+/* Navigation links container - horizontal layout */
+#global-navbar div[style*="justify-content: space-between"] > div:first-child {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+}
+
+/* Nav center class for centering navigation links */
+.nav-center {
+    display: flex !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    flex: 1 !important;
+}
+
+/* Auth section - horizontal layout */
+#global-navbar div[style*="justify-content: space-between"] > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+}
+
+/* Nav auth class for auth buttons */
+.nav-auth {
+    display: flex !important;
+    gap: 0.75rem !important;
+    align-items: center !important;
+}
+
+/* Override navbar buttons to use glass button style */
+#global-navbar .navbar-btn,
+#global-navbar button:not([style*="position: absolute"]) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    backdrop-filter: blur(10px) !important;
+    font-family: inherit !important;
+    margin: 0 !important;
+}
+
+/* Override navbar links */
+#global-navbar a:not(.navbar-dropdown-menu a) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    backdrop-filter: blur(10px) !important;
+    font-family: inherit !important;
+    margin: 0 !important;
+}
+
+/* Hover effects */
+#global-navbar .navbar-btn:hover,
+#global-navbar button:hover,
+#global-navbar a:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: translateY(-1px) !important;
+    color: white !important;
+    text-decoration: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Active state */
+#global-navbar a[style*="color: #60a5fa"],
+#global-navbar .navbar-btn[style*="color: #60a5fa"] {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    color: #60a5fa !important;
+}
+
+/* Glass button class for compatibility */
+.glass-button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.glass-button:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.glass-button.active {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    color: #60a5fa !important;
+}
+
+/* Dropdown Menu */
+.nav-dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.75rem;
+}
+
+.dropdown-toggle.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 200px;
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.dropdown-menu.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+}
+
+/* Dropdown scrollbar styling */
+.dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.7);
+}
+
+/* Preserve dropdown menu styling */
+#global-navbar .navbar-dropdown-menu {
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    min-width: 200px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Dropdown items */
+#global-navbar .navbar-dropdown-menu a {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+}
+
+#global-navbar .navbar-dropdown-menu a:last-child {
+    border-bottom: none !important;
+}
+
+#global-navbar .navbar-dropdown-menu a:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+    transform: translateX(5px) !important;
+}
+
+/* Dropdown sections */
+.dropdown-section {
+    border-bottom: 2px solid rgba(59, 130, 246, 0.2) !important;
+    padding: 1rem 0 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+}
+
+.dropdown-section::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent) !important;
+}
+
+.dropdown-section:last-child {
+    border-bottom: none !important;
+}
+
+.dropdown-section-title {
+    color: #60a5fa !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 0.5rem 1.25rem 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+    visibility: visible !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, #3b82f6, #10b981) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    text-align: center !important;
+}
+
+.dropdown-section .dropdown-item {
+    padding: 0.75rem 1.25rem !important;
+    margin: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-weight: 600 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+    text-align: center !important;
+}
+
+.dropdown-section .dropdown-item:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(16, 185, 129, 0.25)) !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+}
+
+.dropdown-item {
+    display: flex !important;
+    padding: 0.75rem 1rem !important;
+    color: white !important;
+    text-decoration: none !important;
+    font-size: 0.875rem !important;
+    transition: all 0.3s ease !important;
+    background: transparent !important;
+    border: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+    text-align: center !important;
+}
+
+.dropdown-item:hover {
+    background: rgba(16, 185, 129, 0.2) !important;
+    transform: translateX(5px) !important;
+}
+
+.dropdown-item.active {
+    background: rgba(59, 130, 246, 0.2) !important;
+}
+
+.dropdown-item i {
+    width: 16px !important;
+    text-align: center !important;
+    color: #3b82f6 !important;
+}
+
+/* Notification Bell */
+.notification-bell {
+    position: relative;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.5rem 0.75rem !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.notification-bell:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    border-radius: 10px;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive design */
+@media (min-width: 769px) {
+    #global-navbar > div:first-child {
+        flex-direction: column !important;
+    }
+    
+    #global-navbar div[style*="text-align: center"] {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    #global-navbar div[style*="color: white"] {
+        font-size: 1.5rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #global-navbar div[style*="justify-content: space-between"] {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+    }
+    
+    #global-navbar div[style*="text-align: center"] {
+        margin-bottom: 0 !important;
+    }
+    
+    #global-navbar div[style*="color: white"] {
+        font-size: 1.125rem !important;
+    }
+    
+    #global-navbar .navbar-btn,
+    #global-navbar a:not(.navbar-dropdown-menu a) {
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.8125rem !important;
+    }
+    
+    /* Hide some main nav links on mobile to prevent overcrowding */
+    .nav-center a:nth-child(n+4) {
+        display: none !important;
+    }
+    
+    /* Make dropdown menu wider on mobile and ensure all sections are visible */
+    .dropdown-menu {
+        min-width: 250px !important;
+        max-width: 90vw !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(-10px) !important;
+        max-height: 70vh !important;
+        overflow-y: auto !important;
+    }
+    
+    .dropdown-menu.show {
+        transform: translateX(-50%) translateY(0) !important;
+    }
+    
+    /* Ensure all dropdown sections are visible on mobile */
+    .dropdown-section {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        padding: 0.5rem 0 !important;
+    }
+    
+    .dropdown-section-title {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    .dropdown-item {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Further reduce main nav links on very small screens */
+    .nav-center a:nth-child(n+3) {
+        display: none !important;
+    }
+    
+    .dropdown-menu {
+        min-width: 220px !important;
+    }
+}

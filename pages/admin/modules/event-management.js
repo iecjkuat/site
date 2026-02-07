@@ -3,6 +3,13 @@
  * Handles event CRUD operations, calendar view, drafts, and templates
  */
 
+// Import security utilities (Instagram-style pattern)
+if (typeof SecurityUtils === 'undefined') {
+    const script = document.createElement('script');
+    script.src = '/shared/utils/security.js';
+    document.head.appendChild(script);
+}
+
 class EventManagement extends BaseManagement {
     constructor(adminDashboard) {
         super(adminDashboard);
@@ -63,7 +70,12 @@ class EventManagement extends BaseManagement {
             this.renderEventList();
         } catch (e) {
             console.error(e);
-            container.innerHTML = `<div class="alert alert-danger">Failed to load events: ${e.message}</div>`;
+            // SECURITY FIX: Use safe error display (Instagram-style pattern)
+            if (typeof SecurityUtils !== 'undefined') {
+                SecurityUtils.showError(container, e.message, 'Failed to load events');
+            } else {
+                container.innerHTML = '<div class="alert alert-danger">Failed to load events</div>';
+            }
         }
     }
 

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Voting Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+        }
+        
+        #votingGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .vote-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .vote-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        .candidate-option, .project-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-option:hover, .project-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        .selected {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.875rem 2rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🗳️ Voting Portal Test</h1>
+    <div id="votingGrid">
+        <!-- Content will be loaded here -->
+    </div>
+
+    <!-- Load mock data first -->
+    <script src="pages/voting/mock-data.js"></script>
+    
+    <script>
+        console.log('🚀 Starting voting test...');
+        console.log('📊 Mock votes available:', !!window.mockVotes);
+        console.log('📊 Mock votes count:', window.mockVotes?.length);
+        
+        // Simple render function
+        function renderVotes(votes) {
+            const grid = document.getElementById('votingGrid');
+            
+            if (!votes || votes.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; padding: 2rem;"><h3>No votes available</h3></div>';
+                return;
+            }
+            
+            console.log('✅ Rendering', votes.length, 'votes');
+            
+            const html = votes.map(vote => {
+                const timeRemaining = getTimeRemaining(vote.end_date);
+                const progressPercent = vote.total_voters > 0 ? 
+                    Math.round((vote.votes_cast / vote.total_voters) * 100) : 0;
+                
+                if (vote.type === 'leadership' && vote.status === 'active') {
+                    return renderLeadershipCard(vote, timeRemaining, progressPercent);
+                } else if (vote.type === 'project' && vote.status === 'active') {
+                    return renderProjectCard(vote, timeRemaining, progressPercent);
+                } else {
+                    return renderBasicCard(vote, timeRemaining, progressPercent);
+                }
+            }).join('');
+            
+            grid.innerHTML = html;
+            console.log('✅ Votes rendered successfully');
+        }
+        
+        function renderLeadershipCard(vote, timeRemaining, progressPercent) {
+            return `
+                <div class="vote-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0; color: #10b981;">👑 ${vote.title}</h3>
+                            <p style="margin: 0.5rem 0; color: rgba(255,255,255,0.7);">${vote.description}</p>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: #f59e0b;">${timeRemaining}</div>
+                        </div>
+                    </div>
+                    
+                    ${(vote.positions || []).map(position => `
+                        <div style="margin-bottom: 1rem;">
+                            <h4 style="color: #3b82f6; margin-bottom: 0.5rem;">${position.position_name}</h4>
+                            ${(position.candidates || []).map(candidate => `
+                                <div class="candidate-option" onclick="selectCandidate(this, '${position.id}', '${candidate.id}')">
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div style="width: 2rem; height: 2rem; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.875rem;">
+                                            ${candidate.name.split(' ').map(n => n[0]).join('')}
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600;">${candidate.name}</div>
+                                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.7);">${candidate.course} - Year ${candidate.year}</div>
+                                        </div>
+                                        <i class="fas fa-check vote-indicator" style="color: #10b981; opacity: 0; transition: opacity 0.3s;"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                    
+                    <button onclick="submitVote('${vote.id}', 'leadership')">
+                        <i class="fas fa-vote-yea" style="margin-right: 0.5rem;"></i>Cast Your Vote
+                    </button>
+                    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        ${vote.votes_cast}/${vote.total_voters} voted (${progressPercent}%)
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderProjectCard(vote, timeRemaining, progressPercent) {
+            return `
+                <div class="vote-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0; color: #f59e0b;">💡 ${vote.title}</h3>
+                            <p style="margin: 0.5rem 0; color: rgba(255,255,255,0.7);">${vote.description}</p>
+                            <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #3b82f6;">Select up to ${vote.max_selections || 3} projects</p>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: #f59e0b;">${timeRemaining}</div>
+                        </div>
+                    </div>
+                    
+                    ${(vote.options || []).map(project => `
+                        <div class="project-option" onclick="selectProject(this, '${project.id}')">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600;">${project.title}</div>
+                                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0.25rem 0;">${project.description}</div>
+                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                        ${project.budget_requested} - ${project.team_lead}
+                                    </div>
+                                </div>
+                                <i class="fas fa-check vote-indicator" style="color: #10b981; opacity: 0; transition: opacity 0.3s; margin-left: 1rem;"></i>
+                            </div>
+                        </div>
+                    `).join('')}
+                    
+                    <div style="text-align: center; margin: 1rem 0; font-size: 0.875rem;">
+                        Selected: <span id="selected-count-${vote.id}">0</span> of ${vote.max_selections || 3}
+                    </div>
+                    
+                    <button onclick="submitVote('${vote.id}', 'project')">
+                        <i class="fas fa-lightbulb" style="margin-right: 0.5rem;"></i>Submit Project Votes
+                    </button>
+                    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        ${vote.votes_cast}/${vote.total_voters} voted (${progressPercent}%)
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderBasicCard(vote, timeRemaining, progressPercent) {
+            return `
+                <div class="vote-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0;">${vote.title}</h3>
+                            <p style="margin: 0.5rem 0; color: rgba(255,255,255,0.7);">${vote.description}</p>
+                        </div>
+                        <div style="background: rgba(107, 114, 128, 0.2); padding: 0.5rem; border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: #9ca3af;">${vote.status}</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="alert('This vote is ${vote.status}')">
+                        ${vote.status === 'upcoming' ? '⏳ Coming Soon' : '📊 View Results'}
+                    </button>
+                    <div style="text-align: center; margin-top: 0.5rem; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        ${vote.votes_cast}/${vote.total_voters} voted (${progressPercent}%)
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getTimeRemaining(endDate) {
+            const now = new Date();
+            const end = new Date(endDate);
+            const diff = end - now;
+            
+            if (diff <= 0) return 'Ended';
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            if (days > 0) return `${days}d ${hours}h`;
+            return `${hours}h`;
+        }
+        
+        // Selection functions
+        const selections = {
+            leadership: {},
+            projects: new Set()
+        };
+        
+        function selectCandidate(element, positionId, candidateId) {
+            console.log(`Selecting candidate ${candidateId} for position ${positionId}`);
+            
+            // Clear other selections for this position
+            const positionElements = document.querySelectorAll(`[onclick*="'${positionId}'"]`);
+            positionElements.forEach(el => {
+                el.classList.remove('selected');
+                const indicator = el.querySelector('.vote-indicator');
+                if (indicator) indicator.style.opacity = '0';
+            });
+            
+            // Select this candidate
+            element.classList.add('selected');
+            const indicator = element.querySelector('.vote-indicator');
+            if (indicator) indicator.style.opacity = '1';
+            
+            selections.leadership[positionId] = candidateId;
+            console.log('Leadership selections:', selections.leadership);
+        }
+        
+        function selectProject(element, projectId) {
+            console.log(`Toggling project ${projectId}`);
+            
+            const indicator = element.querySelector('.vote-indicator');
+            const isSelected = selections.projects.has(projectId);
+            
+            if (isSelected) {
+                // Deselect
+                element.classList.remove('selected');
+                indicator.style.opacity = '0';
+                selections.projects.delete(projectId);
+            } else if (selections.projects.size < 3) {
+                // Select
+                element.classList.add('selected');
+                indicator.style.opacity = '1';
+                selections.projects.add(projectId);
+            } else {
+                alert('You can only select up to 3 projects!');
+                return;
+            }
+            
+            // Update counter
+            const counters = document.querySelectorAll('[id^="selected-count-"]');
+            counters.forEach(counter => {
+                counter.textContent = selections.projects.size;
+            });
+            
+            console.log('Project selections:', Array.from(selections.projects));
+        }
+        
+        function submitVote(voteId, type) {
+            if (type === 'leadership') {
+                const selectedCount = Object.keys(selections.leadership).length;
+                if (selectedCount === 0) {
+                    alert('Please select at least one candidate before submitting.');
+                    return;
+                }
+                alert(`Leadership vote submitted! Selected ${selectedCount} candidate(s).`);
+            } else if (type === 'project') {
+                if (selections.projects.size === 0) {
+                    alert('Please select at least one project before submitting.');
+                    return;
+                }
+                alert(`Project vote submitted! Selected ${selections.projects.size} project(s).`);
+            }
+        }
+        
+        // Initialize
+        setTimeout(() => {
+            if (window.mockVotes) {
+                renderVotes(window.mockVotes);
+            } else {
+                document.getElementById('votingGrid').innerHTML = '<div style="text-align: center; padding: 2rem; color: white;"><h3>Loading mock data...</h3></div>';
+            }
+        }, 100);
+    </script>
+</body>
+</html>

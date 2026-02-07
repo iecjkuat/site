@@ -218,7 +218,7 @@ class AdminCharts {
         }
 
         // Verify canvas elements exist
-        const requiredCanvases = ['userTrendChart', 'revenueTrendChart', 'collegeChart'];
+        const requiredCanvases = ['systemPerformanceChart', 'userActivityChart', 'resourceUsageChart'];
         const missingCanvases = requiredCanvases.filter(id => !document.getElementById(id));
         
         if (missingCanvases.length > 0) {
@@ -232,32 +232,28 @@ class AdminCharts {
             // Fetch real data from APIs
             console.log('🌐 Fetching real data from APIs...');
             
-            const [userTrendData, revenueTrendData, userStats, financialStats] = await Promise.all([
-                this.fetchUserTrendData(this.currentPeriods.userTrend).catch(() => {
-                    console.log('⚡️ Using mock user trend data (API unavailable)');
-                    return this.getMockUserTrendData(this.currentPeriods.userTrend);
+            const [systemPerformanceData, userActivityData, resourceData] = await Promise.all([
+                this.fetchSystemPerformanceData(this.currentPeriods.systemPerformance).catch(() => {
+                    console.log('⚡️ Using mock system performance data (API unavailable)');
+                    return this.getMockSystemPerformanceData(this.currentPeriods.systemPerformance);
                 }),
-                this.fetchRevenueTrendData(this.currentPeriods.revenueTrend).catch(() => {
-                    console.log('⚡️ Using mock revenue trend data (API unavailable)');
-                    return this.getMockRevenueTrendData(this.currentPeriods.revenueTrend);
+                this.fetchUserActivityData(this.currentPeriods.userActivity).catch(() => {
+                    console.log('⚡️ Using mock user activity data (API unavailable)');
+                    return this.getMockUserActivityData(this.currentPeriods.userActivity);
                 }),
-                this.fetchData('/api/admin/users/analytics').catch(() => {
-                    console.log('⚡️ Using mock user stats (API unavailable)');
-                    return this.getMockUserStats();
-                }),
-                this.fetchData('/api/admin/financial/analytics').catch(() => {
-                    console.log('⚡️ Using mock financial stats (API unavailable)');
-                    return this.getMockFinancialStats();
+                this.fetchData('/api/admin/system/resources').catch(() => {
+                    console.log('⚡️ Using mock resource data (API unavailable)');
+                    return this.getMockResourceData();
                 })
             ]);
 
             // Render Charts with real/mock data
             console.log('🎨 Rendering charts with fetched data...');
-            this.renderUserTrendChart(userTrendData, this.currentPeriods.userTrend);
-            this.renderRevenueTrendChart(revenueTrendData, this.currentPeriods.revenueTrend);
-            this.renderCollegeDistributionChart(userStats);
-            this.renderEventCategoryChart(userStats);
-            this.renderPaymentMethodChart(financialStats);
+            this.renderSystemPerformanceChart(systemPerformanceData, this.currentPeriods.systemPerformance);
+            this.renderUserActivityChart(userActivityData, this.currentPeriods.userActivity);
+            this.renderResourceUsageChart(resourceData);
+            this.renderUserDistributionChart(resourceData);
+            this.renderSystemHealthChart(resourceData);
 
             console.log('✅ All charts rendered successfully with real/mock data');
 
@@ -267,14 +263,14 @@ class AdminCharts {
             
             // Fallback to mock data
             try {
-                const mockUserTrend = this.getMockUserTrendData(this.currentPeriods.userTrend);
-                const mockRevenueTrend = this.getMockRevenueTrendData(this.currentPeriods.revenueTrend);
+                const mockSystemPerformance = this.getMockSystemPerformanceData(this.currentPeriods.systemPerformance);
+                const mockUserActivity = this.getMockUserActivityData(this.currentPeriods.userActivity);
                 
-                this.renderUserTrendChart(mockUserTrend, this.currentPeriods.userTrend);
-                this.renderRevenueTrendChart(mockRevenueTrend, this.currentPeriods.revenueTrend);
-                this.renderCollegeDistributionChart(this.getMockUserStats());
-                this.renderEventCategoryChart(this.getMockUserStats());
-                this.renderPaymentMethodChart(this.getMockFinancialStats());
+                this.renderSystemPerformanceChart(mockSystemPerformance, this.currentPeriods.systemPerformance);
+                this.renderUserActivityChart(mockUserActivity, this.currentPeriods.userActivity);
+                this.renderResourceUsageChart(this.getMockResourceData());
+                this.renderUserDistributionChart(this.getMockResourceData());
+                this.renderSystemHealthChart(this.getMockResourceData());
                 console.log('✅ Charts rendered with mock data');
             } catch (fallbackError) {
                 console.error('❌ Failed to render charts even with mock data:', fallbackError);
@@ -1210,6 +1206,269 @@ class AdminCharts {
             default:
                 return {};
         }
+    }
+
+    /* ================= NEW SYSTEM CHARTS ================= */
+
+    renderSystemPerformanceChart(data, period = '1h') {
+        const ctx = this.getCtx('systemPerformanceChart');
+        
+        if (!ctx) {
+            console.log('❌ systemPerformanceChart canvas not found');
+            return;
+        }
+
+        this.destroyChart('systemPerformanceChart');
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'],
+                datasets: [{
+                    label: 'CPU Usage (%)',
+                    data: data.cpu || [45, 52, 48, 55, 49],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Memory Usage (%)',
+                    data: data.memory || [62, 65, 58, 70, 67],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    y: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        this.charts.set('systemPerformanceChart', chart);
+        console.log('✅ System performance chart rendered');
+    }
+
+    renderUserActivityChart(data, period = '1h') {
+        const ctx = this.getCtx('userActivityChart');
+        
+        if (!ctx) {
+            console.log('❌ userActivityChart canvas not found');
+            return;
+        }
+
+        this.destroyChart('userActivityChart');
+
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels || ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'],
+                datasets: [{
+                    label: 'Active Users',
+                    data: data.activeUsers || [187, 203, 195, 218, 245],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    y: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    }
+                }
+            }
+        });
+
+        this.charts.set('userActivityChart', chart);
+        console.log('✅ User activity chart rendered');
+    }
+
+    renderResourceUsageChart(data) {
+        const ctx = this.getCtx('resourceUsageChart');
+        
+        if (!ctx) {
+            console.log('❌ resourceUsageChart canvas not found');
+            return;
+        }
+
+        this.destroyChart('resourceUsageChart');
+
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used', 'Available'],
+                datasets: [{
+                    data: [data.storageUsed || 78, data.storageAvailable || 22],
+                    backgroundColor: ['#f59e0b', 'rgba(255, 255, 255, 0.1)'],
+                    borderColor: ['#d97706', 'rgba(255, 255, 255, 0.2)'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                    }
+                }
+            }
+        });
+
+        this.charts.set('resourceUsageChart', chart);
+        console.log('✅ Resource usage chart rendered');
+    }
+
+    renderUserDistributionChart(data) {
+        const ctx = this.getCtx('userDistributionChart');
+        
+        if (!ctx) {
+            console.log('❌ userDistributionChart canvas not found');
+            return;
+        }
+
+        this.destroyChart('userDistributionChart');
+
+        const chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Active', 'Inactive', 'Pending'],
+                datasets: [{
+                    data: [data.activeUsers || 245, data.inactiveUsers || 32, data.pendingUsers || 15],
+                    backgroundColor: ['#10b981', '#6b7280', '#f59e0b'],
+                    borderColor: ['#059669', '#4b5563', '#d97706'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                    }
+                }
+            }
+        });
+
+        this.charts.set('userDistributionChart', chart);
+        console.log('✅ User distribution chart rendered');
+    }
+
+    renderSystemHealthChart(data) {
+        const ctx = this.getCtx('systemHealthChart');
+        
+        if (!ctx) {
+            console.log('❌ systemHealthChart canvas not found');
+            return;
+        }
+
+        this.destroyChart('systemHealthChart');
+
+        const chart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Database', 'Server', 'Security', 'Performance', 'Backup'],
+                datasets: [{
+                    label: 'Health Score',
+                    data: [data.databaseHealth || 95, data.serverHealth || 92, data.securityHealth || 98, data.performanceHealth || 88, data.backupHealth || 100],
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(255, 255, 255, 0.8)' }
+                    }
+                },
+                scales: {
+                    r: {
+                        ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: 'rgba(255, 255, 255, 0.8)' },
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        this.charts.set('systemHealthChart', chart);
+        console.log('✅ System health chart rendered');
+    }
+
+    getMockSystemPerformanceData(period) {
+        return {
+            labels: period === '1h' ? ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'] : 
+                   period === '24h' ? ['24h ago', '18h ago', '12h ago', '6h ago', 'Now'] :
+                   ['7d ago', '5d ago', '3d ago', '1d ago', 'Now'],
+            cpu: period === '1h' ? [45, 52, 48, 55, 49] : 
+                 period === '24h' ? [42, 48, 65, 58, 51] :
+                 [38, 45, 52, 48, 44],
+            memory: period === '1h' ? [62, 65, 58, 70, 67] : 
+                    period === '24h' ? [58, 62, 75, 68, 64] :
+                    [55, 60, 68, 62, 59]
+        };
+    }
+
+    getMockUserActivityData(period) {
+        return {
+            labels: period === '1h' ? ['1h ago', '45m ago', '30m ago', '15m ago', 'Now'] : 
+                   period === '24h' ? ['24h ago', '18h ago', '12h ago', '6h ago', 'Now'] :
+                   ['7d ago', '5d ago', '3d ago', '1d ago', 'Now'],
+            activeUsers: period === '1h' ? [187, 203, 195, 218, 245] : 
+                        period === '24h' ? [156, 189, 234, 267, 245] :
+                        [198, 223, 245, 267, 287]
+        };
+    }
+
+    getMockResourceData() {
+        return {
+            storageUsed: 78,
+            storageAvailable: 22,
+            activeUsers: 245,
+            inactiveUsers: 32,
+            pendingUsers: 15,
+            databaseHealth: 95,
+            serverHealth: 92,
+            securityHealth: 98,
+            performanceHealth: 88,
+            backupHealth: 100
+        };
     }
 }
 

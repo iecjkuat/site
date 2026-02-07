@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - JKUAT Innovation Club</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/auth/auth.css">
+</head>
+<body>
+    <div class="auth-page">
+        <!-- Left Side - Form -->
+        <div class="form-side">
+            <div class="form-content">
+                <div class="logo-section">
+                    <i class="fas fa-rocket logo-icon"></i>
+                </div>
+                
+                <h1 class="page-title">SIGN UP</h1>
+                
+                <form id="signupForm" class="auth-form">
+                    <div id="messageContainer"></div>
+                    
+                    <!-- Full Name -->
+                    <div class="input-group">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="name" name="name" placeholder="Full Name" required autocomplete="name">
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="input-group">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="email" name="email" placeholder="Email (use JKUAT email)" required autocomplete="email">
+                    </div>
+                    
+                    <!-- Registration Number -->
+                    <div class="input-group">
+                        <i class="fas fa-id-card input-icon"></i>
+                        <input type="text" id="registrationNumber" name="registrationNumber" placeholder="Registration Number (e.g., EN111-0001/2024)" required>
+                    </div>
+                    
+                    <!-- Phone -->
+                    <div class="input-group">
+                        <i class="fas fa-phone input-icon"></i>
+                        <input type="tel" id="phone" name="phone" placeholder="Phone Number (e.g., +254700000000)" required>
+                    </div>
+                    
+                    <!-- Course -->
+                    <div class="input-group">
+                        <i class="fas fa-graduation-cap input-icon"></i>
+                        <input type="text" id="course" name="course" placeholder="Course (e.g., Computer Science)" required>
+                    </div>
+                    
+                    <!-- Year of Study -->
+                    <div class="input-group">
+                        <i class="fas fa-calendar input-icon"></i>
+                        <select id="yearOfStudy" name="yearOfStudy" required>
+                            <option value="">Select Year of Study</option>
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3">Year 3</option>
+                            <option value="4">Year 4</option>
+                            <option value="5">Year 5</option>
+                        </select>
+                    </div>
+                    
+                    <!-- College -->
+                    <div class="input-group">
+                        <i class="fas fa-building input-icon"></i>
+                        <select id="college" name="college" required>
+                            <option value="">Select College</option>
+                            <option value="COETEC">College of Engineering and Technology (COETEC)</option>
+                            <option value="COHES">College of Health Sciences (COHES)</option>
+                            <option value="CONAS">College of Natural Sciences (CONAS)</option>
+                            <option value="CAES">College of Agriculture and Environmental Sciences (CAES)</option>
+                            <option value="CABE">College of Architecture and Built Environment (CABE)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" name="password" placeholder="Password (min 6 characters)" required autocomplete="new-password">
+                    </div>
+                    
+                    <!-- Confirm Password -->
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required autocomplete="new-password">
+                    </div>
+                    
+                    <!-- Terms Checkbox -->
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <label for="agreeTerms">
+                            I agree all statements in <a href="/terms" class="link">terms of service</a>
+                        </label>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">SIGN UP</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+                
+                <!-- Sign In Link -->
+                <div class="switch-auth">
+                    Already have an account? <a href="/signin" class="link">Sign In</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side - Image -->
+        <div class="image-side">
+            <div class="image-overlay">
+                <h2 class="brand-title">JKUAT INNOVATION</h2>
+                <p class="brand-subtitle">& ENTREPRENEURSHIP CLUB</p>
+                <p class="brand-tagline">Empowering the next generation of innovators</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"></script>
+    <script src="/auth/signup.js"></script>
+</body>
+</html>

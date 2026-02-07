@@ -26,7 +26,7 @@ class ActivityFeed {
                 this.handleFilterChange(e.target);
             }
             
-            if (e.target.matches('#loadMoreFeed')) {
+            if (e.target.matches('#loadMoreBtn')) {
                 this.loadMoreItems();
             }
             
@@ -40,7 +40,7 @@ class ActivityFeed {
     async loadFeedData() {
         try {
             // Show loading state
-            const feedContainer = document.getElementById('activityFeed');
+            const feedContainer = document.getElementById('feedContainer');
             if (feedContainer) {
                 feedContainer.innerHTML = `
                     <div class="feed-loading">
@@ -82,7 +82,7 @@ class ActivityFeed {
     }
 
     renderFeed() {
-        const feedContainer = document.getElementById('activityFeed');
+        const feedContainer = document.getElementById('feedContainer');
         if (!feedContainer) return;
 
         const filteredItems = this.getFilteredItems();
@@ -213,7 +213,7 @@ class ActivityFeed {
     }
 
     updateLoadMoreButton(totalItems) {
-        const loadMoreBtn = document.getElementById('loadMoreFeed');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
         if (!loadMoreBtn) return;
         
         const remainingItems = totalItems - this.loadedItems;

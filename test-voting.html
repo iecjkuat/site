@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Voting Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .candidate-option, .project-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-option:hover, .project-option:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        .selected {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        .vote-indicator i {
+            transition: opacity 0.3s ease;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.875rem 2rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🗳️ Voting System Test</h1>
+        
+        <!-- Leadership Election Test -->
+        <div class="test-card">
+            <h2>Leadership Election Test</h2>
+            <p>Click on candidates to select them:</p>
+            
+            <h3>Club President</h3>
+            <div class="candidate-option" onclick="selectCandidate(this, 'president', 'john')">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 2rem; height: 2rem; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">JD</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">John Doe</div>
+                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Computer Science - Year 3</div>
+                    </div>
+                    <div class="vote-indicator">
+                        <i class="fas fa-check" style="color: #10b981; opacity: 0;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="candidate-option" onclick="selectCandidate(this, 'president', 'jane')">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 2rem; height: 2rem; background: #ec4899; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">JS</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">Jane Smith</div>
+                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Mechatronics - Year 4</div>
+                    </div>
+                    <div class="vote-indicator">
+                        <i class="fas fa-check" style="color: #10b981; opacity: 0;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="alert('Leadership vote submitted!')">Submit Leadership Vote</button>
+        </div>
+        
+        <!-- Project Funding Test -->
+        <div class="test-card">
+            <h2>Project Funding Test</h2>
+            <p>Click on projects to select them (up to 3):</p>
+            <p>Selected: <span id="selected-count">0</span> of 3</p>
+            
+            <div class="project-option" onclick="selectProject(this, 'ai-assistant')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">AI-Powered Campus Assistant</div>
+                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">KSh 50,000 - Tech Team Alpha</div>
+                    </div>
+                    <div class="vote-indicator">
+                        <i class="fas fa-check" style="color: #10b981; opacity: 0;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-option" onclick="selectProject(this, 'smart-irrigation')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Smart Irrigation System</div>
+                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">KSh 75,000 - AgriTech Squad</div>
+                    </div>
+                    <div class="vote-indicator">
+                        <i class="fas fa-check" style="color: #10b981; opacity: 0;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-option" onclick="selectProject(this, 'marketplace-app')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600;">Student Marketplace App</div>
+                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">KSh 40,000 - Mobile Dev Team</div>
+                    </div>
+                    <div class="vote-indicator">
+                        <i class="fas fa-check" style="color: #10b981; opacity: 0;"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="alert('Project votes submitted!')">Submit Project Votes</button>
+        </div>
+    </div>
+
+    <script>
+        // Test functions for candidate selection
+        function selectCandidate(element, position, candidate) {
+            console.log(`Selecting candidate ${candidate} for ${position}`);
+            
+            // Remove selection from other candidates in the same position
+            const positionElements = document.querySelectorAll(`[onclick*="${position}"]`);
+            positionElements.forEach(el => {
+                el.classList.remove('selected');
+                const indicator = el.querySelector('.vote-indicator i');
+                if (indicator) indicator.style.opacity = '0';
+            });
+            
+            // Select this candidate
+            element.classList.add('selected');
+            const indicator = element.querySelector('.vote-indicator i');
+            if (indicator) indicator.style.opacity = '1';
+        }
+        
+        // Test functions for project selection
+        let selectedProjects = new Set();
+        
+        function selectProject(element, project) {
+            console.log(`Toggling project ${project}`);
+            
+            const indicator = element.querySelector('.vote-indicator i');
+            const isSelected = selectedProjects.has(project);
+            
+            if (isSelected) {
+                // Deselect
+                element.classList.remove('selected');
+                indicator.style.opacity = '0';
+                selectedProjects.delete(project);
+            } else if (selectedProjects.size < 3) {
+                // Select if under limit
+                element.classList.add('selected');
+                indicator.style.opacity = '1';
+                selectedProjects.add(project);
+            } else {
+                alert('You can only select up to 3 projects!');
+                return;
+            }
+            
+            // Update counter
+            document.getElementById('selected-count').textContent = selectedProjects.size;
+        }
+        
+        console.log('✅ Test voting functions loaded');
+    </script>
+</body>
+</html>

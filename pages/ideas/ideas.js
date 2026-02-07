@@ -15,6 +15,9 @@ class IdeasPage {
         this.isLoading = false;
         this.hasMore = true;
 
+        // Reply tracking
+        this.replyingTo = null;
+
         this.init();
     }
 
@@ -874,7 +877,7 @@ class IdeasPage {
                         <div class="idea-meta">
                             <span><i class="fas fa-user"></i> ${this.escapeHtml(idea.author.name)}</span>
                             <span><i class="fas fa-clock"></i> ${timeAgo}</span>
-                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${this.escapeHtml(idea.category)}</span>
+                            <span class="idea-category">${this.escapeHtml(idea.category)}</span>
                         </div>
                     </div>
                 </div>
@@ -906,9 +909,6 @@ class IdeasPage {
                 </div>
                 
                 <div class="idea-actions">
-                    <button class="btn btn-outline btn-sm" data-action="view-idea" data-idea-id="${idea.id}">
-                        <i class="fas fa-eye"></i>View Details
-                    </button>
                     <button class="btn btn-primary btn-sm" data-action="like-idea" data-idea-id="${idea.id}">
                         <i class="fas fa-thumbs-up"></i>Like Idea
                     </button>
@@ -1184,223 +1184,37 @@ class IdeasPage {
     }
 
     showCommentsModal(idea) {
-        console.log('ðŸŽµ showCommentsModal called for idea:', idea.title);
+        console.log('🎵 showCommentsModal called for idea:', idea.title);
         this.currentIdeaId = idea.id;
+        this.replyingTo = null; // Reset reply state
 
-        // Remove any existing TikTok modal
-        const existingModal = document.getElementById('tikTokCommentsModal');
-        if (existingModal) {
-            existingModal.remove();
+        const modal = document.getElementById('commentsModal');
+        const titleElem = document.getElementById('commentModalIdeaTitle');
+        const replyBanner = document.getElementById('replyingToBanner');
+
+        if (!modal) {
+            console.error('❌ Comments modal container not found');
+            return;
         }
 
-        // Create TikTok-style comments modal
-        const modal = document.createElement('div');
-        modal.id = 'tikTokCommentsModal';
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000000;
-            z-index: 99999;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 0;
-        `;
+        if (titleElem) titleElem.textContent = idea.title;
+        if (replyBanner) replyBanner.style.display = 'none';
 
         // Load comments data
-        let comments = [];
-        if (window.ideasMockData) {
-            comments = window.ideasMockData.getComments(idea.id);
-        }
+        this.loadComments(idea.id);
 
-        // Get any additional comments from session storage
-        const sessionComments = this.getSessionComments(idea.id);
-        comments = [...comments, ...sessionComments];
+        // Show modal
+        modal.style.display = 'flex';
 
-        const totalComments = comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0);
+        // Focus input
+        const input = modal.querySelector('.comment-input-field');
+        if (input) input.focus();
 
-        modal.innerHTML = `
-            <div style="
-                background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
-                width: 100%;
-                max-width: 360px;
-                max-height: 75vh;
-                border-radius: 20px 20px 0 0;
-                display: flex;
-                flex-direction: column;
-                animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                margin: 0 16px;
-            ">
-                <!-- Handle Bar -->
-                <div style="
-                    width: 32px;
-                    height: 4px;
-                    background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.2));
-                    border-radius: 2px;
-                    margin: 10px auto 6px auto;
-                    flex-shrink: 0;
-                    cursor: pointer;
-                "></div>
-                
-                <!-- Header -->
-                <div style="
-                    text-align: center;
-                    padding: 8px 20px 12px 20px;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-                    flex-shrink: 0;
-                    background: rgba(255, 255, 255, 0.02);
-                ">
-                    <div style="
-                        color: white;
-                        font-size: 15px;
-                        font-weight: 700;
-                        margin-bottom: 3px;
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        line-height: 1.2;
-                    ">${this.escapeHtml(idea.title)}</div>
-                    <span style="
-                        color: rgba(255, 255, 255, 0.7);
-                        font-size: 12px;
-                        font-weight: 500;
-                    ">${totalComments} comment${totalComments !== 1 ? 's' : ''}</span>
-                </div>
-                
-                <!-- Comments List -->
-                <div id="tikTokCommentsList" style="
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 0;
-                    background: #000000;
-                    min-height: 200px;
-                    max-height: 50vh;
-                    scrollbar-width: none;
-                    -ms-overflow-style: none;
-                ">
-                    ${comments.length === 0 ? `
-                        <div style="
-                            text-align: center;
-                            padding: 40px 20px;
-                            color: rgba(255, 255, 255, 0.6);
-                        ">
-                            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">ðŸ’¬</div>
-                            <h4 style="
-                                color: rgba(255, 255, 255, 0.8);
-                                font-size: 16px;
-                                font-weight: 600;
-                                margin-bottom: 8px;
-                            ">No comments yet</h4>
-                            <p style="font-size: 14px; margin: 0;">Be the first to comment!</p>
-                        </div>
-                    ` : comments.map(comment => this.createTikTokCommentHTML(comment)).join('')}
-                </div>
-                
-                <!-- Comment Input -->
-                <div style="
-                    padding: 12px 16px 16px 16px;
-                    background: linear-gradient(180deg, rgba(26, 26, 26, 0.8) 0%, #000000 100%);
-                    border-top: 1px solid rgba(255, 255, 255, 0.08);
-                    flex-shrink: 0;
-                ">
-                    <form id="tikTokAddCommentForm" style="
-                        display: flex;
-                        align-items: center;
-                        background: rgba(255, 255, 255, 0.08);
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        border-radius: 20px;
-                        padding: 10px 14px;
-                        gap: 10px;
-                        transition: all 0.2s ease;
-                    ">
-                        <input 
-                            type="text" 
-                            name="commentText" 
-                            placeholder="Add a comment..." 
-                            required
-                            style="
-                                flex: 1;
-                                background: none;
-                                border: none;
-                                color: white;
-                                font-size: 14px;
-                                outline: none;
-                                padding: 0;
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                            "
-                        />
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" style="
-                                background: none;
-                                border: none;
-                                color: rgba(255, 255, 255, 0.6);
-                                font-size: 14px;
-                                cursor: pointer;
-                                padding: 4px;
-                            ">ðŸ˜Š</button>
-                            <button type="submit" style="
-                                background: none;
-                                border: none;
-                                color: #ff0050;
-                                font-size: 14px;
-                                font-weight: 600;
-                                cursor: pointer;
-                                padding: 0;
-                            ">Post</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-
-        // Add CSS animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideUp {
-                from {
-                    transform: translateY(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
-            }
-            
-            #tikTokCommentsList::-webkit-scrollbar {
-                width: 0px;
-                background: transparent;
-            }
-            
-            .emoji-btn:hover {
-                background: rgba(255, 255, 255, 0.1) !important;
-                transform: scale(1.1);
-            }
-            
-            .tiktok-like-btn:hover .heart-icon {
-                transform: scale(1.2);
-            }
-            
-            .tiktok-reply-btn:hover {
-                color: white !important;
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Add modal to body
-        document.body.appendChild(modal);
-
-        // Add event listeners
-        this.setupTikTokModalListeners(modal);
-
-        console.log('âœ… TikTok-style comments modal created and displayed');
+        console.log('✅ Comments modal displayed');
     }
 
     findIdeaById(ideaId) {
-        console.log('ðŸ” Finding idea by ID:', ideaId);
+        console.log('🔎 Finding idea by ID:', ideaId);
         if (window.ideasMockData) {
             const allIdeas = window.ideasMockData.getIdeas();
             console.log('Available ideas:', allIdeas.map(i => ({ id: i.id, title: i.title })));
@@ -1409,7 +1223,7 @@ class IdeasPage {
             console.log('Found idea:', found ? found.title : 'Not found');
             return found;
         }
-        console.log('âŒ Mock data not available');
+        console.log('❌ Mock data not available');
         return null;
     }
 
@@ -1465,216 +1279,137 @@ class IdeasPage {
         if (!container) return;
 
         // Update comments count
+        const totalComments = comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0);
         if (commentsCount) {
-            const totalComments = comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0);
             commentsCount.textContent = `${totalComments} comment${totalComments !== 1 ? 's' : ''}`;
         }
 
         if (comments.length === 0) {
             container.innerHTML = `
-                <div class="no-comments">
-                    <div class="no-comments-icon">ðŸ’¬</div>
-                    <h4>No comments yet</h4>
-                    <p>Be the first to comment!</p>
+                <div style="text-align: center; padding: 40px 20px; color: rgba(255, 255, 255, 0.6);">
+                    <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">💬</div>
+                    <h4 style="color: rgba(255, 255, 255, 0.8); font-size: 16px; font-weight: 600; margin-bottom: 8px;">No comments yet</h4>
+                    <p style="font-size: 14px; margin: 0;">Be the first to comment!</p>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = comments.map(comment => this.createTikTokCommentHTML(comment)).join('');
+        container.innerHTML = comments.map(comment => this.createCommentHTML(comment)).join('');
 
-        // Add event listeners for comment actions
-        this.setupTikTokCommentListeners();
+        // Add event listeners for comment actions (Reply, Like, View Replies)
+        this.setupCommentListeners();
     }
 
-    createTikTokCommentHTML(comment) {
+    createCommentHTML(comment, isReply = false) {
         const timeAgo = this.getTimeAgo(new Date(comment.timestamp));
         const authorInitials = comment.author.name.split(' ').map(n => n[0]).join('').toUpperCase();
-        const isCreator = comment.author.id === 2; // Assuming idea author has id 2
+        const isCreator = comment.author.id === 2; // Assuming creator has ID 2
 
         let html = `
-            <div style="
-                display: flex;
-                padding: 12px 16px;
-                align-items: flex-start;
-                gap: 12px;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            " data-comment-id="${comment.id}">
-                <div style="
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: 600;
-                    font-size: 14px;
-                    flex-shrink: 0;
-                ">${authorInitials}</div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <span style="color: white; font-size: 14px; font-weight: 600;">${this.escapeHtml(comment.author.name)}</span>
-                        ${isCreator ? '<span style="background: #ff0050; color: white; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; text-transform: uppercase;">Creator</span>' : ''}
+            <div class="comment-item ${isReply ? 'reply-item' : ''}" data-comment-id="${comment.id}">
+                <div class="comment-avatar ${isReply ? 'reply-avatar' : ''}">
+                    ${authorInitials}
+                </div>
+                <div class="comment-body">
+                    <div class="comment-user-row">
+                        <span class="comment-username">${this.escapeHtml(comment.author.name)}</span>
+                        ${isCreator ? '<span class="creator-badge">Creator</span>' : ''}
                     </div>
-                    <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${this.escapeHtml(comment.text)}</div>
-                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
-                        <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${timeAgo}</span>
-                        <button class="tiktok-reply-btn" data-comment-id="${comment.id}" data-reply-to="${this.escapeHtml(comment.author.name)}" style="
-                            background: none;
-                            border: none;
-                            color: rgba(255, 255, 255, 0.6);
-                            font-size: 12px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            padding: 0;
-                        ">Reply</button>
-                        <button class="tiktok-like-btn ${comment.liked ? 'liked' : ''}" data-comment-id="${comment.id}" style="
-                            background: none;
-                            border: none;
-                            color: ${comment.liked ? '#ff0050' : 'rgba(255, 255, 255, 0.6)'};
-                            cursor: pointer;
-                            padding: 0;
-                            display: flex;
-                            align-items: center;
-                            gap: 4px;
-                            font-size: 12px;
-                        ">
-                            <span class="heart-icon">${comment.liked ? 'â¤ï¸' : 'ðŸ¤'}</span>
+                    <div class="comment-text">${this.escapeHtml(comment.text)}</div>
+                    <div class="comment-footer">
+                        <span class="comment-time">${timeAgo}</span>
+                        <button class="reply-btn" data-comment-id="${comment.id}" data-username="${this.escapeHtml(comment.author.name)}">Reply</button>
+                        <button class="like-btn ${comment.liked ? 'liked' : ''}" data-comment-id="${comment.id}">
+                            <i class="${comment.liked ? 'fas' : 'far'} fa-heart"></i>
                             <span class="like-count">${comment.likes || 0}</span>
                         </button>
                     </div>
-                    ${comment.replies && comment.replies.length > 0 ? `
-                        <div class="tiktok-view-replies" data-comment-id="${comment.id}" style="
-                            color: rgba(255, 255, 255, 0.6);
-                            font-size: 12px;
-                            cursor: pointer;
-                            margin-bottom: 8px;
-                        ">
-                            View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'} â–¼
+                    ${!isReply && comment.replies && comment.replies.length > 0 ? `
+                        <button class="view-replies-btn" data-comment-id="${comment.id}">
+                            View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'} ▼
+                        </button>
+                        <div class="replies-container" id="replies-${comment.id}" style="display: none;">
+                            ${comment.replies.map(reply => this.createCommentHTML(reply, true)).join('')}
                         </div>
                     ` : ''}
                 </div>
             </div>
         `;
 
-        // Add replies (initially hidden)
-        if (comment.replies && comment.replies.length > 0) {
-            comment.replies.forEach(reply => {
-                const replyTimeAgo = this.getTimeAgo(new Date(reply.timestamp));
-                const replyInitials = reply.author.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                const isReplyCreator = reply.author.id === 2;
-
-                html += `
-                    <div style="
-                        display: none;
-                        padding: 12px 16px 12px 60px;
-                        align-items: flex-start;
-                        gap: 12px;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                    " data-reply-id="${reply.id}" data-parent-id="${comment.id}">
-                        <div style="
-                            width: 28px;
-                            height: 28px;
-                            border-radius: 50%;
-                            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: white;
-                            font-weight: 600;
-                            font-size: 12px;
-                            flex-shrink: 0;
-                        ">${replyInitials}</div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                <span style="color: white; font-size: 14px; font-weight: 600;">${this.escapeHtml(reply.author.name)}</span>
-                                ${isReplyCreator ? '<span style="background: #ff0050; color: white; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 3px; text-transform: uppercase;">Creator</span>' : ''}
-                            </div>
-                            <div style="color: white; font-size: 14px; line-height: 1.4; margin-bottom: 8px; word-wrap: break-word;">${this.escapeHtml(reply.text)}</div>
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">${replyTimeAgo}</span>
-                                <button class="tiktok-reply-btn" data-reply-to="${this.escapeHtml(reply.author.name)}" style="
-                                    background: none;
-                                    border: none;
-                                    color: rgba(255, 255, 255, 0.6);
-                                    font-size: 12px;
-                                    font-weight: 600;
-                                    cursor: pointer;
-                                    padding: 0;
-                                ">Reply</button>
-                                <button class="tiktok-like-btn ${reply.liked ? 'liked' : ''}" data-reply-id="${reply.id}" style="
-                                    background: none;
-                                    border: none;
-                                    color: ${reply.liked ? '#ff0050' : 'rgba(255, 255, 255, 0.6)'};
-                                    cursor: pointer;
-                                    padding: 0;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
-                                    font-size: 12px;
-                                ">
-                                    <span class="heart-icon">${reply.liked ? 'â¤ï¸' : 'ðŸ¤'}</span>
-                                    <span class="like-count">${reply.likes || 0}</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
         return html;
     }
 
-    setupTikTokCommentListeners() {
-        // Like button listeners
-        document.querySelectorAll('#commentsModal .comment-like-btn').forEach(btn => {
+    setupCommentListeners() {
+        const modal = document.getElementById('commentsModal');
+        if (!modal) return;
+
+        // Like buttons
+        modal.querySelectorAll('.like-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 this.toggleCommentLike(btn);
             });
         });
 
-        // Reply button listeners
-        document.querySelectorAll('#commentsModal .comment-reply-btn').forEach(btn => {
+        // Reply buttons
+        modal.querySelectorAll('.reply-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
-                const replyTo = btn.dataset.replyTo;
-                const commentInput = document.querySelector('#commentsModal .comment-input');
-                if (commentInput) {
-                    commentInput.focus();
-                    if (replyTo) {
-                        commentInput.placeholder = `Replying to ${replyTo}...`;
-                    } else {
-                        commentInput.placeholder = 'Add comment...';
-                    }
+                const commentId = btn.dataset.commentId;
+                const username = btn.dataset.username;
+                this.initiateReply(commentId, username);
+            });
+        });
+
+        // View replies buttons
+        modal.querySelectorAll('.view-replies-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentId = btn.dataset.commentId;
+                const container = document.getElementById(`replies-${commentId}`);
+                if (container) {
+                    const isVisible = container.style.display === 'block';
+                    container.style.display = isVisible ? 'none' : 'block';
+                    btn.textContent = isVisible
+                        ? `View ${container.children.length} reply/replies ▼`
+                        : `Hide replies ▲`;
                 }
             });
         });
 
-        // View replies listeners
-        document.querySelectorAll('#commentsModal .view-replies').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const commentId = btn.dataset.commentId;
-                const replies = document.querySelectorAll(`[data-parent-id="${commentId}"]`);
-                const isExpanded = btn.textContent.includes('Hide');
+        // Close reply banner
+        const cancelReply = document.getElementById('cancelReplyBtn');
+        if (cancelReply) {
+            cancelReply.onclick = () => this.cancelReply();
+        }
+    }
 
-                replies.forEach(reply => {
-                    reply.style.display = isExpanded ? 'none' : 'flex';
-                });
+    initiateReply(commentId, username) {
+        this.replyingTo = { id: commentId, username: username };
+        const banner = document.getElementById('replyingToBanner');
+        const text = document.getElementById('replyingToText');
+        const input = document.querySelector('.comment-input-field');
 
-                const replyCount = replies.length;
-                btn.textContent = isExpanded
-                    ? `View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–¼`
-                    : `Hide ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–²`;
-            });
-        });
+        if (banner && text) {
+            text.textContent = `Replying to ${username}`;
+            banner.style.display = 'flex';
+        }
+
+        if (input) {
+            input.focus();
+            input.placeholder = `Reply to ${username}...`;
+        }
+    }
+
+    cancelReply() {
+        this.replyingTo = null;
+        const banner = document.getElementById('replyingToBanner');
+        const input = document.querySelector('.comment-input-field');
+
+        if (banner) banner.style.display = 'none';
+        if (input) {
+            input.placeholder = 'Add a comment...';
+        }
     }
 
     handleAddComment(e) {
@@ -1706,8 +1441,25 @@ class IdeasPage {
             replies: []
         };
 
-        // Save to session storage
-        this.saveSessionComment(this.currentIdeaId, newComment);
+        if (this.replyingTo) {
+            // Add as reply
+            const comments = this.getSessionComments(this.currentIdeaId);
+            const parent = comments.find(c => c.id == this.replyingTo.id);
+            if (parent) {
+                if (!parent.replies) parent.replies = [];
+                parent.replies.push(newComment);
+                this.saveAllSessionComments(this.currentIdeaId, comments);
+            } else {
+                // If parent is not in session storage (e.g., from mock data),
+                // for this demo, we'll just add it as a new top-level comment
+                // In a real app, this would involve fetching/updating backend data.
+                this.saveSessionComment(this.currentIdeaId, newComment);
+            }
+            this.cancelReply();
+        } else {
+            // Save as a new top-level comment
+            this.saveSessionComment(this.currentIdeaId, newComment);
+        }
 
         // Update comment count in the idea
         this.incrementCommentCount(this.currentIdeaId);
@@ -1715,79 +1467,45 @@ class IdeasPage {
         // Reload comments
         this.loadComments(this.currentIdeaId);
 
-        // Reset form and placeholder
+        // Reset form
         e.target.reset();
-        const commentInput = document.querySelector('.comment-input');
-        if (commentInput) {
-            commentInput.placeholder = 'Add a comment...';
-        }
 
-        // Scroll to bottom to show new comment
+        // Scroll to bottom
         const commentsList = document.getElementById('commentsList');
         if (commentsList) {
             setTimeout(() => {
                 commentsList.scrollTop = commentsList.scrollHeight;
             }, 100);
         }
+
+        this.showCommentSuccess('Comment posted successfully!');
     }
 
-    handleReplySubmission(e) {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const replyText = formData.get('replyText');
-        const parentId = e.target.dataset.parentId;
-
-        if (!replyText.trim()) return;
-
-        const newReply = {
-            id: Date.now(),
-            author: {
-                id: 'current_user',
-                name: 'Current User', // In real app, get from auth
-                role: 'Student'
-            },
-            text: replyText.trim(),
-            timestamp: new Date().toISOString(),
-            likes: 0,
-            liked: false
-        };
-
-        // Add reply to parent comment
-        const comments = this.getSessionComments(this.currentIdeaId);
-        const parentComment = comments.find(c => c.id == parentId);
-        if (parentComment) {
-            if (!parentComment.replies) parentComment.replies = [];
-            parentComment.replies.push(newReply);
-
-            // Save updated comments
-            const key = `idea_comments_${this.currentIdeaId}`;
-            sessionStorage.setItem(key, JSON.stringify(comments));
-        }
-
-        // Update comment count
-        this.incrementCommentCount(this.currentIdeaId);
-
-        // Reload comments
-        this.loadComments(this.currentIdeaId);
-
-        // Hide reply form
-        this.hideReplyForm(parentId);
-
-        // Show success message
-        this.showCommentSuccess('Reply posted successfully!');
+    saveAllSessionComments(ideaId, comments) {
+        const key = `idea_comments_${ideaId}`;
+        sessionStorage.setItem(key, JSON.stringify(comments));
     }
 
     toggleCommentLike(button) {
         const isLiked = button.classList.contains('liked');
-        const likeCount = parseInt(button.querySelector('span').textContent) || 0;
+        const icon = button.querySelector('i');
+        const countSpan = button.querySelector('.like-count');
+        const currentCount = parseInt(countSpan.textContent) || 0;
 
         if (isLiked) {
             button.classList.remove('liked');
-            button.querySelector('span').textContent = Math.max(0, likeCount - 1);
+            if (icon) {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            }
+            countSpan.textContent = Math.max(0, currentCount - 1);
         } else {
             button.classList.add('liked');
-            button.querySelector('span').textContent = likeCount + 1;
+            if (icon) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
+            countSpan.textContent = currentCount + 1;
         }
     }
 
@@ -1916,7 +1634,7 @@ class IdeasPage {
         console.log('Idea added to pending queue:', ideaData);
 
         // Simulate admin notification (in real app, this would be an email/notification)
-        console.log('ðŸ“§ Admin notification sent for new idea submission');
+        console.log('✉️ Admin notification sent for new idea submission');
     }
 
     // Event handlers for category filters
@@ -1937,176 +1655,29 @@ class IdeasPage {
         // Close modal when clicking outside
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.remove();
+                modal.style.display = 'none';
             }
         });
 
-        // Handle comment form submission
-        const form = modal.querySelector('#tikTokAddCommentForm');
+        const form = modal.querySelector('#addCommentForm');
         if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                const formData = new FormData(e.target);
-                const commentText = formData.get('commentText');
-
-                if (!commentText || !commentText.trim()) {
-                    return;
-                }
-
-                const newComment = {
-                    id: Date.now(),
-                    author: {
-                        id: 'current_user',
-                        name: 'Current User',
-                        role: 'Student'
-                    },
-                    text: commentText.trim(),
-                    timestamp: new Date().toISOString(),
-                    likes: 0,
-                    liked: false,
-                    replies: []
-                };
-
-                // Save to session storage
-                this.saveSessionComment(this.currentIdeaId, newComment);
-
-                // Update comment count in the idea card
-                this.incrementCommentCount(this.currentIdeaId);
-
-                // Refresh the modal with new comment
-                modal.remove();
-                const idea = this.findIdeaById(this.currentIdeaId);
-                if (idea) {
-                    this.showCommentsModal(idea);
-                }
-
-                // Show success message
-                this.showCommentSuccess('Comment posted successfully!');
-            });
+            form.addEventListener('submit', (e) => this.handleAddComment(e));
         }
-
-        // Handle like buttons
-        modal.querySelectorAll('.tiktok-like-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.toggleTikTokCommentLike(btn);
-            });
-        });
-
-        // Handle reply buttons
-        modal.querySelectorAll('.tiktok-reply-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const commentInput = modal.querySelector('input[name="commentText"]');
-                if (commentInput) {
-                    commentInput.focus();
-                    const replyTo = btn.dataset.replyTo;
-                    if (replyTo) {
-                        commentInput.placeholder = `Replying to ${replyTo}...`;
-                    }
-                }
-            });
-        });
-
-        // Handle view replies
-        modal.querySelectorAll('.tiktok-view-replies').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const commentId = btn.dataset.commentId;
-                const replies = modal.querySelectorAll(`[data-parent-id="${commentId}"]`);
-                const isExpanded = btn.textContent.includes('Hide');
-
-                replies.forEach(reply => {
-                    reply.style.display = isExpanded ? 'none' : 'flex';
-                });
-
-                const replyCount = replies.length;
-                btn.textContent = isExpanded
-                    ? `View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–¼`
-                    : `Hide ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'} â–²`;
-            });
-        });
-    }
-
-    toggleTikTokCommentLike(button) {
-        const isLiked = button.classList.contains('liked');
-        const likeCountSpan = button.querySelector('.like-count');
-        const heartIcon = button.querySelector('.heart-icon');
-        const currentCount = parseInt(likeCountSpan.textContent) || 0;
-
-        if (isLiked) {
-            button.classList.remove('liked');
-            likeCountSpan.textContent = Math.max(0, currentCount - 1);
-            heartIcon.textContent = 'ðŸ¤';
-            button.style.color = 'rgba(255, 255, 255, 0.6)';
-        } else {
-            button.classList.add('liked');
-            likeCountSpan.textContent = currentCount + 1;
-            heartIcon.textContent = 'â¤ï¸';
-            button.style.color = '#ff0050';
-        }
-    }
-
-    incrementCommentCount(ideaId) {
-        // Update the comment count in the UI
-        const ideaCard = document.querySelector(`[data-idea-id="${ideaId}"]`);
-        if (ideaCard) {
-            const commentStat = ideaCard.querySelector('.idea-stat:nth-child(2) span');
-            if (commentStat) {
-                const currentCount = parseInt(commentStat.textContent.split(' ')[0]) || 0;
-                commentStat.textContent = `${currentCount + 1} comments`;
-            }
-        }
-    }
-
-    showCommentSuccess(message) {
-        // Create a temporary success notification
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-            z-index: 10001;
-            font-weight: 600;
-            max-width: 300px;
-        `;
-        notification.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <i class="fas fa-check-circle"></i>
-                ${message}
-            </div>
-        `;
-
-        document.body.appendChild(notification);
-
-        // Remove after 3 seconds
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
     }
 }
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('ðŸš€ Initializing Ideas Page...');
+    console.log('🚀 Initializing Ideas Page...');
 
     // Force mock data initialization if not available
     if (!window.ideasMockData) {
-        console.log('ðŸ”§ Force initializing mock data...');
+        console.log('🔍 Force initializing mock data...');
         try {
             window.ideasMockData = new IdeasMockData();
-            console.log('âœ… Mock data force initialized');
+            console.log('✅ Mock data force initialized');
         } catch (error) {
-            console.error('âŒ Failed to force initialize mock data:', error);
+            console.error('❌ Failed to force initialize mock data:', error);
         }
     }
 

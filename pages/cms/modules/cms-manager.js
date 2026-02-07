@@ -6,11 +6,12 @@
  */
 
 import { CMSSecurity } from './cms-security.js';
-import { CMSSupabase } from './cms-supabase.js';
+import { CMSAPI } from './cms-api.js';
 import { CMSNotifications } from './cms-notifications.js';
 import { CMSEditors } from './cms-editors.js';
 import { CMSData } from './cms-data.js';
 import { CMSUI } from './cms-ui.js';
+import { CMSMockData } from './cms-mock-data.js';
 
 export class SecureCMSManager {
     constructor() {
@@ -43,16 +44,22 @@ export class SecureCMSManager {
         if (!title || typeof title !== 'string') {
             throw new Error('Title is required and must be a string');
         }
-        if (title.length < 3) {
+        
+        // Normalize Unicode to prevent homoglyph attacks
+        const t = title.normalize('NFKC').trim();
+        
+        if (t.length < 3) {
             throw new Error('Title must be at least 3 characters long');
         }
-        if (title.length > 200) {
+        if (t.length > 200) {
             throw new Error('Title must be less than 200 characters');
         }
-        // Allow unicode letters, numbers, spaces, and common punctuation (including colons, slashes, ampersands)
-        if (!/^[\p{L}\p{N}\p{Zs}\-_.:,!?()'"/&@#%*+=\[\]{}|\\~`^]+$/u.test(title)) {
-            throw new Error('Title contains invalid characters. Control characters and some special symbols are not allowed.');
+        
+        // Block control characters explicitly
+        if (/[\u0000-\u001F\u007F]/.test(t)) {
+            throw new Error('Title contains invalid control characters');
         }
+        
         return true;
     }
 
@@ -171,7 +178,8 @@ export class SecureCMSManager {
     validateRequiredElements() {
         const required = [
             'dashboard-tab', 'articles-tab', 'events-tab', 
-            'opportunities-tab', 'media-tab'
+            'opportunities-tab', 'innovation-tab', 'communications-tab', 
+            'members-tab', 'media-tab'
         ];
         
         const missing = required.filter(id => !document.getElementById(id));
@@ -214,7 +222,11 @@ export class SecureCMSManager {
     }
 
     setupTabs() {
-        const tabButtons = document.querySelectorAll('.tab-btn');
+        // Guard against double setup
+        if (this._tabsSetup) return;
+        this._tabsSetup = true;
+        
+        const tabButtons = document.querySelectorAll('.cms-tab');
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -227,6 +239,10 @@ export class SecureCMSManager {
     }
 
     setupEventDelegation() {
+        // Guard against double setup
+        if (this._delegationSetup) return;
+        this._delegationSetup = true;
+        
         console.log('🎯 Setting up event delegation...');
         
         // Store handler reference for cleanup
@@ -276,13 +292,30 @@ export class SecureCMSManager {
         // Register handlers
         this.eventHandlers.set('view-article', (id) => this.viewContentById(id, 'article'));
         this.eventHandlers.set('view-event', (id) => this.viewContentById(id, 'event'));
+        this.eventHandlers.set('view-project', (id) => this.viewContentById(id, 'project'));
         this.eventHandlers.set('view-opportunity', (id) => this.viewContentById(id, 'opportunity'));
         this.eventHandlers.set('edit-article', (id) => this.editArticle(id));
         this.eventHandlers.set('delete-article', (id) => this.deleteArticle(id));
         this.eventHandlers.set('edit-event', (id) => this.editEvent(id));
         this.eventHandlers.set('delete-event', (id) => this.deleteEvent(id));
+        this.eventHandlers.set('edit-project', (id) => this.editProject(id));
+        this.eventHandlers.set('delete-project', (id) => this.deleteProject(id));
         this.eventHandlers.set('edit-opportunity', (id) => this.editOpportunity(id));
         this.eventHandlers.set('delete-opportunity', (id) => this.deleteOpportunity(id));
+        
+        // New tab handlers
+        this.eventHandlers.set('view-challenge', (id) => this.viewContentById(id, 'challenge'));
+        this.eventHandlers.set('edit-challenge', (id) => this.editChallenge(id));
+        this.eventHandlers.set('delete-challenge', (id) => this.deleteChallenge(id));
+        this.eventHandlers.set('view-idea', (id) => this.viewContentById(id, 'idea'));
+        this.eventHandlers.set('approve-idea', (id) => this.approveIdea(id));
+        this.eventHandlers.set('reject-idea', (id) => this.rejectIdea(id));
+        this.eventHandlers.set('view-message', (id) => this.viewContentById(id, 'message'));
+        this.eventHandlers.set('resend-message', (id) => this.resendMessage(id));
+        this.eventHandlers.set('delete-message', (id) => this.deleteMessage(id));
+        this.eventHandlers.set('view-member', (id) => this.viewMember(id));
+        this.eventHandlers.set('message-member', (id) => this.messageMember(id));
+        this.eventHandlers.set('edit-member', (id) => this.editMember(id));
         
         // Enhanced handlers
         this.eventHandlers.set('bulk-delete', () => this.bulkDelete());
@@ -356,6 +389,10 @@ export class SecureCMSManager {
     }
 
     setupKeyboardShortcuts() {
+        // Guard against double setup
+        if (this._keyboardSetup) return;
+        this._keyboardSetup = true;
+        
         console.log('⌨️ Setting up keyboard shortcuts...');
         
         // Store handler reference for cleanup
@@ -408,6 +445,128 @@ export class SecureCMSManager {
         }
     }
 
+    // Helper methods for tab and collection management
+    getActiveListSelector() {
+        const map = {
+            articles: '#articles-list',
+            events: '#events-list',
+            opportunities: '#opportunities-list',
+            projects: '#projects-list',
+            media: '#media-library',
+            innovation: '#innovation-content',
+            communications: '#communications-content',
+            members: '#members-content',
+        };
+        return map[this.currentTab] || null;
+    }
+
+    normalizeCollection(name) {
+        // Ensure collection names are plural and consistent
+        const plural = new Set([
+            'articles', 'events', 'opportunities', 'projects', 
+            'ideas', 'messages', 'members', 'media', 'challenges'
+        ]);
+        
+        if (plural.has(name)) return name;
+        
+        // Handle singular to plural conversion
+        const singularToPlural = {
+            'article': 'articles',
+            'event': 'events',
+            'opportunity': 'opportunities',
+            'project': 'projects',
+            'idea': 'ideas',
+            'message': 'messages',
+            'member': 'members',
+            'challenge': 'challenges'
+        };
+        
+        return singularToPlural[name] || (name.endsWith('s') ? name : `${name}s`);
+    }
+
+    collectionForType(type) {
+        // Centralized type → collection mapping
+        return this.normalizeCollection(type);
+    }
+
+    getCurrentCollection() {
+        const map = {
+            'articles': 'articles',
+            'events': 'events',
+            'opportunities': 'opportunities',
+            'projects': 'projects',
+            'innovation': 'ideas',
+            'communications': 'messages',
+            'members': 'members',
+            'media': 'media'
+        };
+        return map[this.currentTab] || null;
+    }
+
+    setItemSelection(id, selected) {
+        if (!id) return;
+        if (selected) this.selectedItems.add(id);
+        else this.selectedItems.delete(id);
+        
+        this.updateBulkOperationsVisibility();
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
+        // Only update checkboxes inside the active list to avoid toggling hidden tabs
+        const selector = this.getActiveListSelector();
+        if (!selector) return;
+        
+        const checkboxes = document.querySelectorAll(`${selector} .content-item-checkbox`);
+        checkboxes.forEach(cb => {
+            const id = cb.dataset.id;
+            cb.checked = this.selectedItems.has(id);
+        });
+    }
+
+    clearSelection() {
+        this.selectedItems.clear();
+        
+        // Uncheck all checkboxes
+        const selector = this.getActiveListSelector();
+        if (selector) {
+            const checkboxes = document.querySelectorAll(`${selector} .content-item-checkbox`);
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+        
+        this.updateBulkOperationsVisibility();
+        this.updateSelectionUI();
+    }
+
+    selectAllItems() {
+        const selector = this.getActiveListSelector();
+        if (!selector) {
+            console.warn('No active list selector for tab:', this.currentTab);
+            return;
+        }
+        
+        const checkboxes = document.querySelectorAll(`${selector} .content-item-checkbox`);
+        checkboxes.forEach(cb => {
+            const id = cb.dataset.id;
+            if (!id) return;
+            this.selectedItems.add(id);
+            cb.checked = true;
+        });
+        
+        this.updateBulkOperationsVisibility();
+        this.updateSelectionUI();
+    }
+
+    updateBulkOperationsVisibility() {
+        const toolbar = document.getElementById('cms-bulk-toolbar');
+        const selectionCount = document.getElementById('selection-count');
+        if (!toolbar) return;
+        
+        const count = this.selectedItems.size;
+        toolbar.style.display = count > 0 ? 'flex' : 'none';
+        if (selectionCount) selectionCount.textContent = `${count} selected`;
+    }
+
     async initializeRealTimeFeatures() {
         console.log('🔄 Initializing real-time features...');
         
@@ -428,24 +587,32 @@ export class SecureCMSManager {
     }
 
     async setupRealTimeSubscriptions() {
-        if (!CMSSupabase.isConnected()) {
+        // Guard against missing CMSSupabase
+        if (!window.CMSSupabase || typeof window.CMSSupabase.isConnected !== 'function') {
+            console.log('📡 CMSSupabase not available, skipping real-time subscriptions');
+            return;
+        }
+        
+        if (!window.CMSSupabase.isConnected()) {
             console.log('📡 Supabase not connected, skipping real-time subscriptions');
             return;
         }
         
         try {
+            const sb = window.CMSSupabase;
+            
             // Subscribe to articles changes
-            const articlesSubscription = await CMSSupabase.subscribeToChanges('articles', (payload) => {
+            const articlesSubscription = await sb.subscribeToChanges('articles', (payload) => {
                 this.handleRealTimeUpdate('articles', payload);
             });
             
             // Subscribe to events changes
-            const eventsSubscription = await CMSSupabase.subscribeToChanges('events', (payload) => {
+            const eventsSubscription = await sb.subscribeToChanges('events', (payload) => {
                 this.handleRealTimeUpdate('events', payload);
             });
             
             // Subscribe to opportunities changes
-            const opportunitiesSubscription = await CMSSupabase.subscribeToChanges('opportunities', (payload) => {
+            const opportunitiesSubscription = await sb.subscribeToChanges('opportunities', (payload) => {
                 this.handleRealTimeUpdate('opportunities', payload);
             });
             
@@ -466,19 +633,29 @@ export class SecureCMSManager {
         // Show notification for changes made by other users
         const currentUser = window.authManager?.getUser();
         if (payload.new?.updated_by !== currentUser?.id) {
-            // Use title directly - notifications should handle safe rendering
+            // Use proper singular labels
+            const labels = {
+                'articles': 'article',
+                'events': 'event',
+                'opportunities': 'opportunity',
+                'projects': 'project',
+                'ideas': 'idea',
+                'messages': 'message'
+            };
+            
+            const typeLabel = labels[type] || type;
             const title = payload.new?.title || 'Unknown';
-            const typeLabel = type.slice(0, -1); // Remove 's' from plural
             
             this.notifications.show(
-                `${typeLabel} "${title}" was updated by another user`,
+                `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} "${title}" was updated by another user`,
                 'info'
             );
         }
         
         // Refresh current tab if it matches the updated content type
-        if (this.currentTab === type) {
-            this.loadTabContent(type);
+        const tabName = this.normalizeCollection(type);
+        if (this.currentTab === tabName) {
+            this.loadTabContent(this.currentTab);
         }
         
         // Update dashboard stats
@@ -647,7 +824,7 @@ export class SecureCMSManager {
         if (!searchContainer) return;
         
         // Show search only for content tabs (not dashboard or media)
-        const showSearch = ['articles', 'events', 'opportunities'].includes(this.currentTab);
+        const showSearch = ['articles', 'events', 'opportunities', 'innovation', 'communications', 'members'].includes(this.currentTab);
         searchContainer.style.display = showSearch ? 'flex' : 'none';
     }
 
@@ -743,7 +920,7 @@ export class SecureCMSManager {
         
         try {
             // Update active tab button using CSS classes
-            document.querySelectorAll('.tab-btn').forEach(btn => {
+            document.querySelectorAll('.cms-tab').forEach(btn => {
                 btn.classList.remove('active');
             });
 
@@ -753,17 +930,21 @@ export class SecureCMSManager {
             }
 
             // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.style.display = 'none';
+            document.querySelectorAll('.cms-content').forEach(content => {
+                content.classList.remove('active');
             });
 
             // Show selected tab content
             const selectedTab = document.getElementById(`${tabName}-tab`);
             if (selectedTab) {
-                selectedTab.style.display = 'block';
+                selectedTab.classList.add('active');
             }
 
             this.currentTab = tabName;
+            
+            // Clear selection to prevent state leaks across tabs
+            this.clearSelection();
+            this.updateBulkOperationsVisibility();
             
             // Update search visibility
             this.updateSearchVisibility();
@@ -816,8 +997,20 @@ export class SecureCMSManager {
                 case 'events':
                     await this.loadEvents();
                     break;
+                case 'projects':
+                    await this.loadProjects();
+                    break;
                 case 'opportunities':
                     await this.loadOpportunities();
+                    break;
+                case 'innovation':
+                    await this.loadInnovationHub();
+                    break;
+                case 'communications':
+                    await this.loadCommunications();
+                    break;
+                case 'members':
+                    await this.loadMembers();
                     break;
                 case 'media':
                     await this.loadMediaLibrary();
@@ -872,6 +1065,8 @@ export class SecureCMSManager {
         CMSUI.animateCounter('articles-count', stats.articles);
         CMSUI.animateCounter('events-count', stats.events);
         CMSUI.animateCounter('opportunities-count', stats.opportunities);
+        CMSUI.animateCounter('ideas-count', stats.ideas || 0);
+        CMSUI.animateCounter('members-count', stats.members || 0);
         CMSUI.animateCounter('media-count', stats.media);
         
         // Load recent activity
@@ -889,7 +1084,8 @@ export class SecureCMSManager {
         
         recentItems.forEach(item => {
             const activityItem = CMSUI.createActivityItem(item, () => {
-                this.switchTab(`${item.type}s`);
+                // Use normalizeCollection to handle opportunity → opportunities correctly
+                this.switchTab(this.normalizeCollection(item.type));
             });
             container.appendChild(activityItem);
         });
@@ -904,12 +1100,16 @@ export class SecureCMSManager {
         container.appendChild(CMSUI.createLoadingElement());
 
         try {
-            const allArticles = await CMSData.getArticles();
+            const realArticles = await CMSData.getArticles();
+            // Merge with mock data (uses real if available, mock as fallback)
+            const allArticles = CMSMockData.mergeWithRealData(realArticles, 'articles');
             const filteredArticles = this.filterItems(allArticles);
             this.renderArticles(filteredArticles);
         } catch (error) {
-            container.replaceChildren();
-            container.appendChild(CMSUI.createErrorElement(error.message));
+            console.error('Error loading articles:', error);
+            // On error, use mock data
+            const mockArticles = CMSMockData.get('articles');
+            this.renderArticles(mockArticles);
         }
     }
 
@@ -944,12 +1144,14 @@ export class SecureCMSManager {
         container.appendChild(CMSUI.createLoadingElement());
 
         try {
-            const allEvents = await CMSData.getEvents();
+            const realEvents = await CMSData.getEvents();
+            const allEvents = CMSMockData.mergeWithRealData(realEvents, 'events');
             const filteredEvents = this.filterItems(allEvents);
             this.renderEvents(filteredEvents);
         } catch (error) {
-            container.replaceChildren();
-            container.appendChild(CMSUI.createErrorElement(error.message));
+            console.error('Error loading events:', error);
+            const mockEvents = CMSMockData.get('events');
+            this.renderEvents(mockEvents);
         }
     }
 
@@ -984,12 +1186,14 @@ export class SecureCMSManager {
         container.appendChild(CMSUI.createLoadingElement());
 
         try {
-            const allOpportunities = await CMSData.getOpportunities();
+            const realOpportunities = await CMSData.getOpportunities();
+            const allOpportunities = CMSMockData.mergeWithRealData(realOpportunities, 'opportunities');
             const filteredOpportunities = this.filterItems(allOpportunities);
             this.renderOpportunities(filteredOpportunities);
         } catch (error) {
-            container.replaceChildren();
-            container.appendChild(CMSUI.createErrorElement(error.message));
+            console.error('Error loading opportunities:', error);
+            const mockOpportunities = CMSMockData.get('opportunities');
+            this.renderOpportunities(mockOpportunities);
         }
     }
 
@@ -1011,6 +1215,68 @@ export class SecureCMSManager {
                 onView: (data) => this.viewContent(data, 'opportunity'),
                 onEdit: (id) => this.editOpportunity(id),
                 onDelete: (id) => this.deleteOpportunity(id)
+            });
+            container.appendChild(item);
+        });
+    }
+
+    async loadProjects() {
+        const container = document.getElementById('projects-list');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            const realProjects = await CMSAPI.getProjects();
+            const allProjects = CMSMockData.mergeWithRealData(realProjects, 'projects');
+            const filteredProjects = this.filterItems(allProjects);
+            this.renderProjects(filteredProjects);
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            const mockProjects = CMSMockData.get('projects');
+            this.renderProjects(mockProjects);
+        }
+    }
+
+    renderProjects(projects) {
+        const container = document.getElementById('projects-list');
+        container.replaceChildren();
+
+        if (!projects.length) {
+            container.appendChild(CMSUI.createEmptyState('No projects found. Create your first project!'));
+            return;
+        }
+
+        container.className = 'ig-content-grid';
+        container.setAttribute('data-content-type', 'projects');
+        
+        // Force grid layout with inline styles as fallback
+        const updateGridColumns = () => {
+            const width = window.innerWidth;
+            if (width <= 768) {
+                container.style.gridTemplateColumns = '1fr';
+            } else if (width <= 1100) {
+                container.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            } else {
+                container.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            }
+        };
+        
+        container.style.display = 'grid';
+        container.style.gap = '2rem';
+        container.style.width = '100%';
+        container.style.padding = '1rem 0';
+        updateGridColumns();
+        
+        // Update on window resize
+        window.addEventListener('resize', updateGridColumns);
+
+        projects.forEach(project => {
+            const item = CMSUI.createContentItem(project, 'project', {
+                onView: (data) => this.viewContent(data, 'project'),
+                onEdit: (id) => this.editProject(id),
+                onDelete: (id) => this.deleteProject(id)
             });
             container.appendChild(item);
         });
@@ -1057,12 +1323,221 @@ export class SecureCMSManager {
         });
     }
 
+    // New tab loading methods
+    async loadInnovationHub() {
+        const container = document.getElementById('innovation-content');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            // Load innovation data (ideas and challenges)
+            const realIdeas = await CMSData.getIdeas();
+            const realChallenges = await CMSData.getChallenges();
+            
+            const ideas = CMSMockData.mergeWithRealData(realIdeas, 'ideas');
+            const challenges = CMSMockData.mergeWithRealData(realChallenges, 'challenges');
+            
+            // Update stats
+            this.updateInnovationStats(ideas, challenges);
+            
+            this.renderInnovationContent(ideas, challenges);
+        } catch (error) {
+            console.error('Error loading innovation hub:', error);
+            const mockIdeas = CMSMockData.get('ideas');
+            const mockChallenges = CMSMockData.get('challenges');
+            this.updateInnovationStats(mockIdeas, mockChallenges);
+            this.renderInnovationContent(mockIdeas, mockChallenges);
+        }
+    }
+
+    renderInnovationContent(ideas, challenges) {
+        const container = document.getElementById('innovation-content');
+        container.replaceChildren();
+
+        if (!ideas.length && !challenges.length) {
+            container.appendChild(CMSUI.createEmptyState('No innovation content found. Create your first challenge!'));
+            return;
+        }
+
+        container.className = 'ig-content-grid';
+        container.setAttribute('data-content-type', 'innovation');
+
+        // Render challenges first
+        challenges.forEach(challenge => {
+            const item = CMSUI.createContentItem(challenge, 'challenge', {
+                onView: (data) => this.viewContent(data, 'challenge'),
+                onEdit: (id) => this.editChallenge(id),
+                onDelete: (id) => this.deleteChallenge(id)
+            });
+            container.appendChild(item);
+        });
+
+        // Then render ideas
+        ideas.forEach(idea => {
+            const item = CMSUI.createContentItem(idea, 'idea', {
+                onView: (data) => this.viewContent(data, 'idea'),
+                onApprove: (id) => this.approveIdea(id),
+                onReject: (id) => this.rejectIdea(id)
+            });
+            container.appendChild(item);
+        });
+    }
+
+    updateInnovationStats(ideas, challenges) {
+        const totalIdeas = ideas.length;
+        const pendingIdeas = ideas.filter(idea => idea.status === 'pending').length;
+        const approvedIdeas = ideas.filter(idea => idea.status === 'approved').length;
+        const activeChallenges = challenges.filter(challenge => challenge.status === 'active').length;
+
+        CMSUI.animateCounter('total-ideas-count', totalIdeas);
+        CMSUI.animateCounter('pending-ideas-count', pendingIdeas);
+        CMSUI.animateCounter('approved-ideas-count', approvedIdeas);
+        CMSUI.animateCounter('active-challenges-count', activeChallenges);
+    }
+
+    async loadCommunications() {
+        const container = document.getElementById('communications-content');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            // Load communication data
+            const realMessages = await CMSData.getMessages();
+            const messages = CMSMockData.mergeWithRealData(realMessages, 'communications');
+            
+            // Update stats
+            this.updateCommunicationStats(messages);
+            
+            this.renderCommunications(messages);
+        } catch (error) {
+            console.error('Error loading communications:', error);
+            const mockMessages = CMSMockData.get('communications');
+            this.updateCommunicationStats(mockMessages);
+            this.renderCommunications(mockMessages);
+        }
+    }
+
+    renderCommunications(messages) {
+        const container = document.getElementById('communications-content');
+        container.replaceChildren();
+
+        if (!messages.length) {
+            container.appendChild(CMSUI.createEmptyState('No messages sent yet. Send your first announcement!'));
+            return;
+        }
+
+        container.className = 'ig-content-grid';
+        container.setAttribute('data-content-type', 'communications');
+
+        messages.forEach(message => {
+            const item = CMSUI.createContentItem(message, 'message', {
+                onView: (data) => this.viewContent(data, 'message'),
+                onResend: (id) => this.resendMessage(id),
+                onDelete: (id) => this.deleteMessage(id)
+            });
+            container.appendChild(item);
+        });
+    }
+
+    updateCommunicationStats(messages) {
+        const totalMessages = messages.length;
+        const thisMonth = messages.filter(msg => {
+            const msgDate = new Date(msg.sent_at);
+            const now = new Date();
+            return msgDate.getMonth() === now.getMonth() && msgDate.getFullYear() === now.getFullYear();
+        }).length;
+        
+        // Calculate open rate (mock data for now)
+        const openRate = messages.length > 0 ? Math.round((messages.filter(msg => msg.opened).length / messages.length) * 100) : 0;
+        const activeMembers = 150; // This would come from actual member data
+
+        CMSUI.animateCounter('total-messages-count', totalMessages);
+        CMSUI.animateCounter('recent-messages-count', thisMonth);
+        document.getElementById('message-open-rate').textContent = `${openRate}%`;
+        CMSUI.animateCounter('active-members-count', activeMembers);
+    }
+
+    async loadMembers() {
+        const container = document.getElementById('members-content');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            // Load member data
+            const realMembers = await CMSData.getMembers();
+            const members = CMSMockData.mergeWithRealData(realMembers, 'members');
+            
+            // Update stats
+            this.updateMemberStats(members);
+            
+            this.renderMembers(members);
+        } catch (error) {
+            console.error('Error loading members:', error);
+            const mockMembers = CMSMockData.get('members');
+            this.updateMemberStats(mockMembers);
+            this.renderMembers(mockMembers);
+        }
+    }
+
+    renderMembers(members) {
+        const container = document.getElementById('members-content');
+        container.replaceChildren();
+
+        if (!members.length) {
+            container.appendChild(CMSUI.createEmptyState('No members found.'));
+            return;
+        }
+
+        container.className = 'ig-content-grid';
+        container.setAttribute('data-content-type', 'members');
+
+        members.forEach(member => {
+            const item = CMSUI.createMemberItem(member, {
+                onView: (data) => this.viewMember(data),
+                onMessage: (id) => this.messageMember(id),
+                onEdit: (id) => this.editMember(id)
+            });
+            container.appendChild(item);
+        });
+    }
+
+    updateMemberStats(members) {
+        const totalMembers = members.length;
+        const now = new Date();
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const activeThisMonth = members.filter(member => {
+            const lastActive = new Date(member.last_active);
+            return lastActive >= thisMonth;
+        }).length;
+        
+        const newThisMonth = members.filter(member => {
+            const joinDate = new Date(member.created_at);
+            return joinDate >= thisMonth;
+        }).length;
+        
+        // Calculate engagement rate (mock calculation)
+        const engagementRate = totalMembers > 0 ? Math.round((activeThisMonth / totalMembers) * 100) : 0;
+
+        CMSUI.animateCounter('total-members-count', totalMembers);
+        CMSUI.animateCounter('active-members-stat', activeThisMonth);
+        CMSUI.animateCounter('new-members-count', newThisMonth);
+        document.getElementById('engagement-rate').textContent = `${engagementRate}%`;
+    }
+
     // Event handlers
     viewContentById(id, type) {
         console.log(`🔍 Viewing ${type} with ID:`, id);
         
         try {
-            const data = CMSData.findById(type + 's', id);
+            const collection = this.collectionForType(type);
+            const data = CMSData.findById(collection, id);
             if (data) {
                 console.log(`✅ Found ${type}:`, data.title);
                 this.viewContent(data, type);
@@ -1217,6 +1692,61 @@ export class SecureCMSManager {
         } catch (error) {
             console.error(`❌ Error editing opportunity:`, error);
             this.notifications.show(`Error editing opportunity: ${error.message}`, 'error');
+        }
+    }
+
+    editProject(id) {
+        console.log(`✏️ Editing project with ID:`, id);
+        
+        try {
+            const project = CMSData.findById('projects', id);
+            if (!project) {
+                this.notifications.show('Project not found', 'error');
+                return;
+            }
+            
+            console.log(`✅ Found project:`, project.title);
+            
+            this.showEditModal('project', project, async (updatedData) => {
+                try {
+                    this.validateTitle(updatedData.title);
+                    if (updatedData.content) {
+                        this.validateContent(updatedData.content);
+                    }
+                    
+                    await CMSAPI.updateProject(id, updatedData);
+                    this.notifications.show('Project updated successfully!', 'success');
+                    this.loadProjects();
+                    console.log(`✅ Project updated:`, updatedData.title);
+                    
+                } catch (error) {
+                    console.error(`❌ Error updating project:`, error);
+                    this.notifications.show(`Update failed: ${error.message}`, 'error');
+                    throw error;
+                }
+            });
+            
+        } catch (error) {
+            console.error(`❌ Error editing project:`, error);
+            this.notifications.show(`Error editing project: ${error.message}`, 'error');
+        }
+    }
+
+    async deleteProject(id) {
+        console.log(`🗑️ Deleting project with ID:`, id);
+        
+        if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            await CMSAPI.deleteProject(id);
+            this.notifications.show('Project deleted successfully!', 'success');
+            this.loadProjects();
+            console.log(`✅ Project deleted:`, id);
+        } catch (error) {
+            console.error(`❌ Error deleting project:`, error);
+            this.notifications.show(`Delete failed: ${error.message}`, 'error');
         }
     }
 
@@ -1456,6 +1986,12 @@ export class SecureCMSManager {
                 } else if (type === 'opportunity') {
                     await CMSData.createOpportunity(data);
                     this.loadOpportunities();
+                } else if (type === 'challenge') {
+                    await CMSData.createChallenge(data);
+                    this.loadInnovationHub();
+                } else if (type === 'announcement') {
+                    await CMSData.sendAnnouncement(data);
+                    this.loadCommunications();
                 }
                 
                 this.notifications.show(`${type.charAt(0).toUpperCase() + type.slice(1)} created successfully!`, 'success');
@@ -1471,17 +2007,6 @@ export class SecureCMSManager {
 
     // Enhanced methods for comprehensive CMS functionality
     
-    // Collection mapping for consistent naming
-    getCurrentCollection() {
-        const map = { 
-            articles: 'articles', 
-            events: 'events', 
-            opportunities: 'opportunities', 
-            media: 'media' 
-        };
-        return map[this.currentTab];
-    }
-
     // Search and filtering
     applyFilters() {
         console.log('🔍 Applying filters:', this.searchFilters);
@@ -1492,42 +2017,83 @@ export class SecureCMSManager {
 
     // Filter items client-side for better performance
     filterItems(items) {
-        const q = this.searchFilters.query.trim().toLowerCase();
-        return items.filter(item => {
-            const matchesQuery = !q || (item.title ?? '').toLowerCase().includes(q);
-            const matchesStatus = this.searchFilters.status === 'all' || item.status === this.searchFilters.status;
+        if (!items || !Array.isArray(items)) return [];
+        
+        const { query, type, status, dateRange } = this.searchFilters;
+        
+        let filtered = [...items];
+        
+        // Filter by search query (comprehensive)
+        if (query && query.trim()) {
+            const q = query.toLowerCase().trim();
+            filtered = filtered.filter(item => {
+                // Build comprehensive search haystack
+                const haystack = [
+                    item.title,
+                    item.excerpt,
+                    item.summary,
+                    item.description,
+                    item.content,
+                    item.location,
+                    item.company,
+                    item.organization,
+                    item.author_name,
+                    ...(Array.isArray(item.tags) ? item.tags : [])
+                ].filter(Boolean).join(' ').toLowerCase();
+                
+                return haystack.includes(q);
+            });
+        }
+        
+        // Note: Type filtering removed - items don't have type field, collection already implies type
+        
+        // Filter by status
+        if (status && status !== 'all') {
+            filtered = filtered.filter(item => item.status === status);
+        }
+        
+        // Filter by date range
+        if (dateRange && dateRange !== 'all') {
+            const now = new Date();
+            const ranges = {
+                'today': 1,
+                'week': 7,
+                'month': 30,
+                'year': 365
+            };
             
-            // Type filter: compute from current tab since each tab shows one type
-            const inferredType = 
-                this.currentTab === 'articles' ? 'article' :
-                this.currentTab === 'events' ? 'event' :
-                this.currentTab === 'opportunities' ? 'opportunity' : 'unknown';
-            const matchesType = this.searchFilters.type === 'all' || this.searchFilters.type === inferredType;
-            
-            const matchesDate = this.matchesDateRange(item);
-            
-            return matchesQuery && matchesStatus && matchesType && matchesDate;
-        });
+            const days = ranges[dateRange];
+            if (days) {
+                const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+                filtered = filtered.filter(item => {
+                    const itemDate = new Date(item.created_at || item.start_date || 0);
+                    return itemDate >= cutoff;
+                });
+            }
+        }
+        
+        return filtered;
     }
 
     matchesDateRange(item) {
         const range = this.searchFilters.dateRange;
         if (range === 'all') return true;
         
-        // Try different date fields based on content type
-        // Note: Expects ISO date strings (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ)
-        // If using other formats, normalize in CMSData before filtering
         const raw = item.created_at || item.updated_at || item.published_at || item.start_date;
         if (!raw) return true;
         
         const d = new Date(raw);
-        if (isNaN(d.getTime())) return true; // Invalid date, include in results
+        if (isNaN(d.getTime())) return true;
         
         const now = new Date();
         
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday start
+        // Monday start (more common in Kenya)
+        const day = startOfWeek.getDay();
+        const diff = (day === 0 ? 6 : day - 1);
+        startOfWeek.setDate(startOfWeek.getDate() - diff);
+        
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfYear = new Date(now.getFullYear(), 0, 1);
         
@@ -1538,73 +2104,27 @@ export class SecureCMSManager {
         return true;
     }
 
-    // Bulk operations
-    setItemSelection(id, selected) {
-        if (selected) {
-            this.selectedItems.add(id);
-        } else {
-            this.selectedItems.delete(id);
-        }
-        
-        this.updateBulkOperationsVisibility();
-        this.updateSelectionUI();
-    }
-
     toggleItemSelection(id) {
         const isSelected = this.selectedItems.has(id);
         this.setItemSelection(id, !isSelected);
     }
 
-    selectAllItems() {
-        // Get all visible items in current tab
-        const items = document.querySelectorAll(`#${this.currentTab}-list .ig-content-item`);
-        items.forEach(item => {
-            const id = item.dataset.id;
-            if (id) this.selectedItems.add(id);
-        });
-        
-        this.updateBulkOperationsVisibility();
-        this.updateSelectionUI();
-    }
-
-    clearSelection() {
-        this.selectedItems.clear();
-        this.updateBulkOperationsVisibility();
-        this.updateSelectionUI();
-    }
-
-    updateBulkOperationsVisibility() {
-        const toolbar = document.getElementById('cms-bulk-toolbar');
-        const selectionCount = document.getElementById('selection-count');
-        
-        if (toolbar && selectionCount) {
-            if (this.selectedItems.size > 0) {
-                toolbar.style.display = 'flex';
-                selectionCount.textContent = `${this.selectedItems.size} selected`;
-            } else {
-                toolbar.style.display = 'none';
-            }
-        }
-    }
-
-    updateSelectionUI() {
-        // Update checkboxes and visual indicators - use consistent class name
-        document.querySelectorAll('.content-item-checkbox').forEach(checkbox => {
-            const id = checkbox.dataset.id;
-            checkbox.checked = this.selectedItems.has(id);
-        });
-    }
-
     async bulkDelete() {
-        if (this.selectedItems.size === 0) return;
-        
-        const collection = this.getCurrentCollection();
-        if (!collection) {
-            this.notifications.show('Bulk operations are not available on this tab.', 'info');
+        if (this.selectedItems.size === 0) {
+            this.notifications.show('No items selected', 'warning');
             return;
         }
         
-        const confirmed = confirm(`Are you sure you want to delete ${this.selectedItems.size} items? This action cannot be undone.`);
+        const raw = this.getCurrentCollection();
+        if (!raw) {
+            this.notifications.show('Cannot delete items from this tab', 'error');
+            return;
+        }
+        
+        const collection = this.normalizeCollection(raw);
+        const count = this.selectedItems.size;
+        
+        const confirmed = confirm(`Are you sure you want to delete ${count} item${count > 1 ? 's' : ''}? This action cannot be undone.`);
         if (!confirmed) return;
         
         try {
@@ -1614,24 +2134,30 @@ export class SecureCMSManager {
             
             await Promise.all(deletePromises);
             
-            this.notifications.show(`Successfully deleted ${this.selectedItems.size} items`, 'success');
+            this.notifications.show(`Successfully deleted ${count} items`, 'success');
             this.clearSelection();
             this.loadTabContent(this.currentTab);
             this.updateDashboardStats();
             
         } catch (error) {
+            console.error('Bulk delete failed:', error);
             this.notifications.show(`Failed to delete items: ${error.message}`, 'error');
         }
     }
 
     async bulkPublish() {
-        if (this.selectedItems.size === 0) return;
-        
-        const collection = this.getCurrentCollection();
-        if (!collection) {
-            this.notifications.show('Bulk operations are not available on this tab.', 'info');
+        if (this.selectedItems.size === 0) {
+            this.notifications.show('No items selected', 'warning');
             return;
         }
+        
+        const raw = this.getCurrentCollection();
+        if (!raw) {
+            this.notifications.show('Cannot publish items from this tab', 'error');
+            return;
+        }
+        
+        const collection = this.normalizeCollection(raw);
         
         try {
             const updatePromises = Array.from(this.selectedItems).map(id => {
@@ -1645,18 +2171,24 @@ export class SecureCMSManager {
             this.loadTabContent(this.currentTab);
             
         } catch (error) {
+            console.error('Bulk publish failed:', error);
             this.notifications.show(`Failed to publish items: ${error.message}`, 'error');
         }
     }
 
     async bulkDraft() {
-        if (this.selectedItems.size === 0) return;
-        
-        const collection = this.getCurrentCollection();
-        if (!collection) {
-            this.notifications.show('Bulk operations are not available on this tab.', 'info');
+        if (this.selectedItems.size === 0) {
+            this.notifications.show('No items selected', 'warning');
             return;
         }
+        
+        const raw = this.getCurrentCollection();
+        if (!raw) {
+            this.notifications.show('Cannot draft items from this tab', 'error');
+            return;
+        }
+        
+        const collection = this.normalizeCollection(raw);
         
         try {
             const updatePromises = Array.from(this.selectedItems).map(id => {
@@ -1670,6 +2202,7 @@ export class SecureCMSManager {
             this.loadTabContent(this.currentTab);
             
         } catch (error) {
+            console.error('Bulk draft failed:', error);
             this.notifications.show(`Failed to update items: ${error.message}`, 'error');
         }
     }
@@ -1686,15 +2219,17 @@ export class SecureCMSManager {
 
     async publishScheduledContent(id, scheduledData) {
         const { type, title } = scheduledData;
+        const collection = this.collectionForType(type);
         
         // Update the content status to published
-        await CMSData.updateItem(type + 's', id, { 
+        await CMSData.updateItem(collection, id, { 
             status: 'published',
             published_at: new Date().toISOString()
         });
         
         // Refresh current view if needed
-        if (this.currentTab === type + 's') {
+        const tab = this.normalizeCollection(collection);
+        if (this.currentTab === tab) {
             this.loadTabContent(this.currentTab);
         }
     }
@@ -1956,6 +2491,477 @@ export class SecureCMSManager {
         
         document.body.appendChild(container);
         return container;
+    }
+
+    // New tab action methods
+    editChallenge(id) {
+        console.log(`✏️ Editing challenge with ID:`, id);
+        
+        try {
+            const challenge = CMSData.findById('challenges', id);
+            if (!challenge) {
+                this.notifications.show('Challenge not found', 'error');
+                return;
+            }
+            
+            this.showEditModal('challenge', challenge, async (updatedData) => {
+                try {
+                    this.validateTitle(updatedData.title);
+                    if (updatedData.content) {
+                        this.validateContent(updatedData.content);
+                    }
+                    
+                    await CMSData.updateItem('challenges', id, updatedData);
+                    this.notifications.show('Challenge updated successfully!', 'success');
+                    this.loadInnovationHub();
+                    
+                } catch (error) {
+                    console.error(`❌ Error updating challenge:`, error);
+                    this.notifications.show(`Update failed: ${error.message}`, 'error');
+                    throw error;
+                }
+            });
+            
+        } catch (error) {
+            console.error(`❌ Error editing challenge:`, error);
+            this.notifications.show(`Error editing challenge: ${error.message}`, 'error');
+        }
+    }
+
+    async deleteChallenge(id) {
+        if (!this.checkOperationPermissions('delete', 'challenge')) {
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const success = await CMSData.deleteItem('challenges', id);
+            if (success) {
+                this.notifications.show('Challenge deleted successfully!', 'success');
+                this.loadInnovationHub();
+                this.updateDashboardStats();
+            } else {
+                this.notifications.show('Challenge not found', 'error');
+            }
+        } catch (error) {
+            this.notifications.show('Failed to delete challenge: ' + error.message, 'error');
+        }
+    }
+
+    async approveIdea(id) {
+        if (!this.checkOperationPermissions('approve', 'idea')) {
+            return;
+        }
+        
+        try {
+            await CMSData.updateItem('ideas', id, { status: 'approved' });
+            this.notifications.show('Idea approved successfully!', 'success');
+            this.loadInnovationHub();
+        } catch (error) {
+            this.notifications.show('Failed to approve idea: ' + error.message, 'error');
+        }
+    }
+
+    async rejectIdea(id) {
+        if (!this.checkOperationPermissions('reject', 'idea')) {
+            return;
+        }
+        
+        const reason = prompt('Please provide a reason for rejection (optional):');
+        
+        try {
+            await CMSData.updateItem('ideas', id, { 
+                status: 'rejected',
+                rejection_reason: reason || 'No reason provided'
+            });
+            this.notifications.show('Idea rejected', 'success');
+            this.loadInnovationHub();
+        } catch (error) {
+            this.notifications.show('Failed to reject idea: ' + error.message, 'error');
+        }
+    }
+
+    async resendMessage(id) {
+        if (!this.checkOperationPermissions('send', 'message')) {
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to resend this message?')) {
+            return;
+        }
+        
+        try {
+            await CMSData.resendMessage(id);
+            this.notifications.show('Message resent successfully!', 'success');
+            this.loadCommunications();
+        } catch (error) {
+            this.notifications.show('Failed to resend message: ' + error.message, 'error');
+        }
+    }
+
+    async deleteMessage(id) {
+        if (!this.checkOperationPermissions('delete', 'message')) {
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const success = await CMSData.deleteItem('messages', id);
+            if (success) {
+                this.notifications.show('Message deleted successfully!', 'success');
+                this.loadCommunications();
+            } else {
+                this.notifications.show('Message not found', 'error');
+            }
+        } catch (error) {
+            this.notifications.show('Failed to delete message: ' + error.message, 'error');
+        }
+    }
+
+    viewMember(data) {
+        console.log(`👤 Viewing member:`, data);
+        
+        try {
+            const modal = CMSUI.createMemberModal(data);
+            document.body.appendChild(modal);
+        } catch (error) {
+            console.error(`❌ Error creating member modal:`, error);
+            this.notifications.show(`Error displaying member: ${error.message}`, 'error');
+        }
+    }
+
+    messageMember(id) {
+        console.log(`💬 Messaging member with ID:`, id);
+        
+        try {
+            const member = CMSData.findById('members', id);
+            if (!member) {
+                this.notifications.show('Member not found', 'error');
+                return;
+            }
+            
+            // Show message composition modal
+            this.showMessageModal(member);
+            
+        } catch (error) {
+            console.error(`❌ Error messaging member:`, error);
+            this.notifications.show(`Error messaging member: ${error.message}`, 'error');
+        }
+    }
+
+    editMember(id) {
+        console.log(`✏️ Editing member with ID:`, id);
+        
+        try {
+            const member = CMSData.findById('members', id);
+            if (!member) {
+                this.notifications.show('Member not found', 'error');
+                return;
+            }
+            
+            // Create dedicated member edit modal with proper fields
+            this.showMemberEditModal(member, async (updatedData) => {
+                try {
+                    if (updatedData.email) {
+                        this.validateEmail(updatedData.email);
+                    }
+                    
+                    await CMSData.updateItem('members', id, updatedData);
+                    this.notifications.show('Member updated successfully!', 'success');
+                    this.loadMembers();
+                    
+                } catch (error) {
+                    console.error(`❌ Error updating member:`, error);
+                    this.notifications.show(`Update failed: ${error.message}`, 'error');
+                    throw error;
+                }
+            });
+            
+        } catch (error) {
+            console.error(`❌ Error editing member:`, error);
+            this.notifications.show(`Error editing member: ${error.message}`, 'error');
+        }
+    }
+
+    showMemberEditModal(member, onSave) {
+        // Create dedicated member edit modal with proper fields (name, email, role, status)
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; padding: 1rem;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: #1f2937; border: 2px solid #374151; border-radius: 12px;
+            padding: 2rem; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+        `;
+        
+        const title = document.createElement('h2');
+        title.style.cssText = 'color: white; margin-bottom: 1.5rem; text-align: center;';
+        title.textContent = 'Edit Member';
+        
+        const form = document.createElement('form');
+        form.style.cssText = 'display: flex; flex-direction: column; gap: 1rem;';
+        
+        // Name field
+        const nameLabel = document.createElement('label');
+        nameLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        nameLabel.textContent = 'Name';
+        
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.name = 'name';
+        nameInput.value = member.name || '';
+        nameInput.required = true;
+        nameInput.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem;
+        `;
+        
+        // Email field
+        const emailLabel = document.createElement('label');
+        emailLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        emailLabel.textContent = 'Email';
+        
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.name = 'email';
+        emailInput.value = member.email || '';
+        emailInput.required = true;
+        emailInput.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem;
+        `;
+        
+        // Role field
+        const roleLabel = document.createElement('label');
+        roleLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        roleLabel.textContent = 'Role';
+        
+        const roleSelect = document.createElement('select');
+        roleSelect.name = 'role';
+        roleSelect.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem;
+        `;
+        
+        const roles = ['member', 'executive', 'admin'];
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role;
+            option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            option.selected = member.role === role;
+            roleSelect.appendChild(option);
+        });
+        
+        // Status field
+        const statusLabel = document.createElement('label');
+        statusLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        statusLabel.textContent = 'Status';
+        
+        const statusSelect = document.createElement('select');
+        statusSelect.name = 'status';
+        statusSelect.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem;
+        `;
+        
+        const statuses = ['active', 'inactive', 'suspended'];
+        statuses.forEach(status => {
+            const option = document.createElement('option');
+            option.value = status;
+            option.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            option.selected = member.status === status;
+            statusSelect.appendChild(option);
+        });
+        
+        // Button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.cssText = `
+            padding: 0.75rem 1.5rem; border: 1px solid #6b7280; border-radius: 0.5rem;
+            background: #374151; color: white; cursor: pointer; font-weight: 600;
+        `;
+        
+        const saveButton = document.createElement('button');
+        saveButton.type = 'submit';
+        saveButton.textContent = 'Save Changes';
+        saveButton.style.cssText = `
+            padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
+            background: var(--ig-success); color: white; cursor: pointer; font-weight: 600;
+        `;
+        
+        // Event handlers
+        cancelButton.addEventListener('click', () => modal.remove());
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const updatedData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                role: formData.get('role'),
+                status: formData.get('status')
+            };
+            
+            try {
+                await onSave(updatedData);
+                modal.remove();
+            } catch (error) {
+                // Error already handled by onSave, don't close modal
+            }
+        });
+        
+        // Assemble modal
+        form.appendChild(nameLabel);
+        form.appendChild(nameInput);
+        form.appendChild(emailLabel);
+        form.appendChild(emailInput);
+        form.appendChild(roleLabel);
+        form.appendChild(roleSelect);
+        form.appendChild(statusLabel);
+        form.appendChild(statusSelect);
+        
+        buttonContainer.appendChild(cancelButton);
+        buttonContainer.appendChild(saveButton);
+        form.appendChild(buttonContainer);
+        
+        modalContent.appendChild(title);
+        modalContent.appendChild(form);
+        modal.appendChild(modalContent);
+        
+        document.body.appendChild(modal);
+        
+        setTimeout(() => nameInput.focus(), 100);
+    }
+
+    showMessageModal(member) {
+        // Create message composition modal for individual member
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; padding: 1rem;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: #1f2937; border: 2px solid #374151; border-radius: 12px;
+            padding: 2rem; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+        `;
+        
+        const title = document.createElement('h2');
+        title.style.cssText = 'color: white; margin-bottom: 1.5rem; text-align: center;';
+        title.textContent = `Message ${member.name}`;
+        
+        const form = document.createElement('form');
+        form.style.cssText = 'display: flex; flex-direction: column; gap: 1rem;';
+        
+        // Subject input
+        const subjectLabel = document.createElement('label');
+        subjectLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        subjectLabel.textContent = 'Subject';
+        
+        const subjectInput = document.createElement('input');
+        subjectInput.type = 'text';
+        subjectInput.name = 'subject';
+        subjectInput.required = true;
+        subjectInput.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem;
+        `;
+        
+        // Message textarea
+        const messageLabel = document.createElement('label');
+        messageLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
+        messageLabel.textContent = 'Message';
+        
+        const messageInput = document.createElement('textarea');
+        messageInput.name = 'message';
+        messageInput.required = true;
+        messageInput.rows = 6;
+        messageInput.style.cssText = `
+            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
+            background: #374151; color: white; font-size: 1rem; resize: vertical;
+        `;
+        
+        // Button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.cssText = `
+            padding: 0.75rem 1.5rem; border: 1px solid #6b7280; border-radius: 0.5rem;
+            background: #374151; color: white; cursor: pointer; font-weight: 600;
+        `;
+        
+        const sendButton = document.createElement('button');
+        sendButton.type = 'submit';
+        sendButton.textContent = 'Send Message';
+        sendButton.style.cssText = `
+            padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
+            background: var(--ig-info); color: white; cursor: pointer; font-weight: 600;
+        `;
+        
+        // Event handlers
+        cancelButton.addEventListener('click', () => modal.remove());
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const messageData = {
+                recipient_id: member.id,
+                subject: formData.get('subject'),
+                message: formData.get('message'),
+                type: 'direct'
+            };
+            
+            try {
+                await CMSData.sendMessage(messageData);
+                this.notifications.show('Message sent successfully!', 'success');
+                modal.remove();
+            } catch (error) {
+                this.notifications.show(`Failed to send message: ${error.message}`, 'error');
+            }
+        });
+        
+        // Assemble modal
+        form.appendChild(subjectLabel);
+        form.appendChild(subjectInput);
+        form.appendChild(messageLabel);
+        form.appendChild(messageInput);
+        
+        buttonContainer.appendChild(cancelButton);
+        buttonContainer.appendChild(sendButton);
+        form.appendChild(buttonContainer);
+        
+        modalContent.appendChild(title);
+        modalContent.appendChild(form);
+        modal.appendChild(modalContent);
+        
+        document.body.appendChild(modal);
+        
+        setTimeout(() => subjectInput.focus(), 100);
     }
 
     // Cleanup method

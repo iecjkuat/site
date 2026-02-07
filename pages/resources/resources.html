@@ -19,9 +19,8 @@
     <!-- Global Systems -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
             crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
     <script src="/home/supabase-client.js"></script>
+    <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
 
     <!-- Stylesheets -->
@@ -29,8 +28,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
           integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
           crossorigin="anonymous" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
     <link href="/home/home.css" rel="stylesheet">
-    <link href="resources.css" rel="stylesheet">
+    <link href="/resources/resources.css" rel="stylesheet">
     
     <!-- Override conflicting navbar styles -->
     <style>
@@ -45,7 +45,7 @@
     <meta name="author" content="JKUAT Innovation Club">
 </head>
 
-<body class="bg-pattern">
+<body class="resources-page bg-pattern">
     <!-- Shared navbar will be automatically inserted here -->
 
     <!-- Hero Section -->
@@ -143,24 +143,15 @@
     <div id="footer-placeholder"></div>
 
     <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../home/supabase-client.js"></script>
-    <script src="../shared/global-auth.js"></script>
-    <script src="/shared/core/app.js"></script>
-    <script src="/shared/components/navigation.js"></script>
-    <script src="/shared/components/notifications.js"></script>
-    <script src="resources.js"></script>
+    <script src="/resources/resources.js"></script>
 
     <script>
         // Load navigation and initialize page
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM loaded, initializing resources page...');
 
-            // Initialize navigation
-            if (window.Navigation) {
-                window.navigation = new Navigation();
-                console.log('Navigation initialized');
-            }
+            // Navigation is handled by global-navbar.js
+            // No need to initialize it here
 
             // Resources page will be initialized by resources.js
             console.log('Resources page will be initialized by resources.js');

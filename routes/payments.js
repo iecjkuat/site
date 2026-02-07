@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { handleValidationErrors, commonValidations } = require('../middleware/validation');
 const router = express.Router();

@@ -70,24 +70,70 @@ class AuthManager {
             throw new Error('Supabase client not available');
         }
         
-        // Get current Supabase session
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        // Check for JWT token from backend API login
+        const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const storedUser = localStorage.getItem('user');
         
-        if (error) {
-            console.error('Session error:', error);
-        } else if (session) {
-            this.session = session;
-            this.user = this.formatUser(session.user);
+        if (authToken && storedUser) {
+            try {
+                // We have a backend JWT token, use the stored user data
+                this.user = JSON.parse(storedUser);
+                this.session = { access_token: authToken }; // Mock session for compatibility
+                console.log('✅ Restored JWT session:', this.user.email);
+                console.log('👤 User object:', this.user);
+                
+                // Update UI immediately
+                this.updateUI();
+                
+                // Dispatch login event immediately
+                setTimeout(() => {
+                    console.log('🔐 Dispatching userLoggedIn event with user:', this.user);
+                    document.dispatchEvent(new CustomEvent('userLoggedIn', { detail: this.user }));
+                }, 100);
+            } catch (error) {
+                console.error('Error parsing stored user:', error);
+                localStorage.removeItem('user');
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+            }
+        } else {
+            // Fallback to Supabase session check
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
             
-            // Store user data in localStorage for admin page compatibility
-            localStorage.setItem('user', JSON.stringify(this.user));
-            
-            console.log('✅ Restored Supabase session:', this.user.email);
+            if (error) {
+                console.error('Session error:', error);
+            } else if (session) {
+                this.session = session;
+                this.user = this.formatUser(session.user);
+                
+                // Store user data in localStorage for admin page compatibility
+                localStorage.setItem('user', JSON.stringify(this.user));
+                
+                console.log('✅ Restored Supabase session:', this.user.email);
+            }
         }
         
         // Listen for Supabase auth changes
         supabaseClient.auth.onAuthStateChange((event, session) => {
             console.log('🔐 Supabase auth state changed:', event);
+            
+            // Ignore INITIAL_SESSION event if we already have a JWT token
+            if (event === 'INITIAL_SESSION' && !session) {
+                const hasJWT = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                if (hasJWT) {
+                    console.log('⚠️ Ignoring INITIAL_SESSION with no session - JWT token exists');
+                    return;
+                }
+            }
+            
+            // Ignore SIGNED_OUT event if we have a JWT token (backend auth)
+            if (event === 'SIGNED_OUT') {
+                const hasJWT = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                if (hasJWT) {
+                    console.log('⚠️ Ignoring SIGNED_OUT event - JWT token exists');
+                    return;
+                }
+            }
             
             if (session) {
                 this.session = session;
@@ -98,13 +144,19 @@ class AuthManager {
                 
                 document.dispatchEvent(new CustomEvent('userLoggedIn', { detail: this.user }));
             } else {
-                this.session = null;
-                this.user = null;
-                
-                // Clear localStorage when logged out
-                localStorage.removeItem('user');
-                
-                document.dispatchEvent(new CustomEvent('userLoggedOut'));
+                // Only clear state if we don't have a JWT token
+                const hasJWT = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                if (!hasJWT) {
+                    this.session = null;
+                    this.user = null;
+                    
+                    // Clear localStorage when logged out
+                    localStorage.removeItem('user');
+                    
+                    document.dispatchEvent(new CustomEvent('userLoggedOut'));
+                } else {
+                    console.log('⚠️ Supabase session cleared but JWT exists - keeping user logged in');
+                }
             }
             
             this.updateUI();
@@ -251,6 +303,11 @@ class AuthManager {
             console.log('🔐 Logging out...');
             this.isLoggingOut = true; // Set flag to prevent modal
             
+            // Clear JWT tokens
+            localStorage.removeItem('authToken');
+            sessionStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            
             // Use Supabase Auth logout
             const { error } = await supabaseClient.auth.signOut();
             
@@ -262,20 +319,24 @@ class AuthManager {
             this.session = null;
             this.user = null;
             
-            // Clear localStorage
-            localStorage.removeItem('user');
-            
             console.log('✅ Logout successful');
             document.dispatchEvent(new CustomEvent('userLoggedOut'));
             this.updateUI();
+            
+            // Redirect to home page
+            window.location.href = '/';
             
         } catch (error) {
             console.error('❌ Logout error:', error);
             // Still clear local state even if Supabase call fails
             this.session = null;
             this.user = null;
+            localStorage.removeItem('authToken');
+            sessionStorage.removeItem('authToken');
+            localStorage.removeItem('user');
             document.dispatchEvent(new CustomEvent('userLoggedOut'));
             this.updateUI();
+            window.location.href = '/';
         } finally {
             // Clear logout flag after a short delay
             setTimeout(() => {
@@ -314,11 +375,17 @@ class AuthManager {
         document.querySelectorAll('[data-auth="login-btn"]:not(#navbar-login-btn)').forEach(btn => {
             if (this.isAuthenticated()) {
                 const userName = this.user?.name || 'User';
-                btn.innerHTML = `<i class="fas fa-user"></i> ${userName}`;
+                // SECURITY FIX: Use safe DOM manipulation instead of innerHTML
+                btn.innerHTML = ''; // Clear existing content
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-user';
+                const textNode = document.createTextNode(` ${userName}`);
+                btn.appendChild(icon);
+                btn.appendChild(textNode);
                 btn.onclick = () => window.location.href = '/dashboard';
             } else {
                 btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
-                btn.onclick = () => showLogin();
+                btn.onclick = () => window.location.href = '/signin';
             }
         });
 
@@ -1246,16 +1313,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
         // Initialize Supabase
+        console.log('Step 1: Initializing Supabase client...');
         await initializeSupabase();
+        console.log('Step 1: ✅ Supabase client initialized');
         
         // Initialize Auth Manager
+        console.log('Step 2: Creating AuthManager instance...');
         authManager = new AuthManager();
+        console.log('Step 2: ✅ AuthManager instance created');
+        
+        console.log('Step 3: Initializing AuthManager...');
         await authManager.init();
+        console.log('Step 3: ✅ AuthManager initialized');
         
         // Initialize Auth Modal
+        console.log('Step 4: Creating AuthModal...');
         window.authModal = new AuthModal();
+        console.log('Step 4: ✅ AuthModal created');
         
         // Make everything globally available
+        console.log('Step 5: Exposing to window object...');
         window.authManager = authManager;
         window.supabaseClient = supabaseClient;
         
@@ -1267,10 +1344,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.getCurrentUser = () => authManager.getUser();
         window.getAuthHeaders = () => authManager.getAuthHeaders();
         
+        console.log('Step 5: ✅ All functions exposed');
         console.log('✅ Supabase Authentication System Ready');
+        console.log('🔍 window.authManager:', window.authManager);
+        console.log('🔍 authManager.isAuthenticated:', typeof window.authManager?.isAuthenticated);
+        console.log('🔍 authManager.getUser:', typeof window.authManager?.getUser);
         
     } catch (error) {
         console.error('❌ Failed to initialize auth system:', error);
+        console.error('❌ Error stack:', error.stack);
     }
 });
 

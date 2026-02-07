@@ -48,28 +48,7 @@
 
                 <nav class="nav flex-column">
                     <a class="nav-link active" href="#dashboard" data-section="dashboard" aria-current="page">
-                        <i class="fas fa-tachometer-alt me-2" aria-hidden="true"></i> Dashboard
-                    </a>
-                    <a class="nav-link" href="#users" data-section="users">
-                        <i class="fas fa-users me-2"></i> User Management
-                    </a>
-                    <a class="nav-link" href="#events" data-section="events">
-                        <i class="fas fa-calendar me-2"></i> Event Management
-                    </a>
-                    <a class="nav-link" href="../events/admin-media.html">
-                        <i class="fas fa-images me-2"></i> Media Management
-                    </a>
-                    <a class="nav-link" href="#financial" data-section="financial">
-                        <i class="fas fa-chart-line me-2"></i> Financial Analytics
-                    </a>
-                    <a class="nav-link" href="#innovation" data-section="innovation">
-                        <i class="fas fa-lightbulb me-2"></i> Innovation Hub
-                    </a>
-                    <a class="nav-link" href="#communication" data-section="communication">
-                        <i class="fas fa-comments me-2"></i> Communications
-                    </a>
-                    <a class="nav-link" href="#reports" data-section="reports">
-                        <i class="fas fa-file-export me-2"></i> Export Reports
+                        <i class="fas fa-tachometer-alt me-2" aria-hidden="true"></i> Admin Dashboard
                     </a>
                 </nav>
 
@@ -87,13 +66,7 @@
                     <h2 class="mb-0 font-weight-bold admin-header-text">Admin Dashboard</h2>
                     <div class="d-flex align-items-center">
                         <span class="me-3 text-muted" id="lastUpdated" aria-live="polite">Last updated: Loading...</span>
-                        <button class="btn btn-outline-info btn-sm me-2" onclick="if(window.adminDashboard && window.adminDashboard.chartsModule) window.adminDashboard.chartsModule.forceRefresh()" aria-label="Refresh charts">
-                            <i class="fas fa-chart-bar me-1" aria-hidden="true"></i> Charts
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="if(window.adminDashboard && window.adminDashboard.chartsModule) window.adminDashboard.chartsModule.getChartStatus()" aria-label="Check chart status">
-                            <i class="fas fa-info me-1" aria-hidden="true"></i> Debug
-                        </button>
-                        <button class="btn btn-primary btn-sm" data-action="refreshData" aria-label="Refresh dashboard data">
+                        <button class="btn btn-primary btn-sm" data-action="refreshData" aria-label="Refresh data">
                             <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Refresh
                         </button>
                     </div>
@@ -101,172 +74,35 @@
 
                 <!-- Dashboard Section -->
                 <div id="dashboard-section" class="content-section" role="region" aria-labelledby="dashboard-heading">
-                    <!-- System Status Alert -->
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <div class="alert alert-info alert-dismissible fade show" role="alert" id="systemStatus">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>System Status:</strong> All services operational. Last backup: 2 hours ago.
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Overview Stats -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card stat-card text-center p-3 clickable-card" data-section="users" role="button" tabindex="0" aria-label="View user management">
-                                <div class="card-body position-relative">
-                                    <div class="loading-overlay d-none" id="usersLoader">
-                                        <div class="spinner-border spinner-border-sm text-primary"></div>
-                                    </div>
-                                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
-                                    <h3 class="mb-1 font-weight-bold" id="totalUsers"
-                                        style="color: rgba(255, 255, 255, 0.9);">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-6"></span>
-                                        </span>
-                                    </h3>
-                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Total
-                                        Users</p>
-                                    <small class="text-success font-weight-medium" id="newUsersWeek">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-8"></span>
-                                        </span>
-                                    </small>
-                                    <div class="card-hover-overlay">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stat-card text-center p-3 clickable-card" data-section="events">
-                                <div class="card-body position-relative">
-                                    <div class="loading-overlay d-none" id="eventsLoader">
-                                        <div class="spinner-border spinner-border-sm text-success"></div>
-                                    </div>
-                                    <i class="fas fa-calendar fa-2x text-success mb-2"></i>
-                                    <h3 class="mb-1 font-weight-bold" id="totalEvents"
-                                        style="color: rgba(255, 255, 255, 0.9);">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-6"></span>
-                                        </span>
-                                    </h3>
-                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Total
-                                        Events</p>
-                                    <small class="text-info font-weight-medium" id="upcomingEvents">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-8"></span>
-                                        </span>
-                                    </small>
-                                    <div class="card-hover-overlay">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stat-card text-center p-3 clickable-card" data-section="financial">
-                                <div class="card-body position-relative">
-                                    <div class="loading-overlay d-none" id="revenueLoader">
-                                        <div class="spinner-border spinner-border-sm text-warning"></div>
-                                    </div>
-                                    <i class="fas fa-money-bill fa-2x text-warning mb-2"></i>
-                                    <h3 class="mb-1 font-weight-bold" id="totalRevenue"
-                                        style="color: rgba(255, 255, 255, 0.9);">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-7"></span>
-                                        </span>
-                                    </h3>
-                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Total
-                                        Revenue</p>
-                                    <small class="text-success font-weight-medium" id="revenueMonth">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-9"></span>
-                                        </span>
-                                    </small>
-                                    <div class="card-hover-overlay">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stat-card text-center p-3 clickable-card" data-section="innovation">
-                                <div class="card-body position-relative">
-                                    <div class="loading-overlay d-none" id="ideasLoader">
-                                        <div class="spinner-border spinner-border-sm text-info"></div>
-                                    </div>
-                                    <i class="fas fa-lightbulb fa-2x text-info mb-2"></i>
-                                    <h3 class="mb-1 font-weight-bold" id="totalIdeas"
-                                        style="color: rgba(255, 255, 255, 0.9);">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-6"></span>
-                                        </span>
-                                    </h3>
-                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Ideas
-                                        Submitted</p>
-                                    <small class="text-primary font-weight-medium" id="ideasMonth">
-                                        <span class="placeholder-glow">
-                                            <span class="placeholder col-8"></span>
-                                        </span>
-                                    </small>
-                                    <div class="card-hover-overlay">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions Row -->
+                    <!-- Quick Admin Actions -->
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Quick Actions</h5>
+                                    <h5 class="mb-0">Admin Functions</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-primary w-100 mb-2"
-                                                data-action="createNewEvent">
-                                                <i class="fas fa-plus-circle mb-1"></i><br>
-                                                <small>Create Event</small>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-outline-primary w-100 mb-2" data-action="manageUsers">
+                                                <i class="fas fa-users mb-1"></i><br>
+                                                <small>User Management</small>
                                             </button>
                                         </div>
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-success w-100 mb-2"
-                                                data-action="showUserList">
-                                                <i class="fas fa-user-plus mb-1"></i><br>
-                                                <small>Manage Users</small>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-outline-success w-100 mb-2" data-action="backupDatabase">
+                                                <i class="fas fa-database mb-1"></i><br>
+                                                <small>Backup Database</small>
                                             </button>
                                         </div>
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-warning w-100 mb-2"
-                                                data-action="sendMessage">
-                                                <i class="fas fa-envelope mb-1"></i><br>
-                                                <small>Send Message</small>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-outline-warning w-100 mb-2" data-action="viewLogs">
+                                                <i class="fas fa-file-alt mb-1"></i><br>
+                                                <small>View Logs</small>
                                             </button>
                                         </div>
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-info w-100 mb-2"
-                                                data-action="generateFinancialReport">
-                                                <i class="fas fa-file-pdf mb-1"></i><br>
-                                                <small>Generate Report</small>
-                                            </button>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-secondary w-100 mb-2"
-                                                data-action="exportData">
-                                                <i class="fas fa-download mb-1"></i><br>
-                                                <small>Export Data</small>
-                                            </button>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button class="btn btn-outline-danger w-100 mb-2"
-                                                data-action="showSystemSettings">
+                                        <div class="col-md-3">
+                                            <button class="btn btn-outline-danger w-100 mb-2" data-action="systemSettings">
                                                 <i class="fas fa-cog mb-1"></i><br>
                                                 <small>Settings</small>
                                             </button>
@@ -277,1264 +113,127 @@
                         </div>
                     </div>
 
-                    <!-- Charts Row -->
+                    <!-- Basic Stats -->
                     <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">User Registration Trend</h5>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary active" data-period="7d">7D</button>
-                                        <button class="btn btn-outline-secondary" data-period="30d">30D</button>
-                                        <button class="btn btn-outline-secondary" data-period="90d">90D</button>
-                                    </div>
-                                </div>
+                        <div class="col-md-4">
+                            <div class="card stat-card text-center p-3">
                                 <div class="card-body">
-                                    <div class="chart-container position-relative">
-                                        <canvas id="userTrendChart"></canvas>
-                                        <div class="chart-loading d-none">
-                                            <div class="text-center">
-                                                <div class="spinner-border text-primary"></div>
-                                                <p class="mt-2">Loading chart...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Revenue Trend</h5>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-secondary active" data-period="7d">7D</button>
-                                        <button class="btn btn-outline-secondary" data-period="30d">30D</button>
-                                        <button class="btn btn-outline-secondary" data-period="90d">90D</button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container position-relative">
-                                        <canvas id="revenueTrendChart"></canvas>
-                                        <div class="chart-loading d-none">
-                                            <div class="text-center">
-                                                <div class="spinner-border text-success"></div>
-                                                <p class="mt-2">Loading chart...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Activity & Alerts Row -->
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Recent Activity</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="activity-feed" id="recentActivity">
-                                        <div class="activity-item d-flex align-items-center mb-3">
-                                            <div class="activity-icon rounded-circle me-3"
-                                                style="background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;">
-                                                <i class="fas fa-user-plus"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <p class="mb-1"><strong>New user registered:</strong> Jane Smith from
-                                                    Engineering</p>
-                                                <small class="text-muted">2 minutes ago</small>
-                                            </div>
-                                        </div>
-                                        <div class="activity-item d-flex align-items-center mb-3">
-                                            <div class="activity-icon rounded-circle me-3"
-                                                style="background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa;">
-                                                <i class="fas fa-calendar"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <p class="mb-1"><strong>Event created:</strong> AI Workshop scheduled
-                                                    for Jan 15</p>
-                                                <small class="text-muted">15 minutes ago</small>
-                                            </div>
-                                        </div>
-                                        <div class="activity-item d-flex align-items-center mb-3">
-                                            <div class="activity-icon rounded-circle me-3"
-                                                style="background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24;">
-                                                <i class="fas fa-money-bill"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <p class="mb-1"><strong>Payment received:</strong> KES 1,500 from John
-                                                    Doe</p>
-                                                <small class="text-muted">1 hour ago</small>
-                                            </div>
-                                        </div>
-                                        <div class="activity-item d-flex align-items-center">
-                                            <div class="activity-icon rounded-circle me-3"
-                                                style="background: rgba(6, 182, 212, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(6, 182, 212, 0.3); color: #22d3ee;">
-                                                <i class="fas fa-lightbulb"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <p class="mb-1"><strong>New idea submitted:</strong> Smart Campus
-                                                    Navigation</p>
-                                                <small class="text-muted">3 hours ago</small>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                    <h3 class="mb-1 font-weight-bold" id="totalUsers" style="color: rgba(255, 255, 255, 0.9);">287</h3>
+                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Total Users</p>
+                                    <small class="text-success font-weight-medium" id="activeUsers">245 active</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">System Alerts</h5>
-                                </div>
+                            <div class="card stat-card text-center p-3">
                                 <div class="card-body">
-                                    <div class="alert alert-warning alert-sm">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>3 users</strong> pending approval
-                                        <button class="btn btn-sm btn-outline-warning ms-2"
-                                            data-section="users">Review</button>
-                                    </div>
-                                    <div class="alert alert-info alert-sm">
-                                        <i class="fas fa-calendar-check me-2"></i>
-                                        <strong>2 events</strong> need attention
-                                        <button class="btn btn-sm btn-outline-info ms-2"
-                                            data-section="events">View</button>
-                                    </div>
-                                    <div class="alert alert-success alert-sm">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        System backup completed successfully
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Distribution Charts -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Users by College</h5>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="collegeChart"></canvas>
+                                    <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                                    <h3 class="mb-1 font-weight-bold" style="color: rgba(255, 255, 255, 0.9);">Secure</h3>
+                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">System Status</p>
+                                    <small class="text-success font-weight-medium">All systems operational</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Events by Category</h5>
-                                </div>
+                            <div class="card stat-card text-center p-3">
                                 <div class="card-body">
-                                    <canvas id="eventCategoryChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Payment Methods</h5>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="paymentMethodChart"></canvas>
+                                    <i class="fas fa-database fa-2x text-info mb-2"></i>
+                                    <h3 class="mb-1 font-weight-bold" id="lastBackup" style="color: rgba(255, 255, 255, 0.9);">2h ago</h3>
+                                    <p class="mb-0 font-weight-medium" style="color: rgba(255, 255, 255, 0.7);">Last Backup</p>
+                                    <small class="text-info font-weight-medium">Automated daily</small>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Users Section -->
-                <div id="users-section" class="content-section" style="display: none;" role="region" aria-labelledby="users-heading">
-                    <!-- User Management Header -->
+                    <!-- User Management -->
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">User Management</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-success btn-sm" data-action="showAddUserModal">
-                                                <i class="fas fa-user-plus me-1"></i> Add User
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" data-action="showBulkActionsModal">
-                                                <i class="fas fa-tasks me-1"></i> Bulk Actions
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="exportUsers">
-                                                <i class="fas fa-download me-1"></i> Export
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- User Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="totalUsersCount">287</h5>
-                                                <small class="text-muted">Total Users</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="activeUsersCount">245</h5>
-                                                <small class="text-muted">Active</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="pendingUsersCount">15</h5>
-                                                <small class="text-muted">Pending</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="newUsersCount">23</h5>
-                                                <small class="text-muted">This Month</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-secondary mb-1" id="leadersCount">12</h5>
-                                                <small class="text-muted">Leaders</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="completionRate">78%</h5>
-                                                <small class="text-muted">Profile Complete</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Search and Filter Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                                <input type="text" class="form-control" placeholder="Search users..."
-                                                    id="userSearchInput">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="collegeFilter">
-                                                <option value="">All Colleges</option>
-                                                <option value="Engineering">Engineering</option>
-                                                <option value="Business">Business</option>
-                                                <option value="Agriculture">Agriculture</option>
-                                                <option value="Health Sciences">Health Sciences</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="statusFilter">
-                                                <option value="">All Status</option>
-                                                <option value="Active">Active</option>
-                                                <option value="Pending">Pending</option>
-                                                <option value="Suspended">Suspended</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="roleFilter">
-                                                <option value="">All Roles</option>
-                                                <option value="Member">Member</option>
-                                                <option value="Leader">Leader</option>
-                                                <option value="Admin">Admin</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="userPeriod">
-                                                <option value="7d">Last 7 days</option>
-                                                <option value="30d" selected>Last 30 days</option>
-                                                <option value="90d">Last 90 days</option>
-                                                <option value="1y">Last year</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <!-- View Toggle -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-12">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary active"
-                                                    id="analyticsViewBtn" data-action="showUserAnalytics">
-                                                    <i class="fas fa-chart-bar me-1"></i> Analytics
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary" id="listViewBtn"
-                                                    data-action="showUserList">
-                                                    <i class="fas fa-list me-1"></i> User List
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="pendingViewBtn" data-action="showPendingUsers">
-                                                    <i class="fas fa-clock me-1"></i> Pending Approvals
-                                                    <span class="badge ms-1 badge-warning-glass">3</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Content Area -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="userAnalytics" class="glass-section">
-                                Loading user analytics...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Events Section -->
-                <div id="events-section" class="content-section" style="display: none;">
-                    <!-- Event Management Header -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">Event Management</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-success btn-sm" data-action="createNewEvent">
-                                                <i class="fas fa-plus me-1"></i> Create Event
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" data-action="showEventTemplates">
-                                                <i class="fas fa-copy me-1"></i> Templates
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="exportEvents">
-                                                <i class="fas fa-download me-1"></i> Export
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Event Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="totalEventsCount">24</h5>
-                                                <small class="text-muted">Total Events</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="upcomingEventsCount">5</h5>
-                                                <small class="text-muted">Upcoming</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="draftEventsCount">3</h5>
-                                                <small class="text-muted">Drafts</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="avgAttendanceRate">67%</h5>
-                                                <small class="text-muted">Avg Attendance</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-secondary mb-1" id="thisMonthEvents">8</h5>
-                                                <small class="text-muted">This Month</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-danger mb-1" id="cancelledEvents">2</h5>
-                                                <small class="text-muted">Cancelled</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Search and Filter Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                                <input type="text" class="form-control" placeholder="Search events..."
-                                                    id="eventSearchInput">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="eventTypeFilter">
-                                                <option value="">All Types</option>
-                                                <option value="Workshop">Workshop</option>
-                                                <option value="Seminar">Seminar</option>
-                                                <option value="Competition">Competition</option>
-                                                <option value="Networking">Networking</option>
-                                                <option value="Exhibition">Exhibition</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="eventStatusFilter">
-                                                <option value="">All Status</option>
-                                                <option value="Draft">Draft</option>
-                                                <option value="Published">Published</option>
-                                                <option value="Ongoing">Ongoing</option>
-                                                <option value="Completed">Completed</option>
-                                                <option value="Cancelled">Cancelled</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="eventDateFilter">
-                                                <option value="">All Dates</option>
-                                                <option value="today">Today</option>
-                                                <option value="week">This Week</option>
-                                                <option value="month">This Month</option>
-                                                <option value="upcoming">Upcoming</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="eventSortBy">
-                                                <option value="date">Sort by Date</option>
-                                                <option value="name">Sort by Name</option>
-                                                <option value="attendees">Sort by Attendees</option>
-                                                <option value="created">Sort by Created</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <!-- View Toggle -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-12">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary active"
-                                                    id="eventAnalyticsViewBtn" data-action="showEventAnalytics">
-                                                    <i class="fas fa-chart-bar me-1"></i> Analytics
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="eventListViewBtn" data-action="showEventList">
-                                                    <i class="fas fa-list me-1"></i> Event List
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="eventCalendarViewBtn" data-action="showEventCalendar">
-                                                    <i class="fas fa-calendar me-1"></i> Calendar
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="eventDraftsViewBtn" data-action="showEventDrafts">
-                                                    <i class="fas fa-edit me-1"></i> Drafts
-                                                    <span class="badge ms-1"
-                                                        style="background: rgba(245, 158, 11, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24;">3</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Content Area -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="eventAnalytics" class="glass-section">
-                                Loading event analytics...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Financial Section -->
-                <div id="financial-section" class="content-section hidden">
-                    <!-- Financial Management Header -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">Financial Management</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-success btn-sm" data-action="addManualPayment">
-                                                <i class="fas fa-plus me-1"></i> Add Payment
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" data-action="reconcilePayments">
-                                                <i class="fas fa-sync me-1"></i> Reconcile
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="exportFinance">
-                                                <i class="fas fa-download me-1"></i> Export
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Financial Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="totalRevenueAmount">KES 145K</h5>
-                                                <small class="text-muted">Total Revenue</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="monthlyRevenueAmount">KES 23.5K</h5>
-                                                <small class="text-muted">This Month</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="totalPaymentsCount">156</h5>
-                                                <small class="text-muted">Total Payments</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="pendingPaymentsCount">8</h5>
-                                                <small class="text-muted">Pending</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-secondary mb-1" id="avgPaymentAmount">KES 929</h5>
-                                                <small class="text-muted">Avg Payment</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-danger mb-1" id="failedPaymentsCount">3</h5>
-                                                <small class="text-muted">Failed</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Search and Filter Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                                <input type="text" class="form-control" placeholder="Search payments..."
-                                                    id="paymentSearchInput">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="paymentMethodFilter">
-                                                <option value="">All Methods</option>
-                                                <option value="M-Pesa">M-Pesa</option>
-                                                <option value="Bank Transfer">Bank Transfer</option>
-                                                <option value="Cash">Cash</option>
-                                                <option value="Card">Card</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="paymentStatusFilter">
-                                                <option value="">All Status</option>
-                                                <option value="Completed">Completed</option>
-                                                <option value="Pending">Pending</option>
-                                                <option value="Failed">Failed</option>
-                                                <option value="Refunded">Refunded</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="paymentDateFilter">
-                                                <option value="">All Dates</option>
-                                                <option value="today">Today</option>
-                                                <option value="week">This Week</option>
-                                                <option value="month">This Month</option>
-                                                <option value="quarter">This Quarter</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="amountRangeFilter">
-                                                <option value="">All Amounts</option>
-                                                <option value="0-500">KES 0-500</option>
-                                                <option value="500-1000">KES 500-1K</option>
-                                                <option value="1000-5000">KES 1K-5K</option>
-                                                <option value="5000+">KES 5K+</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-1">
-                                            <button class="btn btn-outline-secondary w-100"
-                                                data-action="clearFinancialFilters">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- View Toggle -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-12">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary active"
-                                                    id="financialAnalyticsViewBtn" data-action="showFinancialAnalytics">
-                                                    <i class="fas fa-chart-line me-1"></i> Analytics
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="paymentsViewBtn" data-action="showPaymentList">
-                                                    <i class="fas fa-list me-1"></i> Payments
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="pendingPaymentsViewBtn" data-action="showPendingPayments">
-                                                    <i class="fas fa-clock me-1"></i> Pending
-                                                    <span class="badge ms-1 badge-warning-glass">8</span>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="reportsViewBtn" data-action="showFinancialReports">
-                                                    <i class="fas fa-file-invoice me-1"></i> Reports
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Content Area -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="financialAnalytics" class="glass-section">
-                                Loading financial analytics...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Innovation Section -->
-                <div id="innovation-section" class="content-section hidden">
-                    <!-- Innovation Hub Header -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">Innovation Hub Management</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-primary btn-sm" data-action="showInnovationPortal">
-                                                <i class="fas fa-external-link-alt me-1"></i> View Portal
-                                            </button>
-                                            <button class="btn btn-success btn-sm" data-action="createNewChallenge">
-                                                <i class="fas fa-plus me-1"></i> New Challenge
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="exportIdeas">
-                                                <i class="fas fa-download me-1"></i> Export
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Innovation Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="totalIdeasCount">89</h5>
-                                                <small class="text-muted">Total Ideas</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="pendingIdeasCount">15</h5>
-                                                <small class="text-muted">Pending Review</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="approvedIdeasCount">52</h5>
-                                                <small class="text-muted">Approved</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="implementedIdeasCount">12</h5>
-                                                <small class="text-muted">Implemented</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-secondary mb-1" id="monthlyIdeasCount">12</h5>
-                                                <small class="text-muted">This Month</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-danger mb-1" id="implementationRate">23%</h5>
-                                                <small class="text-muted">Success Rate</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Search and Filter Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                                <input type="text" class="form-control" placeholder="Search ideas..."
-                                                    id="ideaSearchInput">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="ideaCategoryFilter">
-                                                <option value="">All Categories</option>
-                                                <option value="Technology">Technology</option>
-                                                <option value="Business">Business</option>
-                                                <option value="Social Impact">Social Impact</option>
-                                                <option value="Environment">Environment</option>
-                                                <option value="Education">Education</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="ideaStatusFilter">
-                                                <option value="">All Status</option>
-                                                <option value="Pending">Pending Review</option>
-                                                <option value="Approved">Approved</option>
-                                                <option value="In Development">In Development</option>
-                                                <option value="Implemented">Implemented</option>
-                                                <option value="Rejected">Rejected</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="ideaVotesFilter">
-                                                <option value="">All Votes</option>
-                                                <option value="0-10">0-10 votes</option>
-                                                <option value="10-25">10-25 votes</option>
-                                                <option value="25-50">25-50 votes</option>
-                                                <option value="50+">50+ votes</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="ideaSortBy">
-                                                <option value="votes">Sort by Votes</option>
-                                                <option value="date">Sort by Date</option>
-                                                <option value="title">Sort by Title</option>
-                                                <option value="status">Sort by Status</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-1">
-                                            <button class="btn btn-outline-secondary w-100"
-                                                data-action="clearIdeaFilters">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- View Toggle -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-12">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary active"
-                                                    id="innovationAnalyticsViewBtn"
-                                                    data-action="showInnovationAnalytics">
-                                                    <i class="fas fa-chart-bar me-1"></i> Analytics
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary" id="ideasListBtn"
-                                                    data-action="showIdeaList">
-                                                    <i class="fas fa-list me-1"></i> Idea List
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="pendingIdeasViewBtn" data-action="showPendingIdeas">
-                                                    <i class="fas fa-clock me-1"></i> Pending Review
-                                                    <span class="badge ms-1 badge-warning-glass">15</span>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="challengesViewBtn" data-action="showIdeaChallenges">
-                                                    <i class="fas fa-star me-1"></i> Challenges
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Content Area -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="innovationAnalytics" class="glass-section">
-                                Loading innovation analytics...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Communication Section -->
-                <div id="communication-section" class="content-section hidden">
-                    <!-- Communication Management Header -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">Communication Management</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-success btn-sm" data-action="sendBulkMessage">
-                                                <i class="fas fa-envelope me-1"></i> Send Message
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" data-action="createMessageTemplate">
-                                                <i class="fas fa-file-alt me-1"></i> Templates
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="scheduleMessage">
-                                                <i class="fas fa-clock me-1"></i> Schedule
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Communication Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="totalMessagesCount">234</h5>
-                                                <small class="text-muted">Total Messages</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="deliveredMessagesCount">221</h5>
-                                                <small class="text-muted">Delivered</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="readRatePercent">89%</h5>
-                                                <small class="text-muted">Read Rate</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="pendingMessagesCount">5</h5>
-                                                <small class="text-muted">Pending</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-secondary mb-1" id="scheduledMessagesCount">3</h5>
-                                                <small class="text-muted">Scheduled</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-danger mb-1" id="failedMessagesCount">8</h5>
-                                                <small class="text-muted">Failed</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Search and Filter Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <div class="input-group">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                                <input type="text" class="form-control" placeholder="Search messages..."
-                                                    id="messageSearchInput">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="messageTypeFilter">
-                                                <option value="">All Types</option>
-                                                <option value="Email">Email</option>
-                                                <option value="SMS">SMS</option>
-                                                <option value="Push">Push Notification</option>
-                                                <option value="In-App">In-App</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="messageStatusFilter">
-                                                <option value="">All Status</option>
-                                                <option value="Delivered">Delivered</option>
-                                                <option value="Pending">Pending</option>
-                                                <option value="Failed">Failed</option>
-                                                <option value="Scheduled">Scheduled</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="recipientFilter">
-                                                <option value="">All Recipients</option>
-                                                <option value="all">All Members</option>
-                                                <option value="active">Active Members</option>
-                                                <option value="leaders">Leaders</option>
-                                                <option value="college">By College</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <select class="form-select" id="messageDateFilter">
-                                                <option value="">All Dates</option>
-                                                <option value="today">Today</option>
-                                                <option value="week">This Week</option>
-                                                <option value="month">This Month</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-1">
-                                            <button class="btn btn-outline-secondary w-100"
-                                                data-action="clearMessageFilters">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- View Toggle -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-12">
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary active"
-                                                    id="commAnalyticsViewBtn" data-action="showCommunicationAnalytics">
-                                                    <i class="fas fa-chart-bar me-1"></i> Analytics
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="messagesViewBtn" data-action="showMessageList">
-                                                    <i class="fas fa-list me-1"></i> Message History
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="scheduledMessagesViewBtn" data-action="showScheduledMessages">
-                                                    <i class="fas fa-clock me-1"></i> Scheduled
-                                                    <span class="badge ms-1 badge-info-glass">3</span>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-primary"
-                                                    id="templatesViewBtn" data-action="showMessageTemplates">
-                                                    <i class="fas fa-file-alt me-1"></i> Templates
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dynamic Content Area -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="communicationAnalytics" class="glass-section">
-                                Loading communication analytics...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reports Section -->
-                <div id="reports-section" class="content-section hidden">
-                    <!-- Reports Management Header -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0">Export Reports & Analytics</h4>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-primary btn-sm" data-action="generateFullUserReport">
-                                                <i class="fas fa-download me-1"></i> Full PDF
-                                            </button>
-                                            <button class="btn btn-outline-info btn-sm" data-action="exportUserCSV">
-                                                <i class="fas fa-table me-1"></i> Export CSV
-                                            </button>
-                                            <button class="btn btn-info btn-sm" data-action="viewReportHistory">
-                                                <i class="fas fa-history me-1"></i> History
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Report Stats Row -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-primary mb-1" id="totalReportsCount">47</h5>
-                                                <small class="text-muted">Reports Generated</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-success mb-1" id="scheduledReportsCount">5</h5>
-                                                <small class="text-muted">Scheduled</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-info mb-1" id="lastReportDate">Jan 4</h5>
-                                                <small class="text-muted">Last Generated</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="text-center p-2 border rounded bg-light">
-                                                <h5 class="text-warning mb-1" id="reportSizeTotal">2.3 MB</h5>
-                                                <small class="text-muted">Total Size</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Report Options -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <label class="form-label">Date Range</label>
-                                            <select class="form-select" id="reportDateRange">
-                                                <option value="7d">Last 7 days</option>
-                                                <option value="30d" selected>Last 30 days</option>
-                                                <option value="90d">Last 90 days</option>
-                                                <option value="1y">Last year</option>
-                                                <option value="custom">Custom Range</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">Format</label>
-                                            <select class="form-select" id="reportFormat">
-                                                <option value="csv">CSV</option>
-                                                <option value="excel">Excel</option>
-                                                <option value="pdf">PDF</option>
-                                                <option value="json">JSON</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">Include</label>
-                                            <select class="form-select" id="reportIncludes">
-                                                <option value="summary">Summary Only</option>
-                                                <option value="detailed">Detailed Data</option>
-                                                <option value="charts">Include Charts</option>
-                                                <option value="all">Everything</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Report Categories -->
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header card-header-blue">
-                                    <h5 class="mb-0" style="color: rgba(255, 255, 255, 0.9);">
-                                        <i class="fas fa-users me-2"></i> User Reports
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>User Registration Report</strong>
-                                                <br><small class="text-muted">Complete user data with registration
-                                                    details</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                data-action="exportData" data-type="users">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>User Activity Report</strong>
-                                                <br><small class="text-muted">Login activity and engagement
-                                                    metrics</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                data-action="exportUserActivity">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>College Demographics</strong>
-                                                <br><small class="text-muted">User distribution by college and
-                                                    program</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                data-action="exportDemographics">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header card-header-green">
-                                    <h5 class="mb-0" style="color: rgba(255, 255, 255, 0.9);">
-                                        <i class="fas fa-calendar me-2"></i> Event Reports
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Event Summary Report</strong>
-                                                <br><small class="text-muted">All events with attendance and
-                                                    feedback</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-success"
-                                                data-action="exportData" data-type="events">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Attendance Analytics</strong>
-                                                <br><small class="text-muted">Detailed attendance patterns and
-                                                    trends</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-success" data-action="exportAttendance">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Event Performance</strong>
-                                                <br><small class="text-muted">ROI and success metrics per event</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-success"
-                                                data-action="exportEventPerformance">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header card-header-warning">
-                                    <h5 class="mb-0" style="color: rgba(255, 255, 255, 0.9);">
-                                        <i class="fas fa-money-bill me-2"></i> Financial Reports
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Payment Summary</strong>
-                                                <br><small class="text-muted">All payments with transaction
-                                                    details</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-warning"
-                                                data-action="exportData" data-type="payments">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Revenue Analytics</strong>
-                                                <br><small class="text-muted">Revenue trends and forecasting</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-warning" data-action="exportRevenue">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Financial Statement</strong>
-                                                <br><small class="text-muted">Complete financial overview</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-warning"
-                                                data-action="generateFinancialReport">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header card-header-cyan">
-                                    <h5 class="mb-0" style="color: rgba(255, 255, 255, 0.9);">
-                                        <i class="fas fa-lightbulb me-2"></i> Innovation Reports
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Ideas Database</strong>
-                                                <br><small class="text-muted">All submitted ideas with voting
-                                                    data</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-info" data-action="exportData" data-type="ideas">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Innovation Metrics</strong>
-                                                <br><small class="text-muted">Implementation rates and success
-                                                    stories</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-info"
-                                                data-action="exportInnovationMetrics">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>Challenge Results</strong>
-                                                <br><small class="text-muted">Innovation challenge outcomes</small>
-                                            </div>
-                                            <button class="btn btn-sm btn-outline-info"
-                                                data-action="exportChallengeResults">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bulk Export Options -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Bulk Export Options</h5>
+                                    <h5 class="mb-0">User Management</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-check-group">
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                id="exportUsers" checked>
-                                                            <label class="form-check-label"
-                                                                for="exportUsers">Users</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                id="exportEvents" checked>
-                                                            <label class="form-check-label"
-                                                                for="exportEvents">Events</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                id="exportPayments" checked>
-                                                            <label class="form-check-label"
-                                                                for="exportPayments">Payments</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                id="exportIdeas" checked>
-                                                            <label class="form-check-label"
-                                                                for="exportIdeas">Ideas</label>
-                                                        </div>
-                                                    </div>
+                                        <div class="col-md-6">
+                                            <h6>User Actions</h6>
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-outline-primary" data-action="viewAllUsers">
+                                                    <i class="fas fa-list me-2"></i>View All Users
+                                                </button>
+                                                <button class="btn btn-outline-success" data-action="addUser">
+                                                    <i class="fas fa-user-plus me-2"></i>Add New User
+                                                </button>
+                                                <button class="btn btn-outline-warning" data-action="pendingUsers">
+                                                    <i class="fas fa-clock me-2"></i>Pending Approvals (3)
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Quick Stats</h6>
+                                            <div class="list-group">
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Active Users</span>
+                                                    <span class="badge bg-success">245</span>
+                                                </div>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Pending Approval</span>
+                                                    <span class="badge bg-warning">3</span>
+                                                </div>
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Admin Users</span>
+                                                    <span class="badge bg-info">2</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4 text-end">
-                                            <button class="btn btn-primary me-2" data-action="exportSelectedData">
-                                                <i class="fas fa-download me-1"></i> Export Selected
-                                            </button>
-                                            <button class="btn btn-success" data-action="exportAllData">
-                                                <i class="fas fa-database me-1"></i> Export Everything
-                                            </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Maintenance -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">System Maintenance</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <h6>Database</h6>
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-outline-success" data-action="backupDatabase">
+                                                    <i class="fas fa-save me-2"></i>Create Backup
+                                                </button>
+                                                <button class="btn btn-outline-info" data-action="optimizeDatabase">
+                                                    <i class="fas fa-database me-2"></i>Optimize Database
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>System</h6>
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-outline-secondary" data-action="clearCache">
+                                                    <i class="fas fa-broom me-2"></i>Clear Cache
+                                                </button>
+                                                <button class="btn btn-outline-warning" data-action="viewLogs">
+                                                    <i class="fas fa-file-alt me-2"></i>View Error Logs
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>Security</h6>
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-outline-danger" data-action="systemSettings">
+                                                    <i class="fas fa-cog me-2"></i>System Settings
+                                                </button>
+                                                <button class="btn btn-outline-info" data-action="exportData">
+                                                    <i class="fas fa-download me-2"></i>Export Data
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

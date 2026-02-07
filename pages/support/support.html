@@ -28,30 +28,13 @@
           integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
           crossorigin="anonymous" rel="stylesheet">
     <link href="/home/home.css" rel="stylesheet">
-    <link href="../shared/components/navigation.css" rel="stylesheet">
-    <link href="support.css" rel="stylesheet">
+    <link href="/shared/components/navigation.css" rel="stylesheet">
+    <link href="/support/support.css" rel="stylesheet">
     
-    <!-- Override conflicting navbar styles -->
+    <!-- Adjust body padding for navbar -->
     <style>
-        body { padding-top: 140px !important; }
-        
-        /* Hide conflicting navigation elements */
-        #navigation-placeholder,
-        .minimal-navbar,
-        .navigation-container,
-        .glass-nav,
-        .nav-club-header,
-        .nav-club-title,
-        .nav-links-container,
-        .nav-center,
-        .nav-auth,
-        .nav-dropdown {
-            display: none !important;
-        }
-        
-        /* Override support page specific navbar styles */
-        body.support-page {
-            padding-top: 140px !important;
+        body { 
+            padding-top: 80px !important; 
         }
         
         /* Ensure global navbar is visible */
@@ -360,9 +343,9 @@
     </footer>
 
     <script src="/shared/role-ui-controller.js"></script>
-    <script src="mock-data.js"></script>
-    <script src="footer.js"></script>
-    <script src="support.js"></script>
+    <script src="/support/mock-data.js"></script>
+    <script src="/support/footer.js"></script>
+    <script src="/support/support.js"></script>
     
     <!-- Initialize Support Page -->
     <script>

@@ -3,6 +3,13 @@
  * Handles bulk messaging, templates, scheduled messages, and communication analytics
  */
 
+// Import security utilities (Instagram-style pattern)
+if (typeof SecurityUtils === 'undefined') {
+    const script = document.createElement('script');
+    script.src = '/shared/utils/security.js';
+    document.head.appendChild(script);
+}
+
 class CommunicationManagement extends BaseManagement {
     constructor(adminDashboard) {
         super(adminDashboard);
@@ -46,7 +53,12 @@ class CommunicationManagement extends BaseManagement {
             }
         } catch (error) {
             console.error(`Error loading communication ${view}:`, error);
-            container.innerHTML = `<div class="alert alert-danger">Error loading ${view}: ${error.message}</div>`;
+            // SECURITY FIX: Use safe error display (Instagram-style pattern)
+            if (typeof SecurityUtils !== 'undefined') {
+                SecurityUtils.showError(container, error.message, `Error loading ${view}`);
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">Error loading ${view}</div>`;
+            }
         }
     }
 

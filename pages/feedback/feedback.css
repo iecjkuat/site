@@ -1,7 +1,7 @@
 /* Feedback Portal Specific Styles */
 
 /* Ensure proper spacing for fixed navbar */
-body {
+.feedback-page {
     padding-top: 140px !important;
 }
 
@@ -294,7 +294,7 @@ textarea.form-input {
 }
 
 /* Ensure proper spacing */
-main.container {
+.feedback-page main.container {
     padding-top: 140px !important;
 }
 

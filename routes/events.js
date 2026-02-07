@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 
 // Import sub-route modules
 const attendanceRoutes = require('./events-attendance');
@@ -21,14 +21,13 @@ router.get('/', async (req, res) => {
     let query = supabase
       .from('events')
       .select(`
-        id, title, description, event_type, start_date, end_date, location, venue_details,
-        max_attendees, registration_required, registration_deadline, fee, status, tags,
-        created_at, updated_at
+        id, title, description, event_type, event_date, end_date, location,
+        status, tags, created_at, updated_at
       `)
-      .order('start_date', { ascending: true });
+      .order('event_date', { ascending: true });
 
     if (status) query = query.eq('status', status);
-    if (upcoming === 'true') query = query.gte('start_date', new Date().toISOString());
+    if (upcoming === 'true') query = query.gte('event_date', new Date().toISOString());
     if (category) query = query.eq('event_type', category);
 
     query = query.range(offset, offset + parseInt(limit) - 1);

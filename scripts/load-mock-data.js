@@ -4,7 +4,7 @@
  */
 
 require('dotenv').config();
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 const fs = require('fs');
 const path = require('path');
 

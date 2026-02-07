@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News & Articles - JKUAT Innovation Club</title>
+
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"
+        crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
+    <link href="/home/home.css" rel="stylesheet">
+    <link href="/news/news.css" rel="stylesheet">
+</head>
+<body class="news-page">
+    <!-- Shared navbar will be automatically inserted here -->
+
+    <!-- Main Content -->
+    <main class="news-main">
+        <div class="container">
+            <!-- Page Header -->
+            <section class="news-header">
+                <div class="header-content">
+                    <div class="header-badge">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Stay Informed</span>
+                    </div>
+                    <h1 class="header-title">
+                        <span class="line-1">News &</span>
+                        <span class="line-2">Articles</span>
+                    </h1>
+                    <p class="header-description">
+                        Stay up-to-date with the latest announcements, news, and articles from JKUAT Innovation Club. 
+                        Discover insights, updates, and stories from our vibrant community.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Filters & Search -->
+            <section class="news-filters">
+                <div class="filters-container">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all">
+                            <i class="fas fa-globe"></i>
+                            <span>All</span>
+                        </button>
+                        <button class="filter-tab" data-filter="announcement">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
+                        </button>
+                        <button class="filter-tab" data-filter="news">
+                            <i class="fas fa-newspaper"></i>
+                            <span>News</span>
+                        </button>
+                        <button class="filter-tab" data-filter="article">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Articles</span>
+                        </button>
+                        <button class="filter-tab" data-filter="event">
+                            <i class="fas fa-calendar"></i>
+                            <span>Events</span>
+                        </button>
+                    </div>
+                    
+                    <div class="search-container">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="newsSearch" placeholder="Search news and articles...">
+                        </div>
+                        <button class="search-btn" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pinned Announcements -->
+            <section class="pinned-announcements" id="pinnedSection">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-thumbtack"></i>
+                        Pinned Announcements
+                    </h2>
+                </div>
+                <div class="pinned-grid" id="pinnedGrid">
+                    <!-- Pinned content will be loaded here -->
+                </div>
+            </section>
+
+            <!-- News Grid -->
+            <section class="news-content">
+                <div class="content-header">
+                    <h2 id="contentTitle">Latest Updates</h2>
+                    <div class="sort-options">
+                        <select id="sortSelect">
+                            <option value="date-desc">Newest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="title-asc">Title A-Z</option>
+                            <option value="title-desc">Title Z-A</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="news-grid" id="newsGrid">
+                    <!-- News items will be loaded here -->
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="loadingState">
+                    <div class="loading-spinner"></div>
+                    <p>Loading content...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <h3>No content found</h3>
+                    <p>Try adjusting your filters or search terms.</p>
+                </div>
+
+                <!-- Load More -->
+                <div class="load-more-container" id="loadMoreContainer" style="display: none;">
+                    <button class="load-more-btn" id="loadMoreBtn">
+                        <i class="fas fa-plus"></i>
+                        Load More
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Scripts -->
+    <script src="/shared/components/notifications.js"></script>
+    <script src="/shared/utils/utils.js"></script>
+    <script src="/news/news.js"></script>
+    <script src="/news/footer.js"></script>
+</body>
+</html>

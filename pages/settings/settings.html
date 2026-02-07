@@ -9,192 +9,155 @@
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
 
-    <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
-    <script src="/home/supabase-client.js"></script>
-    <script src="/shared/global-navbar.js"></script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous" rel="stylesheet">
 
     <!-- Stylesheets -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-          crossorigin="anonymous" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    <link href="../shared/components/navigation.css" rel="stylesheet">
-    <link href="../shared/assets/css/main.css" rel="stylesheet">
-    <link href="settings.css" rel="stylesheet">
-    
-    <!-- Override conflicting navbar styles -->
-    <style>
-        body { padding-top: 140px !important; }
-    </style>
+    <link href="/shared/core/base.css" rel="stylesheet">
+    <link href="/shared/core/theme.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
+    <link href="/settings/settings.css" rel="stylesheet">
 
-    <!-- Meta Tags -->
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"
+        crossorigin="anonymous"></script>
+    <script src="/shared/supabase-client.js"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+
     <meta name="description"
         content="Manage your JKUAT Innovation Club account settings, preferences, and profile information.">
-    <meta name="keywords" content="JKUAT, settings, profile, account, preferences">
 </head>
 
-<body class="bg-pattern">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+<body class="settings-page">
+    <!-- Global Background -->
+    <div class="global-bg"></div>
+
+    <!-- Navigation placeholder -->
+    <div id="navbar-placeholder"></div>
 
     <!-- Main Content -->
-    <section style="padding: 6rem 0 4rem 0; position: relative; z-index: 10;">
-        <div class="container">
+    <main class="settings-main">
+        <div class="settings-container">
 
             <!-- Page Header -->
-            <div class="page-header">
-                <div class="page-badge">
-                    ACCOUNT SETTINGS
-                </div>
-                <h1 class="page-title">
-                    Manage Your <span class="gradient-text accent">Profile</span>
-                </h1>
-                <p class="page-description">
-                    Update your personal information, preferences, and account security settings.
-                </p>
-            </div>
+            <header class="settings-header">
+                <div class="header-badge">ACCOUNT SETTINGS</div>
+                <h1 class="header-title">Manage Your <span class="text-accent">Profile</span></h1>
+                <p class="header-description">Update your personal information, preferences, and account security
+                    settings.</p>
+            </header>
 
             <!-- Settings Layout -->
             <div class="settings-layout">
 
-                <!-- Settings Navigation Sidebar -->
-                <div class="settings-sidebar">
-                    <div class="glass-card">
-                        <h3 class="sidebar-title">Settings</h3>
-                        <nav class="settings-nav">
-                            <button class="settings-tab active" data-tab="profile">
-                                <i class="fas fa-user"></i>Personal Info
-                            </button>
-                            <button class="settings-tab" data-tab="academic">
-                                <i class="fas fa-graduation-cap"></i>Academic Details
-                            </button>
-                            <button class="settings-tab" data-tab="membership">
-                                <i class="fas fa-id-card"></i>Membership
-                            </button>
-                            <button class="settings-tab" data-tab="payments">
-                                <i class="fas fa-credit-card"></i>Payment History
-                            </button>
-                            <button class="settings-tab" data-tab="activity">
-                                <i class="fas fa-chart-line"></i>Activity Log
-                            </button>
-                            <button class="settings-tab" data-tab="notifications">
-                                <i class="fas fa-bell"></i>Notifications
-                            </button>
-                            <button class="settings-tab" data-tab="security">
-                                <i class="fas fa-shield-alt"></i>Security
-                            </button>
-                            <button class="settings-tab" data-tab="preferences">
-                                <i class="fas fa-cog"></i>App Preferences
-                            </button>
-                            <button class="settings-tab" data-tab="privacy">
-                                <i class="fas fa-user-shield"></i>Privacy & Data
-                            </button>
-                            <button class="settings-tab" data-tab="danger">
-                                <i class="fas fa-exclamation-triangle"></i>Danger Zone
-                            </button>
-                        </nav>
-                    </div>
-                </div>
+                <!-- Sidebar Navigation -->
+                <aside class="settings-sidebar">
+                    <nav class="settings-nav" role="tablist">
+                        <button class="nav-tab active" data-tab="profile" role="tab" aria-selected="true"
+                            aria-controls="profile">
+                            <i class="fas fa-user"></i>
+                            <span>Personal Info</span>
+                        </button>
+                        <button class="nav-tab" data-tab="academic" role="tab" aria-selected="false"
+                            aria-controls="academic">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Academic Details</span>
+                        </button>
+                        <button class="nav-tab" data-tab="security" role="tab" aria-selected="false"
+                            aria-controls="security">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Security</span>
+                        </button>
+                        <button class="nav-tab" data-tab="notifications" role="tab" aria-selected="false"
+                            aria-controls="notifications">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </button>
+                        <button class="nav-tab" data-tab="preferences" role="tab" aria-selected="false"
+                            aria-controls="preferences">
+                            <i class="fas fa-cog"></i>
+                            <span>Preferences</span>
+                        </button>
+                        <button class="nav-tab" data-tab="danger" role="tab" aria-selected="false"
+                            aria-controls="danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Danger Zone</span>
+                        </button>
+                    </nav>
+                </aside>
 
-                <!-- Settings Content -->
+                <!-- Content Area -->
                 <div class="settings-content">
 
-                    <!-- Personal Information Section -->
-                    <div id="profile" class="settings-section active">
-                        <div class="glass-card" style="padding: 2.5rem; margin-bottom: 2rem;">
-                            <div
-                                style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem;">
+                    <!-- Profile Section -->
+                    <section id="profile" class="tab-panel active" role="tabpanel" aria-hidden="false">
+                        <div class="panel-card">
+                            <div class="card-header">
                                 <div>
-                                    <h2
-                                        style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                        Personal Information</h2>
-                                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Update your
-                                        personal details and contact information</p>
+                                    <h2>Personal Information</h2>
+                                    <p>Update your personal details and contact information</p>
                                 </div>
                                 <button id="editProfileBtn" class="btn btn-outline btn-sm">
                                     <i class="fas fa-edit"></i>Edit Profile
                                 </button>
                             </div>
 
-                            <!-- Profile Picture Section -->
-                            <div
-                                style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                <div style="position: relative;">
-                                    <div id="profilePicture"
-                                        style="width: 100px; height: 100px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
-                                        <span id="profileInitials"
-                                            style="font-size: 2rem; font-weight: 800; color: white;">JD</span>
+                            <!-- Profile Picture -->
+                            <div class="profile-section">
+                                <div class="profile-avatar">
+                                    <div id="profilePicture" class="avatar-circle">
+                                        <span id="profileInitials">JD</span>
                                     </div>
-                                    <button id="changePictureBtn"
-                                        style="position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; background: #10b981; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                                        <i class="fas fa-camera" style="font-size: 0.75rem; color: white;"></i>
+                                    <button id="changePictureBtn" class="avatar-edit-btn">
+                                        <i class="fas fa-camera"></i>
                                     </button>
                                     <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
                                 </div>
-                                <div>
-                                    <h3 id="displayName"
-                                        style="color: white; font-weight: 700; font-size: 1.25rem; margin-bottom: 0.25rem;">
-                                        John Doe</h3>
-                                    <p id="displayEmail"
-                                        style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.25rem;">
-                                        john.doe@student.jkuat.ac.ke</p>
-                                    <p id="displayRole" style="color: #10b981; font-weight: 600; font-size: 0.875rem;">
-                                        Active Member</p>
+                                <div class="profile-info">
+                                    <h3 id="displayName">John Doe</h3>
+                                    <p id="displayEmail">john.doe@student.jkuat.ac.ke</p>
+                                    <span id="displayRole" class="role-badge">Active Member</span>
                                 </div>
                             </div>
 
-                            <form id="profileForm">
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Full
-                                            Name *</label>
-                                        <input type="text" id="fullName" name="name" class="glass-input"
-                                            placeholder="Enter your full name" required>
+                            <!-- Profile Form -->
+                            <form id="profileForm" class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="fullName">Full Name *</label>
+                                        <input type="text" id="fullName" name="name" class="form-input"
+                                            placeholder="Enter your full name" required disabled>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Email
-                                            Address *</label>
-                                        <input type="email" id="email" name="email" class="glass-input"
-                                            placeholder="Enter your email" required>
+                                    <div class="form-group">
+                                        <label for="email">Email Address *</label>
+                                        <input type="email" id="email" name="email" class="form-input"
+                                            placeholder="Enter your email" required disabled>
                                     </div>
                                 </div>
 
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Phone
-                                            Number</label>
-                                        <input type="tel" id="phone" name="phone" class="glass-input"
-                                            placeholder="Enter your phone number">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="phone">Phone Number</label>
+                                        <input type="tel" id="phone" name="phone" class="form-input"
+                                            placeholder="Enter your phone number" disabled>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Date
-                                            of Birth</label>
-                                        <input type="date" id="dateOfBirth" name="date_of_birth" class="glass-input">
+                                    <div class="form-group">
+                                        <label for="dateOfBirth">Date of Birth</label>
+                                        <input type="date" id="dateOfBirth" name="date_of_birth" class="form-input"
+                                            disabled>
                                     </div>
                                 </div>
 
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Gender</label>
-                                        <select id="gender" name="gender" class="glass-input">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="gender">Gender</label>
+                                        <select id="gender" name="gender" class="form-input" disabled>
                                             <option value="">Select gender</option>
                                             <option value="male">Male</option>
                                             <option value="female">Female</option>
@@ -202,33 +165,27 @@
                                             <option value="prefer_not_to_say">Prefer not to say</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">LinkedIn
-                                            Profile</label>
-                                        <input type="url" id="linkedinUrl" name="linkedin_url" class="glass-input"
-                                            placeholder="https://linkedin.com/in/yourprofile">
+                                    <div class="form-group">
+                                        <label for="linkedinUrl">LinkedIn Profile</label>
+                                        <input type="url" id="linkedinUrl" name="linkedin_url" class="form-input"
+                                            placeholder="https://linkedin.com/in/yourprofile" disabled>
                                     </div>
                                 </div>
 
-                                <div style="margin-bottom: 1.5rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Bio</label>
-                                    <textarea id="bio" name="bio" class="glass-input" rows="3"
-                                        placeholder="Tell us about yourself, your interests, and goals"></textarea>
+                                <div class="form-group">
+                                    <label for="bio">Bio</label>
+                                    <textarea id="bio" name="bio" class="form-input" rows="3"
+                                        placeholder="Tell us about yourself" disabled></textarea>
                                 </div>
 
-                                <div style="margin-bottom: 2rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Skills
-                                        & Interests</label>
-                                    <input type="text" id="skills" name="skills" class="glass-input"
-                                        placeholder="e.g., Web Development, AI, Entrepreneurship (comma-separated)">
-                                    <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Separate
-                                        multiple skills with commas</small>
+                                <div class="form-group">
+                                    <label for="skills">Skills & Interests</label>
+                                    <input type="text" id="skills" name="skills" class="form-input"
+                                        placeholder="e.g., Web Development, AI, Entrepreneurship" disabled>
+                                    <small>Separate multiple skills with commas</small>
                                 </div>
 
-                                <div style="display: flex; gap: 1rem;">
+                                <div class="form-actions">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-save"></i>Save Changes
                                     </button>
@@ -239,58 +196,47 @@
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </section>
 
-                    <!-- Academic Details Section -->
-                    <div id="academic" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <div style="margin-bottom: 2rem;">
-                                <h2 style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                    Academic Information</h2>
-                                <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Your academic details
-                                    and JKUAT student information</p>
+                    <!-- Academic Section -->
+                    <section id="academic" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="panel-card">
+                            <div class="card-header">
+                                <div>
+                                    <h2>Academic Information</h2>
+                                    <p>Your academic details and JKUAT student information</p>
+                                </div>
                             </div>
 
-                            <form id="academicForm">
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Registration
-                                            Number *</label>
+                            <form id="academicForm" class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="registrationNumber">Registration Number *</label>
                                         <input type="text" id="registrationNumber" name="registration_number"
-                                            class="glass-input" placeholder="e.g., EN111-0001/2021" required>
+                                            class="form-input" placeholder="e.g., EN111-0001/2021" required>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Course
-                                            of Study *</label>
-                                        <input type="text" id="course" name="course" class="glass-input"
+                                    <div class="form-group">
+                                        <label for="course">Course of Study *</label>
+                                        <input type="text" id="course" name="course" class="form-input"
                                             placeholder="e.g., Computer Science" required>
                                     </div>
                                 </div>
 
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Year
-                                            of Study *</label>
-                                        <select id="yearOfStudy" name="year_of_study" class="glass-input" required>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="yearOfStudy">Year of Study *</label>
+                                        <select id="yearOfStudy" name="year_of_study" class="form-input" required>
                                             <option value="">Select year</option>
                                             <option value="1">Year 1</option>
                                             <option value="2">Year 2</option>
                                             <option value="3">Year 3</option>
                                             <option value="4">Year 4</option>
                                             <option value="5">Year 5</option>
-                                            <option value="6">Year 6</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">College/School
-                                            *</label>
-                                        <select id="college" name="college" class="glass-input" required>
+                                    <div class="form-group">
+                                        <label for="college">College/School *</label>
+                                        <select id="college" name="college" class="form-input" required>
                                             <option value="">Select college</option>
                                             <option value="Engineering and Technology">Engineering and Technology
                                             </option>
@@ -299,741 +245,193 @@
                                             <option value="Health Sciences">Health Sciences</option>
                                             <option value="Human Resource Development">Human Resource Development
                                             </option>
-                                            <option value="Architecture and Building Sciences">Architecture and Building
-                                                Sciences</option>
-                                            <option value="Pure and Applied Sciences">Pure and Applied Sciences</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div style="margin-bottom: 2rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Experience
-                                        Level</label>
-                                    <select id="experienceLevel" name="experience_level" class="glass-input">
-                                        <option value="">Select experience level</option>
-                                        <option value="beginner">Beginner</option>
-                                        <option value="intermediate">Intermediate</option>
-                                        <option value="advanced">Advanced</option>
-                                        <option value="expert">Expert</option>
-                                    </select>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>Update Academic Info
+                                    </button>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i>Update Academic Info
-                                </button>
                             </form>
                         </div>
-                    </div>
-
-                    <!-- Membership Status Section -->
-                    <div id="membership" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem; margin-bottom: 2rem;">
-                            <div style="margin-bottom: 2rem;">
-                                <h2 style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                    Membership Status</h2>
-                                <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Your current membership
-                                    status and history</p>
-                            </div>
-
-                            <!-- Current Status -->
-                            <div
-                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                                        <i class="fas fa-user-check" style="font-size: 1.25rem; color: #10b981;"></i>
-                                    </div>
-                                    <div class="membership-status"
-                                        style="font-size: 1.25rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">
-                                        Active</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Current Status
-                                    </div>
-                                </div>
-
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                                        <i class="fas fa-calendar" style="font-size: 1.25rem; color: #3b82f6;"></i>
-                                    </div>
-                                    <div id="memberSince"
-                                        style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">
-                                        Jan 2024</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Member Since
-                                    </div>
-                                </div>
-
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="width: 50px; height: 50px; background: rgba(245, 158, 11, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                                        <i class="fas fa-clock" style="font-size: 1.25rem; color: #f59e0b;"></i>
-                                    </div>
-                                    <div class="membership-expiry"
-                                        style="font-size: 1.25rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.25rem;">
-                                        Jan 2025</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Expires</div>
-                                </div>
-                            </div>
-
-                            <!-- Membership Actions -->
-                            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-                                <button id="generateCardBtn" class="btn btn-primary" style="display: none;">
-                                    <i class="fas fa-id-card"></i>Download Membership Card
-                                </button>
-                                <button id="renewMembershipBtn" class="btn btn-outline" style="display: none;">
-                                    <i class="fas fa-refresh"></i>Renew Membership
-                                </button>
-                                <button id="payMembershipBtn" class="btn btn-primary" style="display: none;">
-                                    <i class="fas fa-credit-card"></i>Pay Membership Fee
-                                </button>
-                            </div>
-
-                            <!-- Membership History -->
-                            <div>
-                                <h3 style="color: white; font-weight: 700; margin-bottom: 1rem; font-size: 1.25rem;">
-                                    Membership History</h3>
-                                <div id="membershipHistory" style="display: flex; flex-direction: column; gap: 1rem;">
-                                    <!-- History items will be loaded here -->
-                                    <div
-                                        style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                                        <div
-                                            style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-check" style="color: #10b981;"></i>
-                                        </div>
-                                        <div style="flex: 1;">
-                                            <div style="color: white; font-weight: 600;">Membership Activated</div>
-                                            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">January
-                                                15, 2024</div>
-                                        </div>
-                                        <div style="color: #10b981; font-weight: 600;">KSh 500</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment History Section -->
-                    <div id="payments" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                                <div>
-                                    <h2
-                                        style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                        Payment History</h2>
-                                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">View all your
-                                        payment transactions and receipts</p>
-                                </div>
-                                <div style="display: flex; gap: 1rem;">
-                                    <select id="paymentFilter" class="glass-input"
-                                        style="width: auto; padding: 0.5rem 1rem;">
-                                        <option value="">All Payments</option>
-                                        <option value="membership">Membership</option>
-                                        <option value="event">Events</option>
-                                        <option value="renewal">Renewals</option>
-                                    </select>
-                                    <button id="exportPaymentsBtn" class="btn btn-outline btn-sm">
-                                        <i class="fas fa-download"></i>Export
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Payment Summary -->
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">
-                                        KSh 1,500</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Total Paid</div>
-                                </div>
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">
-                                        5</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Transactions
-                                    </div>
-                                </div>
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.25rem;">
-                                        KSh 500</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Last Payment
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Payment List -->
-                            <div id="paymentHistory" style="display: flex; flex-direction: column; gap: 1rem;">
-                                <!-- Payment items will be loaded here -->
-                                <div
-                                    style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                    <div
-                                        style="width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-credit-card" style="color: #10b981;"></i>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Membership
-                                            Fee Payment</div>
-                                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">December 15,
-                                            2024 • M-Pesa</div>
-                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Ref:
-                                            PAY-1734567890-ABC123</div>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <div style="color: #10b981; font-weight: 700; font-size: 1.125rem;">KSh 500
-                                        </div>
-                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Completed
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-outline btn-sm" onclick="downloadReceipt('payment-id')">
-                                        <i class="fas fa-receipt"></i>Receipt
-                                    </button>
-                                </div>
-
-                                <div
-                                    style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                    <div
-                                        style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-calendar" style="color: #3b82f6;"></i>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Innovation
-                                            Workshop Registration</div>
-                                        <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">November 20,
-                                            2024 • Card Payment</div>
-                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Ref:
-                                            CARD-1732123456-XYZ789</div>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <div style="color: #3b82f6; font-weight: 700; font-size: 1.125rem;">KSh 1,000
-                                        </div>
-                                        <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Completed
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-outline btn-sm" onclick="downloadReceipt('payment-id-2')">
-                                        <i class="fas fa-receipt"></i>Receipt
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Load More -->
-                            <div style="text-align: center; margin-top: 2rem;">
-                                <button id="loadMorePayments" class="btn btn-outline">
-                                    <i class="fas fa-chevron-down"></i>Load More Payments
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Activity Log Section -->
-                    <div id="activity" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                                <div>
-                                    <h2
-                                        style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                        Activity Participation Log</h2>
-                                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Track your
-                                        engagement and participation in club activities</p>
-                                </div>
-                                <div style="display: flex; gap: 1rem;">
-                                    <select id="activityFilter" class="glass-input"
-                                        style="width: auto; padding: 0.5rem 1rem;">
-                                        <option value="">All Activities</option>
-                                        <option value="events">Events</option>
-                                        <option value="workshops">Workshops</option>
-                                        <option value="meetings">Meetings</option>
-                                        <option value="projects">Projects</option>
-                                    </select>
-                                    <select id="activityPeriod" class="glass-input"
-                                        style="width: auto; padding: 0.5rem 1rem;">
-                                        <option value="all">All Time</option>
-                                        <option value="month">This Month</option>
-                                        <option value="quarter">This Quarter</option>
-                                        <option value="year">This Year</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Activity Stats -->
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #10b981; margin-bottom: 0.25rem;">
-                                        12</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Events Attended
-                                    </div>
-                                </div>
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #3b82f6; margin-bottom: 0.25rem;">
-                                        3</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Projects Joined
-                                    </div>
-                                </div>
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.25rem;">
-                                        8</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Workshops</div>
-                                </div>
-                                <div
-                                    style="text-align: center; padding: 1.5rem; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px;">
-                                    <div
-                                        style="font-size: 1.75rem; font-weight: 800; color: #8b5cf6; margin-bottom: 0.25rem;">
-                                        95%</div>
-                                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Attendance Rate
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Activity Timeline -->
-                            <div>
-                                <h3 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.25rem;">
-                                    Recent Activity</h3>
-                                <div id="activityTimeline" style="display: flex; flex-direction: column; gap: 1rem;">
-                                    <!-- Activity items will be loaded here -->
-                                    <div
-                                        style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                        <div
-                                            style="width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-calendar-check" style="color: #10b981;"></i>
-                                        </div>
-                                        <div style="flex: 1;">
-                                            <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">
-                                                Attended Innovation Workshop</div>
-                                            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">December
-                                                15, 2024 • 2 hours</div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Earned 50
-                                                participation points</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="color: #10b981; font-weight: 600; font-size: 0.875rem;">
-                                                Completed</div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">+50 XP
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                        <div
-                                            style="width: 50px; height: 50px; background: rgba(59, 130, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-users" style="color: #3b82f6;"></i>
-                                        </div>
-                                        <div style="flex: 1;">
-                                            <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Joined
-                                                Project Team</div>
-                                            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">December
-                                                10, 2024 • Smart Campus App</div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">Role:
-                                                Frontend Developer</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="color: #3b82f6; font-weight: 600; font-size: 0.875rem;">Active
-                                            </div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">+30 XP
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                                        <div
-                                            style="width: 50px; height: 50px; background: rgba(245, 158, 11, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-trophy" style="color: #f59e0b;"></i>
-                                        </div>
-                                        <div style="flex: 1;">
-                                            <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">Won
-                                                Hackathon Competition</div>
-                                            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">November
-                                                25, 2024 • JKUAT Hackathon 2024</div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">1st Place
-                                                - Team Innovation</div>
-                                        </div>
-                                        <div style="text-align: right;">
-                                            <div style="color: #f59e0b; font-weight: 600; font-size: 0.875rem;">
-                                                Achievement</div>
-                                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">+200 XP
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Load More -->
-                                <div style="text-align: center; margin-top: 2rem;">
-                                    <button id="loadMoreActivity" class="btn btn-outline">
-                                        <i class="fas fa-chevron-down"></i>Load More Activity
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notification Preferences Section -->
-                    <div id="notifications" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <div style="margin-bottom: 2rem;">
-                                <h2 style="color: white; font-weight: 700; margin-bottom: 0.5rem; font-size: 1.5rem;">
-                                    Notification Preferences</h2>
-                                <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Customize how and when
-                                    you receive notifications from the club</p>
-                            </div>
-
-                            <form id="notificationForm">
-                                <!-- Communication Channels -->
-                                <div style="margin-bottom: 2rem;">
-                                    <h3
-                                        style="color: white; font-weight: 700; margin-bottom: 1rem; font-size: 1.125rem;">
-                                        Communication Channels</h3>
-                                    <div
-                                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="emailNotifications" name="email_notifications"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div
-                                                    style="color: white; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                                                    <i class="fas fa-envelope" style="color: #10b981;"></i>Email
-                                                    Notifications
-                                                </div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Receive updates via email</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="smsNotifications" name="sms_notifications"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div
-                                                    style="color: white; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                                                    <i class="fas fa-sms" style="color: #3b82f6;"></i>SMS Notifications
-                                                </div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Receive updates via SMS</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="whatsappNotifications"
-                                                name="whatsapp_notifications" style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div
-                                                    style="color: white; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                                                    <i class="fab fa-whatsapp" style="color: #25d366;"></i>WhatsApp
-                                                </div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Receive updates via WhatsApp</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Notification Types -->
-                                <div style="margin-bottom: 2rem;">
-                                    <h3
-                                        style="color: white; font-weight: 700; margin-bottom: 1rem; font-size: 1.125rem;">
-                                        Notification Types</h3>
-                                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="eventReminders" name="event_reminders"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div style="color: white; font-weight: 600;">Event Reminders</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">Get
-                                                    reminded about upcoming events and deadlines</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="membershipUpdates" name="membership_updates"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div style="color: white; font-weight: 600;">Membership Updates</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Notifications about membership status, renewals, and payments</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="projectUpdates" name="project_updates"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div style="color: white; font-weight: 600;">Project Updates</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Updates from projects you're involved in</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="newsletter" name="newsletter"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div style="color: white; font-weight: 600;">Newsletter</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Monthly newsletter with club updates and opportunities</div>
-                                            </div>
-                                        </label>
-
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="checkbox" id="opportunityAlerts" name="opportunity_alerts"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div style="flex: 1;">
-                                                <div style="color: white; font-weight: 600;">Opportunity Alerts</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Notifications about new opportunities, competitions, and
-                                                    scholarships</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Notification Timing -->
-                                <div style="margin-bottom: 2rem;">
-                                    <h3
-                                        style="color: white; font-weight: 700; margin-bottom: 1rem; font-size: 1.125rem;">
-                                        Notification Timing</h3>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                                        <div>
-                                            <label
-                                                style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Event
-                                                Reminder Time</label>
-                                            <select id="reminderTime" name="reminder_time" class="glass-input">
-                                                <option value="1h">1 hour before</option>
-                                                <option value="2h">2 hours before</option>
-                                                <option value="1d">1 day before</option>
-                                                <option value="2d">2 days before</option>
-                                                <option value="1w">1 week before</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label
-                                                style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Quiet
-                                                Hours</label>
-                                            <select id="quietHours" name="quiet_hours" class="glass-input">
-                                                <option value="none">No quiet hours</option>
-                                                <option value="night">10 PM - 8 AM</option>
-                                                <option value="sleep">11 PM - 7 AM</option>
-                                                <option value="custom">Custom hours</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i>Save Notification Preferences
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                    </section>
 
                     <!-- Security Section -->
-                    <div id="security" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <h2 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.5rem;">Change
-                                Password</h2>
-                            <form id="passwordForm">
-                                <div style="margin-bottom: 1.5rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Current
-                                        Password</label>
-                                    <input type="password" name="currentPassword" class="glass-input"
-                                        placeholder="Enter current password" required>
+                    <section id="security" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="panel-card">
+                            <div class="card-header">
+                                <div>
+                                    <h2>Change Password</h2>
+                                    <p>Update your password to keep your account secure</p>
+                                </div>
+                            </div>
+
+                            <form id="passwordForm" class="settings-form">
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input id="currentPassword" type="password" name="currentPassword"
+                                        class="form-input" placeholder="Enter current password" required
+                                        autocomplete="current-password">
                                 </div>
 
-                                <div style="margin-bottom: 1.5rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">New
-                                        Password</label>
-                                    <input type="password" name="newPassword" class="glass-input"
-                                        placeholder="Enter new password" required>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input id="newPassword" type="password" name="newPassword" class="form-input"
+                                        placeholder="Enter new password" required autocomplete="new-password">
                                 </div>
 
-                                <div style="margin-bottom: 2rem;">
-                                    <label
-                                        style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Confirm
-                                        New Password</label>
-                                    <input type="password" name="confirmPassword" class="glass-input"
-                                        placeholder="Confirm new password" required>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input id="confirmPassword" type="password" name="confirmPassword"
+                                        class="form-input" placeholder="Confirm new password" required
+                                        autocomplete="new-password">
                                 </div>
 
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-key"></i>Change Password
-                                </button>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-key"></i>Change Password
+                                    </button>
+                                </div>
                             </form>
                         </div>
-                    </div>
+                    </section>
 
+                    <!-- Notifications Section -->
+                    <section id="notifications" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="panel-card">
+                            <div class="card-header">
+                                <div>
+                                    <h2>Notification Preferences</h2>
+                                    <p>Customize how and when you receive notifications</p>
+                                </div>
+                            </div>
 
+                            <form id="notificationForm" class="settings-form">
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="email_notifications" checked>
+                                        <div class="checkbox-content">
+                                            <div class="checkbox-title">
+                                                <i class="fas fa-envelope"></i>Email Notifications
+                                            </div>
+                                            <div class="checkbox-desc">Receive updates via email</div>
+                                        </div>
+                                    </label>
 
-                    <!-- App Preferences Section -->
-                    <div id="preferences" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <h2 style="color: white; font-weight: 700; margin-bottom: 2rem; font-size: 1.5rem;">App
-                                Preferences</h2>
-                            <form id="appPreferencesForm">
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Language
-                                            / Lugha</label>
-                                        <select id="language" name="language" class="glass-input">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="event_reminders" checked>
+                                        <div class="checkbox-content">
+                                            <div class="checkbox-title">
+                                                <i class="fas fa-calendar"></i>Event Reminders
+                                            </div>
+                                            <div class="checkbox-desc">Get reminded about upcoming events</div>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="project_updates" checked>
+                                        <div class="checkbox-content">
+                                            <div class="checkbox-title">
+                                                <i class="fas fa-project-diagram"></i>Project Updates
+                                            </div>
+                                            <div class="checkbox-desc">Updates from projects you're involved in</div>
+                                        </div>
+                                    </label>
+
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="newsletter">
+                                        <div class="checkbox-content">
+                                            <div class="checkbox-title">
+                                                <i class="fas fa-newspaper"></i>Newsletter
+                                            </div>
+                                            <div class="checkbox-desc">Monthly newsletter with club updates</div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>Save Preferences
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- Preferences Section -->
+                    <section id="preferences" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="panel-card">
+                            <div class="card-header">
+                                <div>
+                                    <h2>App Preferences</h2>
+                                    <p>Customize your app experience</p>
+                                </div>
+                            </div>
+
+                            <form id="appPreferencesForm" class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="language">Language</label>
+                                        <select id="language" name="language" class="form-input">
                                             <option value="en">English (US)</option>
                                             <option value="sw">Kiswahili</option>
                                         </select>
-                                        <p
-                                            style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 0.5rem;">
-                                            Choose your preferred language.</p>
                                     </div>
-                                    <div>
-                                        <label
-                                            style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">Appearance</label>
-                                        <select id="theme" name="theme" class="glass-input">
+                                    <div class="form-group">
+                                        <label for="theme">Appearance</label>
+                                        <select id="theme" name="theme" class="form-input">
                                             <option value="dark">Dark Mode</option>
                                             <option value="light">Light Mode</option>
                                             <option value="system">System Default</option>
                                         </select>
-                                        <p
-                                            style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 0.5rem;">
-                                            Customize the look and feel.</p>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i>Save Preferences
-                                </button>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>Save Preferences
+                                    </button>
+                                </div>
                             </form>
                         </div>
-                    </div>
-
-                    <!-- Privacy & Data Section -->
-                    <div id="privacy" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem;">
-                            <h2 style="color: white; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.5rem;">
-                                Privacy & Data</h2>
-
-                            <!-- Privacy Settings -->
-                            <div style="margin-bottom: 3rem;">
-                                <h3 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">
-                                    Profile Visibility</h3>
-                                <form id="privacyForm">
-                                    <div
-                                        style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="radio" name="profileVisibility" value="public"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div>
-                                                <div style="color: white; font-weight: 600;">Public</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Visible to everyone</div>
-                                            </div>
-                                        </label>
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="radio" name="profileVisibility" value="members"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div>
-                                                <div style="color: white; font-weight: 600;">Members Only</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Visible only to other club members</div>
-                                            </div>
-                                        </label>
-                                        <label
-                                            style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer;">
-                                            <input type="radio" name="profileVisibility" value="private"
-                                                style="width: 1.25rem; height: 1.25rem;">
-                                            <div>
-                                                <div style="color: white; font-weight: 600;">Private</div>
-                                                <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem;">
-                                                    Visible only to you and admins</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-shield-alt"></i>Update Privacy
-                                    </button>
-                                </form>
-                            </div>
-
-                            <!-- Data Export -->
-                            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 2rem;">
-                                <h3 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">
-                                    Download Your Data</h3>
-                                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1.5rem;">
-                                    Get a copy of your data, including your profile, activity history, and settings.
-                                </p>
-                                <button id="exportDataBtn" class="btn btn-outline">
-                                    <i class="fas fa-download"></i>Download Personal Data
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    </section>
 
                     <!-- Danger Zone Section -->
-                    <div id="danger" class="settings-section">
-                        <div class="glass-card" style="padding: 2.5rem; border: 1px solid rgba(239, 68, 68, 0.3);">
-                            <h2 style="color: #ef4444; font-weight: 700; margin-bottom: 1.5rem; font-size: 1.5rem;">
-                                Danger Zone</h2>
-                            <div
-                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-                                <h3 style="color: #ef4444; font-weight: 600; margin-bottom: 0.5rem;">Delete Account</h3>
-                                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1rem;">Once you delete your
-                                    account, there is no going back. Please be certain.</p>
+                    <section id="danger" class="tab-panel" role="tabpanel" aria-hidden="true">
+                        <div class="panel-card danger-card">
+                            <div class="card-header">
+                                <div>
+                                    <h2 class="danger-title">Danger Zone</h2>
+                                    <p>Irreversible and destructive actions</p>
+                                </div>
+                            </div>
+
+                            <div class="danger-box">
+                                <h3>Delete Account</h3>
+                                <p>Once you delete your account, there is no going back. Please be certain.</p>
                                 <button id="deleteAccountBtn" class="btn btn-danger">
                                     <i class="fas fa-trash"></i>Delete Account
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
                 </div>
             </div>
         </div>
-    </section>
+    </main>
 
     <!-- Footer -->
-    <footer class="glass-footer">
-        <div class="container">
-            <div style="text-align: center; padding: 2rem 0;">
-                <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
-                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
-                </p>
-            </div>
+    <footer class="settings-footer">
+        <div class="settings-container">
+            <p>&copy; 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.</p>
         </div>
     </footer>
 
-    <script src="../shared/minimal-navbar.js"></script>
-    <script src="mock-data.js"></script>
-    <script src="settings.js"></script>
-    
-    <!-- Initialize Navigation -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            new Navigation();
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="/settings/settings.js"></script>
 </body>
 
 </html>

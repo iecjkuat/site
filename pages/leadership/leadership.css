@@ -153,6 +153,7 @@ body.leadership-page::before {
 .dropdown-item {
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 0.75rem !important;
     padding: 0.75rem 1rem !important;
     color: white !important;
@@ -161,6 +162,7 @@ body.leadership-page::before {
     font-weight: 500 !important;
     transition: all 0.3s ease !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    text-align: center !important;
 }
 
 .dropdown-item:last-child {
@@ -791,7 +793,7 @@ body.leadership-page::before {
 }
 
 /* Buttons */
-.btn {
+.leadership-page .btn {
     background: linear-gradient(135deg, #10b981, #059669);
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: white;
@@ -807,19 +809,19 @@ body.leadership-page::before {
     font-weight: 500;
 }
 
-.btn:hover {
+.leadership-page .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     color: white;
     text-decoration: none;
 }
 
-.btn-outline {
+.leadership-page .btn-outline {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-.btn-outline:hover {
+.leadership-page .btn-outline:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 

@@ -1,215 +1,329 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Hub - JKUAT Innovation Club</title>
-    
+
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.quilljs.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+    <!-- CSP temporarily disabled for debugging -->
     
     <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"></script>
+
     <!-- DOMPurify for HTML Sanitization -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"
-            integrity="sha512-jB0TkTBeQC9ZSkBqDhdmfTv1qdfbWpGE/PcggFZTSI7b6tD/qKd5QXwQbdYBcMb9Jx8Qg2U8UaXL5Zwz5qYUdg=="
-            crossorigin="anonymous"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+
     <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
-    
+    <script src="/shared/supabase-client.js"></script>
+
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-          crossorigin="anonymous" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    <link href="cms.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous" rel="stylesheet">
+    <!-- Core Stylesheets -->
+    <link href="/shared/core/base.css" rel="stylesheet">
+    <link href="/shared/core/theme.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
     
+    <!-- Public Page Styles (for consistent card rendering) -->
+    <link href="/events/events.css" rel="stylesheet">
+    <link href="/projects/projects.css" rel="stylesheet">
+    <link href="/opportunities/opportunities.css" rel="stylesheet">
+    <link href="/ideas/ideas.css" rel="stylesheet">
+    
+    <!-- CMS Specific Styles -->
+    <link href="/cms/cms.css" rel="stylesheet">
+
     <!-- Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 </head>
-<body>
-    <!-- Instagram-style CMS Interface -->
-    <div style="padding-top: 6rem;">
-        
+
+<body class="cms-page">
+    <!-- Global Background -->
+    <div class="global-bg"></div>
+
+    <!-- Navigation Placeholder -->
+    <div id="navbar-placeholder"></div>
+    <!-- CMS Interface -->
+    <div class="cms-main-container">
+
         <!-- Header -->
-        <div class="ig-header">
-            <div class="ig-header-title">
-                <i class="fas fa-camera ig-header-icon"></i>
-                <div>
-                    <h1>Content Hub</h1>
-                    <div class="ig-header-subtitle">Executive Content Management</div>
+        <div class="cms-header">
+            <div class="cms-header-top">
+                <div class="cms-header-title">
+                    <div class="cms-header-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="cms-header-text">
+                        <h1>Content Management</h1>
+                        <div class="cms-header-subtitle">Manage all club content from one place</div>
+                    </div>
+                </div>
+                <div class="cms-header-actions">
+                    <!-- Actions will be added here -->
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <!-- Analytics button removed -->
-            </div>
-        </div>
 
-        <!-- Navigation Tabs -->
-        <div class="ig-tabs">
-            <button class="ig-tab tab-btn active" data-tab="dashboard">
-                <i class="fas fa-home"></i> Dashboard
-            </button>
-            <button class="ig-tab tab-btn" data-tab="articles">
-                <i class="fas fa-newspaper"></i> Articles
-            </button>
-            <button class="ig-tab tab-btn" data-tab="events">
-                <i class="fas fa-calendar"></i> Events
-            </button>
-            <button class="ig-tab tab-btn" data-tab="opportunities">
-                <i class="fas fa-briefcase"></i> Opportunities
-            </button>
-            <button class="ig-tab tab-btn" data-tab="media">
-                <i class="fas fa-images"></i> Media
-            </button>
+            <!-- Navigation Tabs -->
+            <div class="cms-tabs">
+                <button class="cms-tab active" data-tab="dashboard">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+                <button class="cms-tab" data-tab="articles">
+                    <i class="fas fa-newspaper"></i> Articles
+                </button>
+                <button class="cms-tab" data-tab="events">
+                    <i class="fas fa-calendar"></i> Events
+                </button>
+                <button class="cms-tab" data-tab="projects">
+                    <i class="fas fa-project-diagram"></i> Projects
+                </button>
+                <button class="cms-tab" data-tab="opportunities">
+                    <i class="fas fa-briefcase"></i> Opportunities
+                </button>
+                <button class="cms-tab" data-tab="innovation">
+                    <i class="fas fa-lightbulb"></i> Innovation
+                </button>
+                <button class="cms-tab" data-tab="communications">
+                    <i class="fas fa-envelope"></i> Communications
+                </button>
+                <button class="cms-tab" data-tab="members">
+                    <i class="fas fa-users"></i> Members
+                </button>
+                <button class="cms-tab" data-tab="media">
+                    <i class="fas fa-images"></i> Media
+                </button>
+            </div>
         </div>
 
         <!-- Content Container -->
-        <div class="ig-container">
-            
-            <!-- Dashboard Tab -->
-            <div id="dashboard-tab" class="ig-content tab-content">
-                <!-- Stats Grid -->
-                <div class="ig-stats-grid">
-                    <div class="ig-stat-card">
-                        <div class="ig-stat-number" id="articles-count">0</div>
-                        <div class="ig-stat-label">Articles Published</div>
-                    </div>
-                    <div class="ig-stat-card">
-                        <div class="ig-stat-number" id="events-count">0</div>
-                        <div class="ig-stat-label">Events Scheduled</div>
-                    </div>
-                    <div class="ig-stat-card">
-                        <div class="ig-stat-number" id="opportunities-count">0</div>
-                        <div class="ig-stat-label">Opportunities Posted</div>
-                    </div>
-                    <div class="ig-stat-card">
-                        <div class="ig-stat-number" id="media-count">0</div>
-                        <div class="ig-stat-label">Media Files</div>
-                    </div>
-                </div>
+        <div class="cms-container">
 
-                <!-- Recent Activity -->
-                <div class="ig-card" style="margin-bottom: 32px;">
-                    <div style="padding: 20px 24px; border-bottom: 1px solid var(--ig-border);">
-                        <h3 style="font-size: 18px; font-weight: 600; color: var(--ig-dark); margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-clock" style="color: #F77737;"></i>
-                            Recent Activity
-                        </h3>
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="cms-content active">
+                <!-- Stats Grid -->
+                <div class="cms-stats-grid">
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="articles-count">0</div>
+                        <div class="cms-stat-label">Articles</div>
                     </div>
-                    <div id="recent-activity" style="padding: 20px 24px;">
-                        <div class="ig-loading">
-                            <div class="ig-spinner"></div>
-                            Loading recent activity...
-                        </div>
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="events-count">0</div>
+                        <div class="cms-stat-label">Events</div>
+                    </div>
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="projects-count">0</div>
+                        <div class="cms-stat-label">Projects</div>
+                    </div>
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="opportunities-count">0</div>
+                        <div class="cms-stat-label">Opportunities</div>
+                    </div>
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="ideas-count">0</div>
+                        <div class="cms-stat-label">Ideas</div>
+                    </div>
+                    <div class="cms-stat-card">
+                        <div class="cms-stat-number" id="members-count">0</div>
+                        <div class="cms-stat-label">Members</div>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="ig-quick-actions">
-                    <div class="ig-quick-action" data-action="create-article">
-                        <div class="ig-quick-action-icon">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-bolt"></i>
+                        <h2>Quick Actions</h2>
+                    </div>
+                </div>
+
+                <div class="cms-quick-actions">
+                    <div class="cms-quick-action" data-action="create-article">
+                        <div class="cms-quick-action-icon">
                             <i class="fas fa-newspaper"></i>
                         </div>
-                        <div class="ig-quick-action-title">Create Article</div>
-                        <div class="ig-quick-action-desc">Write and publish news articles, announcements, and blog posts</div>
+                        <div class="cms-quick-action-title">Create Article</div>
+                        <div class="cms-quick-action-desc">Write and publish news articles and announcements</div>
                     </div>
 
-                    <div class="ig-quick-action" data-action="create-event">
-                        <div class="ig-quick-action-icon">
+                    <div class="cms-quick-action" data-action="create-event">
+                        <div class="cms-quick-action-icon">
                             <i class="fas fa-calendar-plus"></i>
                         </div>
-                        <div class="ig-quick-action-title">Create Event</div>
-                        <div class="ig-quick-action-desc">Schedule workshops, meetings, competitions, and other club events</div>
+                        <div class="cms-quick-action-title">Create Event</div>
+                        <div class="cms-quick-action-desc">Schedule workshops, meetings, and competitions</div>
                     </div>
 
-                    <div class="ig-quick-action" data-action="create-opportunity">
-                        <div class="ig-quick-action-icon">
+                    <div class="cms-quick-action" data-action="create-project">
+                        <div class="cms-quick-action-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="cms-quick-action-title">New Project</div>
+                        <div class="cms-quick-action-desc">Start a new club project or initiative</div>
+                    </div>
+
+                    <div class="cms-quick-action" data-action="create-opportunity">
+                        <div class="cms-quick-action-icon">
                             <i class="fas fa-briefcase"></i>
                         </div>
-                        <div class="ig-quick-action-title">Post Opportunity</div>
-                        <div class="ig-quick-action-desc">Share internships, jobs, scholarships, and other opportunities</div>
+                        <div class="cms-quick-action-title">Post Opportunity</div>
+                        <div class="cms-quick-action-desc">Share internships, jobs, and scholarships</div>
                     </div>
 
-                    <div class="ig-quick-action" data-action="show-media">
-                        <div class="ig-quick-action-icon">
+                    <div class="cms-quick-action" data-action="review-ideas">
+                        <div class="cms-quick-action-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="cms-quick-action-title">Review Ideas</div>
+                        <div class="cms-quick-action-desc">Manage innovation submissions and challenges</div>
+                    </div>
+
+                    <div class="cms-quick-action" data-action="show-media">
+                        <div class="cms-quick-action-icon">
                             <i class="fas fa-images"></i>
                         </div>
-                        <div class="ig-quick-action-title">Media Library</div>
-                        <div class="ig-quick-action-desc">Upload and manage images, documents, and other media files</div>
+                        <div class="cms-quick-action-title">Media Library</div>
+                        <div class="cms-quick-action-desc">Upload and manage images and documents</div>
                     </div>
                 </div>
             </div>
 
             <!-- Articles Tab -->
-            <div id="articles-tab" class="ig-content tab-content" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
-                        <i class="fas fa-newspaper" style="margin-right: 8px; color: #405DE6;"></i>
-                        Articles & News
-                    </h2>
-                    <button id="new-article-btn" class="ig-btn ig-btn-primary">
+            <div id="articles-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-newspaper"></i>
+                        <h2>Articles & News</h2>
+                    </div>
+                    <button id="new-article-btn" class="cms-btn cms-btn-primary">
                         <i class="fas fa-plus"></i> New Article
                     </button>
                 </div>
-                <div id="articles-list" class="ig-content-grid">
+                <div id="articles-list" class="cms-content-grid">
                     <!-- Articles will be loaded here -->
                 </div>
             </div>
 
             <!-- Events Tab -->
-            <div id="events-tab" class="ig-content tab-content" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
-                        <i class="fas fa-calendar" style="margin-right: 8px; color: #833AB4;"></i>
-                        Events Management
-                    </h2>
-                    <button id="new-event-btn" class="ig-btn ig-btn-primary">
+            <div id="events-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-calendar"></i>
+                        <h2>Events</h2>
+                    </div>
+                    <button id="new-event-btn" class="cms-btn cms-btn-primary">
                         <i class="fas fa-plus"></i> New Event
                     </button>
                 </div>
-                <div id="events-list" class="ig-content-grid">
+                <div id="events-list" class="cms-content-grid">
                     <!-- Events will be loaded here -->
                 </div>
             </div>
 
+            <!-- Projects Tab -->
+            <div id="projects-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-project-diagram"></i>
+                        <h2>Projects</h2>
+                    </div>
+                    <button id="new-project-btn" class="cms-btn cms-btn-primary">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                </div>
+                <div id="projects-list" class="cms-content-grid">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+
             <!-- Opportunities Tab -->
-            <div id="opportunities-tab" class="ig-content tab-content" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
-                        <i class="fas fa-briefcase" style="margin-right: 8px; color: #E4405F;"></i>
-                        Opportunities Management
-                    </h2>
-                    <button id="new-opportunity-btn" class="ig-btn ig-btn-primary">
+            <div id="opportunities-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-briefcase"></i>
+                        <h2>Opportunities</h2>
+                    </div>
+                    <button id="new-opportunity-btn" class="cms-btn cms-btn-primary">
                         <i class="fas fa-plus"></i> New Opportunity
                     </button>
                 </div>
-                <div id="opportunities-list" class="ig-content-grid">
+                <div id="opportunities-list" class="cms-content-grid">
                     <!-- Opportunities will be loaded here -->
                 </div>
             </div>
 
-            <!-- Media Tab -->
-            <div id="media-tab" class="ig-content tab-content" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 24px; font-weight: 700; color: var(--ig-dark); margin: 0;">
-                        <i class="fas fa-images" style="margin-right: 8px; color: #F77737;"></i>
-                        Media Library
-                    </h2>
-                    <button id="upload-media-btn" class="ig-btn ig-btn-primary">
-                        <i class="fas fa-upload"></i> Upload Media
+            <!-- Innovation Hub Tab -->
+            <div id="innovation-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-lightbulb"></i>
+                        <h2>Innovation Hub</h2>
+                    </div>
+                    <button id="create-challenge-btn" class="cms-btn cms-btn-primary">
+                        <i class="fas fa-trophy"></i> New Challenge
                     </button>
                 </div>
-                <div id="media-library" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
+                <div id="innovation-content" class="cms-content-grid">
+                    <!-- Innovation ideas and challenges will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Communications Tab -->
+            <div id="communications-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-envelope"></i>
+                        <h2>Communications</h2>
+                    </div>
+                    <button id="send-announcement-btn" class="cms-btn cms-btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Announcement
+                    </button>
+                </div>
+                <div id="communications-content" class="cms-content-grid">
+                    <!-- Communications content will be loaded here -->
+                    <div style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.6);">
+                        <i class="fas fa-envelope" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Communications features coming soon!</p>
+                        <p style="font-size: 0.875rem;">Send announcements, newsletters, and notifications to members.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members Tab -->
+            <div id="members-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-users"></i>
+                        <h2>Members</h2>
+                    </div>
+                    <button id="export-members-btn" class="cms-btn">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+                <div id="members-content" class="cms-content-grid">
+                    <!-- Members list will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Media Tab -->
+            <div id="media-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-images"></i>
+                        <h2>Media Library</h2>
+                    </div>
+                    <button id="upload-media-btn" class="cms-btn cms-btn-primary">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </div>
+                <div id="media-library" class="cms-content-grid">
                     <!-- Media files will be loaded here -->
                 </div>
             </div>
@@ -221,25 +335,33 @@
     <div id="createEventModal" class="hidden">
         <div class="modal-backdrop">
             <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-                <button id="closeEventModal" class="glass-button" style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
-                
+                <button id="closeEventModal" class="glass-button"
+                    style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                    <div
+                        style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
                         <i class="fas fa-calendar-plus" style="font-size: 1.5rem; color: #10b981;"></i>
                     </div>
-                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create New Event</h2>
-                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Schedule workshops, meetings, competitions, and other club events</p>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create New
+                        Event</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Schedule workshops, meetings,
+                        competitions, and other club events</p>
                 </div>
 
                 <form id="eventForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Title</label>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event
+                            Title</label>
                         <input type="text" name="title" placeholder="Enter event title..." required class="glass-input">
                     </div>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Type</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event
+                                Type</label>
                             <select name="type" required class="glass-input">
                                 <option value="">Select Type</option>
                                 <option value="workshop">Workshop</option>
@@ -252,39 +374,53 @@
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Location</label>
-                            <input type="text" name="location" placeholder="Venue or Online" required class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Location</label>
+                            <input type="text" name="location" placeholder="Venue or Online" required
+                                class="glass-input">
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Start Date & Time</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Start
+                                Date & Time</label>
                             <input type="datetime-local" name="startDate" required class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">End Date & Time</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">End
+                                Date & Time</label>
                             <input type="datetime-local" name="endDate" class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Max Participants</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Max
+                                Participants</label>
                             <input type="number" name="maxParticipants" placeholder="Unlimited" class="glass-input">
                         </div>
                     </div>
 
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Registration Fee (KSh)</label>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Registration
+                            Fee (KSh)</label>
                         <input type="number" name="registrationFee" placeholder="0" min="0" class="glass-input">
                     </div>
 
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event Description</label>
-                        <div id="eventEditor" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px; min-height: 200px;"></div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Event
+                            Description</label>
+                        <div id="eventEditor"
+                            style="background: rgba(255, 255, 255, 0.9); border-radius: 8px; min-height: 200px;"></div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
                             <select name="status" class="glass-input">
                                 <option value="published">Publish Now</option>
                                 <option value="draft">Save as Draft</option>
@@ -292,21 +428,26 @@
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Registration Required</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Registration
+                                Required</label>
                             <select name="requiresRegistration" class="glass-input">
                                 <option value="true">Yes</option>
                                 <option value="false">No</option>
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags (Optional)</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags
+                                (Optional)</label>
                             <input type="text" name="tags" placeholder="innovation, workshop, tech" class="glass-input">
                         </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                         <button type="button" id="close-event-modal" class="glass-button">Cancel</button>
-                        <button type="submit" class="glass-button primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <button type="submit" class="glass-button primary"
+                            style="background: linear-gradient(135deg, #10b981, #059669);">
                             <i class="fas fa-calendar-plus"></i>Create Event
                         </button>
                     </div>
@@ -319,24 +460,32 @@
     <div id="createOpportunityModal" class="hidden">
         <div class="modal-backdrop">
             <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-                <button id="closeOpportunityModal" class="glass-button" style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
-                
+                <button id="closeOpportunityModal" class="glass-button"
+                    style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="width: 60px; height: 60px; background: rgba(236, 72, 153, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);">
+                    <div
+                        style="width: 60px; height: 60px; background: rgba(236, 72, 153, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);">
                         <i class="fas fa-briefcase" style="font-size: 1.5rem; color: #ec4899;"></i>
                     </div>
-                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Post New Opportunity</h2>
-                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Share internships, jobs, scholarships, and other opportunities</p>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Post New
+                        Opportunity</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Share internships, jobs,
+                        scholarships, and other opportunities</p>
                 </div>
 
                 <form id="opportunityForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Opportunity Title</label>
-                            <input type="text" name="title" placeholder="Enter opportunity title..." required class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Opportunity
+                                Title</label>
+                            <input type="text" name="title" placeholder="Enter opportunity title..." required
+                                class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Type</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Type</label>
                             <select name="type" required class="glass-input">
                                 <option value="">Select Type</option>
                                 <option value="internship">Internship</option>
@@ -352,53 +501,270 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Company/Organization</label>
-                            <input type="text" name="company" placeholder="Company name..." required class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Company/Organization</label>
+                            <input type="text" name="company" placeholder="Company name..." required
+                                class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Location</label>
-                            <input type="text" name="location" placeholder="Remote, Nairobi, etc..." class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Location</label>
+                            <input type="text" name="location" placeholder="Remote, Nairobi, etc..."
+                                class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Deadline</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Deadline</label>
                             <input type="date" name="deadline" required class="glass-input">
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Salary/Stipend (Optional)</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Salary/Stipend
+                                (Optional)</label>
                             <input type="text" name="salary" placeholder="e.g., KSh 50,000/month" class="glass-input">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Application Link</label>
-                            <input type="url" name="applicationLink" placeholder="https://..." required class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Application
+                                Link</label>
+                            <input type="url" name="applicationLink" placeholder="https://..." required
+                                class="glass-input">
                         </div>
                     </div>
 
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Description & Requirements</label>
-                        <div id="opportunityEditor" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px; min-height: 250px;"></div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Description
+                            & Requirements</label>
+                        <div id="opportunityEditor" style="border-radius: 8px; min-height: 250px;"></div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
                             <select name="status" class="glass-input">
                                 <option value="published">Publish Now</option>
                                 <option value="draft">Save as Draft</option>
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags (Optional)</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags
+                                (Optional)</label>
                             <input type="text" name="tags" placeholder="tech, remote, internship" class="glass-input">
                         </div>
                     </div>
 
                     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                         <button type="button" id="close-opportunity-modal" class="glass-button">Cancel</button>
-                        <button type="submit" class="glass-button primary" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                        <button type="submit" class="glass-button primary"
+                            style="background: linear-gradient(135deg, #ec4899, #be185d);">
                             <i class="fas fa-briefcase"></i>Post Opportunity
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Announcement Modal -->
+    <div id="sendAnnouncementModal" class="hidden">
+        <div class="modal-backdrop">
+            <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                <button id="closeAnnouncementModal" class="glass-button"
+                    style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div
+                        style="width: 60px; height: 60px; background: rgba(99, 102, 241, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                        <i class="fas fa-bullhorn" style="font-size: 1.5rem; color: var(--ig-info);"></i>
+                    </div>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Send
+                        Announcement</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Broadcast important messages to
+                        club members</p>
+                </div>
+
+                <form id="announcementForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Subject</label>
+                        <input type="text" name="subject" placeholder="Enter announcement subject..." required
+                            class="glass-input">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Priority</label>
+                            <select name="priority" required class="glass-input">
+                                <option value="normal">Normal</option>
+                                <option value="high">High Priority</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Recipients</label>
+                            <select name="recipients" required class="glass-input">
+                                <option value="all">All Members</option>
+                                <option value="executives">Executives Only</option>
+                                <option value="active">Active Members</option>
+                                <option value="new">New Members</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Message
+                            Content</label>
+                        <div id="announcementEditor" style="border-radius: 8px; min-height: 200px;"></div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Send
+                                Method</label>
+                            <select name="method" class="glass-input">
+                                <option value="notification">In-App Notification</option>
+                                <option value="email">Email</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Schedule</label>
+                            <select name="schedule" class="glass-input">
+                                <option value="now">Send Now</option>
+                                <option value="later">Schedule for Later</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" id="close-announcement-modal" class="glass-button">Cancel</button>
+                        <button type="submit" class="glass-button primary"
+                            style="background: linear-gradient(135deg, var(--ig-info), #4f46e5);">
+                            <i class="fas fa-paper-plane"></i>Send Announcement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Challenge Modal -->
+    <div id="createChallengeModal" class="hidden">
+        <div class="modal-backdrop">
+            <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                <button id="closeChallengeModal" class="glass-button"
+                    style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div
+                        style="width: 60px; height: 60px; background: rgba(99, 102, 241, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);">
+                        <i class="fas fa-trophy" style="font-size: 1.5rem; color: var(--ig-info);"></i>
+                    </div>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create
+                        Innovation Challenge</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Launch challenges to inspire
+                        innovation and creativity</p>
+                </div>
+
+                <form id="challengeForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Challenge
+                            Title</label>
+                        <input type="text" name="title" placeholder="Enter challenge title..." required
+                            class="glass-input">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Category</label>
+                            <select name="category" required class="glass-input">
+                                <option value="">Select Category</option>
+                                <option value="technology">Technology</option>
+                                <option value="sustainability">Sustainability</option>
+                                <option value="social-impact">Social Impact</option>
+                                <option value="business">Business Innovation</option>
+                                <option value="design">Design</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Duration</label>
+                            <select name="duration" required class="glass-input">
+                                <option value="">Select Duration</option>
+                                <option value="1-week">1 Week</option>
+                                <option value="2-weeks">2 Weeks</option>
+                                <option value="1-month">1 Month</option>
+                                <option value="3-months">3 Months</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Prize
+                                (Optional)</label>
+                            <input type="text" name="prize" placeholder="e.g., KSh 10,000" class="glass-input">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Start
+                                Date</label>
+                            <input type="date" name="startDate" required class="glass-input">
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">End
+                                Date</label>
+                            <input type="date" name="endDate" required class="glass-input">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Challenge
+                            Description & Rules</label>
+                        <div id="challengeEditor" style="border-radius: 8px; min-height: 200px;"></div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
+                            <select name="status" class="glass-input">
+                                <option value="published">Launch Now</option>
+                                <option value="draft">Save as Draft</option>
+                                <option value="scheduled">Schedule Launch</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Max
+                                Participants</label>
+                            <input type="number" name="maxParticipants" placeholder="Unlimited" class="glass-input">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" id="close-challenge-modal" class="glass-button">Cancel</button>
+                        <button type="submit" class="glass-button primary"
+                            style="background: linear-gradient(135deg, var(--ig-info), #4f46e5);">
+                            <i class="fas fa-rocket"></i>Launch Challenge
                         </button>
                     </div>
                 </form>
@@ -410,24 +776,32 @@
     <div id="createArticleModal" class="hidden">
         <div class="modal-backdrop">
             <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-                <button id="closeArticleModal" class="glass-button" style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
-                
+                <button id="closeArticleModal" class="glass-button"
+                    style="position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">&times;</button>
+
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
+                    <div
+                        style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);">
                         <i class="fas fa-newspaper" style="font-size: 1.5rem; color: #3b82f6;"></i>
                     </div>
-                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create New Article</h2>
-                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Write and publish articles, news, and announcements</p>
+                    <h2 style="font-size: 1.75rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">Create New
+                        Article</h2>
+                    <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">Write and publish articles, news,
+                        and announcements</p>
                 </div>
 
                 <form id="articleForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Article Title</label>
-                        <input type="text" name="title" placeholder="Enter article title..." required class="glass-input">
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Article
+                            Title</label>
+                        <input type="text" name="title" placeholder="Enter article title..." required
+                            class="glass-input">
                     </div>
-                    
+
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Category</label>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Category</label>
                         <select name="category" required class="glass-input">
                             <option value="">Select Category</option>
                             <option value="news">News & Announcements</option>
@@ -440,18 +814,24 @@
                     </div>
 
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Featured Image (Optional)</label>
-                        <input type="file" name="featuredImage" accept="image/*" class="glass-input" style="padding: 0.5rem;">
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Featured
+                            Image (Optional)</label>
+                        <input type="file" name="featuredImage" accept="image/*" class="glass-input"
+                            style="padding: 0.5rem;">
                     </div>
 
                     <div>
-                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Article Content</label>
-                        <div id="articleEditor" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px; min-height: 300px;"></div>
+                        <label
+                            style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Article
+                            Content</label>
+                        <div id="articleEditor" style="border-radius: 8px; min-height: 300px;"></div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Status</label>
                             <select name="status" class="glass-input">
                                 <option value="published">Publish Now</option>
                                 <option value="draft">Save as Draft</option>
@@ -459,8 +839,11 @@
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags (Optional)</label>
-                            <input type="text" name="tags" placeholder="innovation, technology, workshop" class="glass-input">
+                            <label
+                                style="display: block; color: rgba(255, 255, 255, 0.9); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem;">Tags
+                                (Optional)</label>
+                            <input type="text" name="tags" placeholder="innovation, technology, workshop"
+                                class="glass-input">
                         </div>
                     </div>
 
@@ -476,79 +859,9 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="../shared/core/app.js"></script>
-    <script type="module" src="cms.js"></script>
-    
-    <script>
-        // Initialize CMS when DOM is ready
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔧 CMS DOM loaded, initializing...');
-            
-            // Add event listeners for buttons (replacing inline onclick handlers)
-            const addClickListener = (id, handler) => {
-                const element = document.getElementById(id);
-                if (element && typeof handler === 'function') {
-                    element.addEventListener('click', handler);
-                }
-            };
-
-            // Analytics button removed
-            // addClickListener('analytics-btn', () => {
-            //     if (typeof showAnalytics === 'function') showAnalytics();
-            // });
-
-            // Quick action buttons
-            document.querySelectorAll('.ig-quick-action').forEach(action => {
-                action.addEventListener('click', () => {
-                    const actionType = action.dataset.action;
-                    switch (actionType) {
-                        case 'create-article':
-                            if (typeof showCreateArticle === 'function') showCreateArticle();
-                            break;
-                        case 'create-event':
-                            if (typeof showCreateEvent === 'function') showCreateEvent();
-                            break;
-                        case 'create-opportunity':
-                            if (typeof showCreateOpportunity === 'function') showCreateOpportunity();
-                            break;
-                        case 'show-media':
-                            if (typeof showMediaLibrary === 'function') showMediaLibrary();
-                            break;
-                    }
-                });
-            });
-
-            // Tab-specific create buttons
-            addClickListener('new-article-btn', () => {
-                if (typeof showCreateArticle === 'function') showCreateArticle();
-            });
-            addClickListener('new-event-btn', () => {
-                if (typeof showCreateEvent === 'function') showCreateEvent();
-            });
-            addClickListener('new-opportunity-btn', () => {
-                if (typeof showCreateOpportunity === 'function') showCreateOpportunity();
-            });
-            addClickListener('upload-media-btn', () => {
-                if (typeof showMediaUpload === 'function') showMediaUpload();
-            });
-
-            // Modal close buttons
-            addClickListener('close-event-modal', () => {
-                if (typeof closeEventModal === 'function') closeEventModal();
-            });
-            addClickListener('close-opportunity-modal', () => {
-                if (typeof closeOpportunityModal === 'function') closeOpportunityModal();
-            });
-            addClickListener('close-article-modal', () => {
-                if (typeof closeArticleModal === 'function') closeArticleModal();
-            });
-            
-            // The global navbar is already loaded via the script tag in head
-            // Just wait a moment for it to initialize
-            setTimeout(() => {
-                console.log('✅ CMS page ready with secure event handlers');
-            }, 500);
-        });
-    </script>
+    <script src="/shared/core/app.js"></script>
+    <script src="/cms/cms-init.js"></script>
+    <script type="module" src="/cms/cms.js"></script>
 </body>
+
 </html>

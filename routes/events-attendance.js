@@ -5,7 +5,7 @@
 
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { supabase } = require('../lib/supabase');
+const { supabaseAdmin: supabase } = require('../lib/supabase');
 const router = express.Router();
 
 // QR Code attendance tracking

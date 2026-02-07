@@ -76,7 +76,8 @@ class HomePage {
                 if (window.authManager?.isAuthenticated()) {
                     this.showUserMenu();
                 } else {
-                    window.showLogin?.();
+                    const currentPage = window.location.pathname;
+                    window.location.href = `/signin?redirect=${encodeURIComponent(currentPage)}`;
                 }
             },
             'heroRegisterBtn': (e) => {
@@ -85,7 +86,7 @@ class HomePage {
                 if (isAuth) {
                     window.location.href = '/dashboard';
                 } else {
-                    window.showRegister?.();
+                    window.location.href = '/signup';
                 }
             },
             'heroLearnMoreBtn': (e) => {
@@ -469,14 +470,13 @@ class HomePage {
     }
 
     showAuthModal(mode = 'login') {
-        if (window.GlobalAuthModal) {
-            window.GlobalAuthModal.show(mode);
-        } else if (mode === 'login' && window.showLogin) {
-            window.showLogin();
-        } else if (mode === 'register' && window.showRegister) {
-            window.showRegister();
+        // Redirect to standalone auth pages instead of showing modal
+        if (mode === 'login') {
+            window.location.href = '/signin';
+        } else if (mode === 'register') {
+            window.location.href = '/signup';
         } else {
-            console.error('Auth modal system not available');
+            console.error('Unknown auth mode:', mode);
         }
     }
 

@@ -591,16 +591,23 @@ class IdeasMockData {
 }
 
 // Initialize and make available globally immediately
+console.log('💡 Initializing Ideas Mock Data...');
 window.ideasMockData = new IdeasMockData();
 console.log('💡 Ideas Mock Data ready');
 
 // Also initialize on DOMContentLoaded for compatibility
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.ideasMockData) {
+        console.log('💡 Fallback: Initializing Ideas Mock Data on DOMContentLoaded');
         window.ideasMockData = new IdeasMockData();
         console.log('💡 Ideas Mock Data ready (fallback)');
     }
 });
+
+// Ensure it's available immediately for synchronous access
+if (!window.ideasMockData) {
+    window.ideasMockData = new IdeasMockData();
+}
 
 // Export for use in other modules
 window.IdeasMockData = IdeasMockData;

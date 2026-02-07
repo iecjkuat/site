@@ -8,39 +8,43 @@ import { SecureCMSManager } from './modules/cms-manager.js';
 // Utility functions
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// More comprehensive but safer development detection
-const isDevelopment = () => {
-    const hostname = window.location.hostname;
-    const search = window.location.search;
-    
-    // Check for explicit debug flag first
-    if (search.includes('debug=1') || localStorage.getItem('cms-debug') === 'true') {
-        return true;
-    }
-    
-    // Safe hostname checks (more restrictive)
+// Trusted development host detection (security hardening)
+const isTrustedDevHost = () => {
+    const h = window.location.hostname;
     return (
-        hostname === 'localhost' || 
-        hostname === '127.0.0.1' || 
-        hostname === '' || // file:// protocol
-        hostname.startsWith('192.168.') || // local network
-        hostname.startsWith('10.') || // local network
-        hostname.endsWith('.local') || // .local domains
-        hostname.startsWith('dev.') || // dev subdomains (safer than includes)
-        // Only match known preview patterns
-        (hostname.includes('vercel.app') && hostname.includes('preview')) ||
-        (hostname.includes('netlify.app') && hostname.includes('deploy-preview'))
+        h === 'localhost' ||
+        h === '127.0.0.1' ||
+        h === '' || // file:// protocol (though protocol check is safer)
+        h.startsWith('192.168.') ||
+        h.startsWith('10.') ||
+        h.endsWith('.local') ||
+        h.startsWith('dev.') ||
+        (h.includes('vercel.app') && h.includes('preview')) ||
+        (h.includes('netlify.app') && h.includes('deploy-preview')) ||
+        window.location.protocol === 'file:' // Explicit file:// check
     );
+};
+
+// More comprehensive but safer development detection
+// SECURITY: Only honor debug flags on trusted hostnames to prevent production debug exposure
+const isDevelopment = () => {
+    const search = window.location.search;
+    const debugFlag = search.includes('debug=1') || localStorage.getItem('cms-debug') === 'true';
+    
+    // Debug flags only work on trusted dev hosts
+    return isTrustedDevHost() && debugFlag;
 };
 
 /**
  * Wait for auth manager with timeout protection
  * Prevents infinite hanging if auth system fails to load
+ * SECURITY: Also checks for required methods to detect partial initialization
  */
 async function waitForAuthManager(timeoutMs = 8000) {
     const start = Date.now();
     
-    while (!window.authManager) {
+    // Wait for authManager with required methods
+    while (!window.authManager?.isAuthenticated || !window.authManager?.getUser) {
         if (Date.now() - start > timeoutMs) {
             throw new Error('Auth system did not load within timeout. Please refresh the page or check your connection.');
         }
@@ -59,6 +63,7 @@ let lastCMSRejectionNotification = 0;
 /**
  * Show user-friendly error message instead of harsh alert()
  * Accessible modal with proper ARIA attributes and keyboard support
+ * SECURITY: Proper cleanup of event listeners to prevent memory leaks
  */
 function showInitializationError(error) {
     // Log full error for debugging (only in dev)
@@ -86,6 +91,7 @@ function showInitializationError(error) {
     // Create accessible error dialog
     const errorContainer = document.createElement('div');
     errorContainer.id = 'cms-init-error';
+    errorContainer.tabIndex = -1; // Make focusable for keyboard navigation
     errorContainer.setAttribute('role', 'dialog');
     errorContainer.setAttribute('aria-modal', 'true');
     errorContainer.setAttribute('aria-labelledby', 'error-title');
@@ -95,7 +101,7 @@ function showInitializationError(error) {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: #1f2937;
+        background: #000000;
         border: 2px solid #ef4444;
         border-radius: 12px;
         padding: 2rem;
@@ -156,6 +162,22 @@ function showInitializationError(error) {
         margin-left: 0.5rem;
     `;
     
+    // Cleanup function to remove modal and event listeners
+    const cleanup = () => {
+        document.removeEventListener('keydown', onKeyDown);
+        backdrop.remove();
+    };
+    
+    // Keydown handler
+    const onKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            window.location.reload();
+        }
+    };
+    
+    // Setup event listeners
+    document.addEventListener('keydown', onKeyDown);
+    
     // Add event listeners with CSS hover effects
     refreshButton.addEventListener('click', () => window.location.reload());
     refreshButton.addEventListener('mouseover', () => refreshButton.style.backgroundColor = '#dc2626');
@@ -163,25 +185,21 @@ function showInitializationError(error) {
     refreshButton.addEventListener('focus', () => refreshButton.style.backgroundColor = '#dc2626');
     refreshButton.addEventListener('blur', () => refreshButton.style.backgroundColor = '#ef4444');
     
-    dashboardButton.addEventListener('click', () => window.location.href = '/dashboard');
+    // Dashboard button - conditional redirect based on auth availability
+    dashboardButton.addEventListener('click', () => {
+        window.location.href = window.authManager ? '/dashboard' : '/';
+    });
     dashboardButton.addEventListener('mouseover', () => dashboardButton.style.backgroundColor = '#4b5563');
     dashboardButton.addEventListener('mouseout', () => dashboardButton.style.backgroundColor = '#374151');
     dashboardButton.addEventListener('focus', () => dashboardButton.style.backgroundColor = '#4b5563');
     dashboardButton.addEventListener('blur', () => dashboardButton.style.backgroundColor = '#374151');
     
-    // Keyboard support
-    const handleKeyDown = (event) => {
-        if (event.key === 'Escape') {
-            // ESC key reloads (most expected behavior for error dialogs)
+    // Backdrop click reloads
+    backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
             window.location.reload();
-        } else if (event.key === 'Enter' && event.target === errorContainer) {
-            // Enter on dialog focuses first button
-            refreshButton.focus();
         }
-    };
-    
-    errorContainer.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keydown', handleKeyDown);
+    });
     
     // Create button container
     const buttonContainer = document.createElement('div');
@@ -200,8 +218,8 @@ function showInitializationError(error) {
     
     // Focus management for accessibility
     setTimeout(() => {
-        refreshButton.focus();
-    }, 100);
+        errorContainer.focus();
+    }, 0);
     
     // Fallback to alert only if DOM manipulation actually fails (very rare)
     setTimeout(() => {
@@ -262,8 +280,23 @@ const cmsActions = {
 };
 
 // Expose actions globally for HTML onclick compatibility
-// Using a single frozen object reduces global namespace pollution and prevents mutation
-Object.assign(window, cmsActions);
+// SECURITY: Use defineProperty with non-writable in production to prevent tampering
+if (isDevelopment()) {
+    // In development, allow flexibility for hot reload
+    Object.assign(window, cmsActions);
+} else {
+    // In production, make properties non-writable and non-configurable
+    for (const [key, value] of Object.entries(cmsActions)) {
+        Object.defineProperty(window, key, {
+            value: value,
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
+    }
+}
+
+// Freeze the cmsActions object itself (prevents modification of the object)
 Object.freeze(cmsActions);
 
 /**
@@ -319,19 +352,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 /**
  * Global error handler for unhandled CMS-related errors
  * Improved filtering to catch actual CMS errors with rate limiting
+ * SECURITY: Enhanced detection using stack traces (bundler-safe)
  */
 window.addEventListener('error', (event) => {
-    // Precise CMS error detection using known module names
+    // Enhanced CMS error detection using stack traces (bundler-safe)
+    const stack = event.error?.stack || '';
     const isCMSError = (
+        // Stack-based detection (works with bundlers)
+        stack.includes('/modules/cms-') ||
+        stack.includes('SecureCMSManager') ||
+        stack.includes('CMSUI') ||
+        stack.includes('CMSSecurity') ||
+        stack.includes('CMSData') ||
+        stack.includes('CMSAPI') ||
+        // Filename-based detection (works in dev)
         event.filename?.includes('cms-manager.js') || 
         event.filename?.includes('cms-data.js') ||
         event.filename?.includes('cms-ui.js') ||
         event.filename?.includes('cms-security.js') ||
+        event.filename?.includes('cms-api.js') ||
         event.filename?.includes('cms-supabase.js') ||
         event.filename?.includes('cms-notifications.js') ||
         event.filename?.includes('cms-editors.js') ||
-        event.error?.stack?.includes('SecureCMSManager') ||
-        (event.error?.cms === true) // Support for tagged errors
+        // Tagged errors
+        (event.error?.cms === true)
     );
     
     if (isCMSError) {
@@ -356,15 +400,22 @@ window.addEventListener('error', (event) => {
 /**
  * Handle unhandled promise rejections in CMS modules
  * Improved filtering and rate limiting with module-scoped state
+ * SECURITY: Tightened detection to avoid silencing non-CMS errors
  */
 window.addEventListener('unhandledrejection', (event) => {
-    // Precise CMS-related promise rejection detection
+    // Enhanced CMS-related promise rejection detection using stack traces
     const reason = event.reason;
+    const stack = reason?.stack || '';
     const isCMSRejection = (
-        reason?.stack?.includes('cms-manager.js') ||
-        reason?.stack?.includes('SecureCMSManager') ||
-        reason?.name?.includes('CMS') ||
-        (reason?.cms === true) // Support for tagged errors
+        // Stack-based detection (bundler-safe)
+        stack.includes('/modules/cms-') ||
+        stack.includes('SecureCMSManager') ||
+        stack.includes('CMSUI') ||
+        stack.includes('CMSSecurity') ||
+        stack.includes('CMSData') ||
+        stack.includes('CMSAPI') ||
+        // Tagged errors
+        (reason?.cms === true)
     );
     
     if (isCMSRejection) {

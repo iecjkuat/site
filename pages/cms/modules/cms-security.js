@@ -5,6 +5,24 @@
  */
 
 export class CMSSecurity {
+    static sanitizeForDisplay(obj, fields = []) {
+        const source = obj && typeof obj === 'object' ? obj : {};
+        const sanitized = {};
+        for (const field of fields) {
+            sanitized[field] = this.escapeHtml(source[field]);
+        }
+        return sanitized;
+    }
+
+    /**
+     * IMPORTANT: Only use escapeHtml() for innerHTML contexts
+     * For textContent or setAttribute, use raw values (browser handles escaping)
+     * 
+     * Example:
+     *   element.innerHTML = escapeHtml(userInput); // ✅ Correct
+     *   element.textContent = userInput;           // ✅ Correct (no escaping needed)
+     *   element.textContent = escapeHtml(userInput); // ❌ Wrong (double-escaping)
+     */
     static escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
         return String(unsafe)
@@ -15,18 +33,11 @@ export class CMSSecurity {
             .replace(/'/g, "&#039;");
     }
 
-    static sanitizeForDisplay(obj, fields = []) {
-        const source = obj && typeof obj === 'object' ? obj : {};
-        const sanitized = {};
-        for (const field of fields) {
-            sanitized[field] = this.escapeHtml(source[field]);
-        }
-        return sanitized;
-    }
-
     static validateRole(user) {
         // CMS access: executives (primary users) and admins (full access)
-        return !!user && (user.role === 'executive' || user.role === 'admin');
+        // SECURITY: Normalize case and handle missing role safely
+        const role = String(user?.role || '').toLowerCase();
+        return role === 'executive' || role === 'admin';
     }
 
     static validateInput(data = {}, rules = {}) {
@@ -46,30 +57,54 @@ export class CMSSecurity {
             }
             
             if (value !== null && value !== undefined) {
-                const str = typeof value === 'string' ? value : String(value);
-                
-                if (rule.minLength && str.length < rule.minLength) {
-                    errors.push(`${field} must be at least ${rule.minLength} characters`);
-                }
-                
-                if (rule.maxLength && str.length > rule.maxLength) {
-                    errors.push(`${field} must be no more than ${rule.maxLength} characters`);
-                }
-                
-                if (rule.pattern) {
-                    if (!(rule.pattern instanceof RegExp)) {
-                        errors.push(`${field} validation misconfigured`);
-                    } else if (!rule.pattern.test(str)) {
-                        errors.push(`${field} format is invalid`);
+                // Handle string validation
+                if (typeof value === 'string' || rule.type === 'string') {
+                    const str = String(value).trim(); // Trim before validation
+                    
+                    if (rule.minLength && str.length < rule.minLength) {
+                        errors.push(`${field} must be at least ${rule.minLength} characters`);
+                    }
+                    
+                    if (rule.maxLength && str.length > rule.maxLength) {
+                        errors.push(`${field} must be no more than ${rule.maxLength} characters`);
+                    }
+                    
+                    if (rule.pattern) {
+                        if (!(rule.pattern instanceof RegExp)) {
+                            errors.push(`${field} validation misconfigured`);
+                        } else if (!rule.pattern.test(str)) {
+                            errors.push(`${field} format is invalid`);
+                        }
+                    }
+                    
+                    if (rule.type === 'email' && !this.isValidEmail(str)) {
+                        errors.push(`${field} must be a valid email address`);
+                    }
+                    
+                    if (rule.type === 'url' && !this.isSafeHttpUrl(str)) {
+                        errors.push(`${field} must be a valid http/https URL`);
                     }
                 }
                 
-                if (rule.type === 'email' && !this.isValidEmail(str)) {
-                    errors.push(`${field} must be a valid email address`);
-                }
-                
-                if (rule.type === 'url' && !this.isSafeHttpUrl(str)) {
-                    errors.push(`${field} must be a valid http/https URL`);
+                // Handle number validation
+                if (rule.type === 'number') {
+                    const num = Number(value);
+                    
+                    if (isNaN(num)) {
+                        errors.push(`${field} must be a valid number`);
+                    } else {
+                        if (rule.min !== undefined && num < rule.min) {
+                            errors.push(`${field} must be at least ${rule.min}`);
+                        }
+                        
+                        if (rule.max !== undefined && num > rule.max) {
+                            errors.push(`${field} must be no more than ${rule.max}`);
+                        }
+                        
+                        if (rule.integer && !Number.isInteger(num)) {
+                            errors.push(`${field} must be an integer`);
+                        }
+                    }
                 }
             }
         }
@@ -105,71 +140,147 @@ export class CMSSecurity {
         }
     }
 
+    /**
+     * Check if URL is same-origin (stricter than isSafeHttpUrl)
+     * Use for contexts where off-site links should be blocked (e.g., media URLs)
+     */
+    static isSameOriginHttpUrl(url) {
+        try {
+            const s = String(url).trim();
+            if (/^\/{2,}/.test(s)) return false;
+            const u = new URL(s, window.location.origin);
+            return (
+                (u.protocol === 'http:' || u.protocol === 'https:') &&
+                u.origin === window.location.origin
+            );
+        } catch {
+            return false;
+        }
+    }
+
     // Legacy method for backward compatibility - now redirects to isSafeHttpUrl
     static isValidUrl(url) {
         return this.isSafeHttpUrl(url);
     }
 
     /**
-     * Basic HTML sanitizer - removes dangerous tags and attributes
-     * For production, consider using DOMPurify library for more comprehensive sanitization
+     * Basic HTML sanitizer - UNSAFE FALLBACK ONLY
+     * WARNING: This is NOT safe for production use. Regex-based sanitizers are bypassable.
+     * @deprecated Use renderSafeHtml() with DOMPurify instead
+     * 
+     * This method now returns PLAIN TEXT only (strips all HTML tags)
+     * to prevent misuse as a "safe" HTML sanitizer.
      */
-    static sanitizeHtml(html) {
-        if (!html) return '';
-        
-        const str = String(html);
-        
-        // Remove script tags and their content
-        let cleaned = str.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        
-        // Remove dangerous tags
-        const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'select', 'option'];
-        for (const tag of dangerousTags) {
-            const regex = new RegExp(`<\\/?${tag}\\b[^>]*>`, 'gi');
-            cleaned = cleaned.replace(regex, '');
-        }
-        
-        // Remove dangerous attributes
-        const dangerousAttrs = ['onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onchange', 'onsubmit'];
-        for (const attr of dangerousAttrs) {
-            const regex = new RegExp(`\\s${attr}\\s*=\\s*[^\\s>]*`, 'gi');
-            cleaned = cleaned.replace(regex, '');
-        }
-        
-        // Remove javascript: and data: URLs
-        cleaned = cleaned.replace(/href\s*=\s*["']?\s*javascript:/gi, 'href="#"');
-        cleaned = cleaned.replace(/src\s*=\s*["']?\s*javascript:/gi, 'src="#"');
-        cleaned = cleaned.replace(/href\s*=\s*["']?\s*data:/gi, 'href="#"');
-        cleaned = cleaned.replace(/src\s*=\s*["']?\s*data:/gi, 'src="#"');
-        
-        return cleaned;
+    static sanitizeHtmlFallbackUnsafe(html) {
+        // Strip all HTML tags and return plain text
+        return String(html ?? '').replace(/<[^>]*>/g, '');
     }
 
     /**
      * Render HTML content safely in a container
-     * Uses DOMPurify if available, falls back to basic sanitization
+     * SECURITY: Requires DOMPurify with strict whitelist. Falls back to textContent if unavailable.
      */
     static renderSafeHtml(htmlContent, container) {
-        if (!container || !htmlContent) return;
+        if (!container) return;
         
         // Use DOMPurify if available (loaded from CDN)
-        if (window.DOMPurify) {
-            const sanitized = DOMPurify.sanitize(String(htmlContent), {
-                USE_PROFILES: { html: true },
-                ALLOWED_URI_REGEXP: /^https?:/i,
-                FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
-                FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
-            });
-            container.innerHTML = sanitized;
-        } else {
-            // Fallback to basic sanitization
-            const sanitized = this.sanitizeHtml(htmlContent);
-            container.innerHTML = sanitized;
+        const purifier = window.DOMPurify;
+        if (!purifier) {
+            // SAFE FALLBACK: Render as text, not HTML
+            // This prevents XSS but loses formatting
+            container.textContent = String(htmlContent ?? '');
+            return;
         }
+        
+        const sanitized = purifier.sanitize(String(htmlContent), {
+            USE_PROFILES: { html: true },
+            
+            // WHITELIST APPROACH: Only allow basic content formatting
+            ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'em', 'b', 'i', 'u', 's',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'pre', 'code',
+                'ul', 'ol', 'li',
+                'a', 'span',
+                'img'
+            ],
+            ALLOWED_ATTR: [
+                'href', 'title', 'target', 'rel',
+                'src', 'alt',
+                'class'
+            ],
+            
+            // BLACKLIST: Block dangerous tags (defense in depth)
+            FORBID_TAGS: [
+                'script', 'style', 'iframe', 'object', 'embed', 
+                'form', 'input', 'textarea', 'button', 'select', 'option',
+                'link', 'meta', 'base',
+                'svg', 'math' // Common XSS vectors
+            ],
+            FORBID_ATTR: [
+                'style',      // CSS can be dangerous
+                'srcset',     // Can bypass URL checks
+                'formaction', // Form hijacking
+                'xlink:href'  // SVG XSS vector
+            ],
+            
+            ADD_ATTR: ['target', 'rel'],
+            ALLOW_UNKNOWN_PROTOCOLS: false,
+            // Allow http/https and relative URLs (same-origin)
+            ALLOWED_URI_REGEXP: /^(?:(?:https?):|\/)/i
+        });
+        
+        container.innerHTML = sanitized;
+        
+        // Post-processing: Harden links and images
+        this.hardenLinks(container);
+        this.hardenImages(container);
+    }
+
+    /**
+     * Harden all links in container
+     * - Force rel="noopener noreferrer" for _blank
+     * - Remove non-standard target values
+     */
+    static hardenLinks(container) {
+        container.querySelectorAll('a').forEach(a => {
+            const target = (a.getAttribute('target') || '').toLowerCase();
+            
+            if (target === '_blank') {
+                // Prevent tabnabbing
+                a.setAttribute('rel', 'noopener noreferrer');
+            } else if (target && target !== '_self' && target !== '_parent' && target !== '_top') {
+                // Remove weird/custom target values
+                a.removeAttribute('target');
+            }
+        });
+    }
+
+    /**
+     * Harden all images in container
+     * - Add privacy/security attributes
+     * - Optionally enforce same-origin (uncomment if needed)
+     */
+    static hardenImages(container) {
+        container.querySelectorAll('img').forEach(img => {
+            // Privacy: Don't leak referrer to external sites
+            img.setAttribute('referrerpolicy', 'no-referrer');
+            
+            // Performance: Lazy load images
+            img.setAttribute('loading', 'lazy');
+            img.setAttribute('decoding', 'async');
+            
+            // OPTIONAL: Enforce same-origin images only (uncomment if needed)
+            // const src = img.getAttribute('src') || '';
+            // if (!this.isSameOriginHttpUrl(src)) {
+            //     img.remove();
+            // }
+        });
     }
 
     /**
      * Render Delta content safely using Quill (preferred method)
+     * SECURITY: Delta format is safer than HTML as it's structured data
      */
     static renderDeltaInto(container, delta) {
         if (!container || !delta) return;
@@ -180,10 +291,11 @@ export class CMSSecurity {
 
         // Check if Quill is available
         if (typeof Quill === 'undefined') {
-            // Fallback: show plain text
+            // SAFE FALLBACK: Extract plain text from delta
+            const plainText = this.deltaToPlainText(delta);
             const fallback = document.createElement('div');
-            fallback.textContent = 'Rich content (Quill editor not loaded)';
-            fallback.style.cssText = 'color: #666; font-style: italic; padding: 1rem;';
+            fallback.textContent = plainText || 'Content not available (Quill editor not loaded)';
+            fallback.style.cssText = 'color: #666; font-style: italic; padding: 1rem; white-space: pre-wrap;';
             container.replaceChild(fallback, tmp);
             return;
         }
@@ -207,6 +319,27 @@ export class CMSSecurity {
             editor.setAttribute('contenteditable', 'false');
             editor.style.cursor = 'default';
         }
+    }
+
+    /**
+     * Extract plain text from Quill Delta format
+     * Helper for fallback when Quill is not available
+     */
+    static deltaToPlainText(delta) {
+        if (!delta || !Array.isArray(delta.ops)) return '';
+        
+        return delta.ops
+            .map(op => {
+                if (typeof op.insert === 'string') {
+                    return op.insert;
+                }
+                // Handle embeds (images, videos, etc.) with placeholders
+                if (op.insert && typeof op.insert === 'object') {
+                    return '[media]';
+                }
+                return '';
+            })
+            .join('');
     }
 
     /**
@@ -254,18 +387,22 @@ export class CMSSecurity {
     }
 
     static generateSecureId() {
-        return (crypto?.randomUUID?.() ?? this.fallbackSecureId());
+        // Use crypto.randomUUID if available (most secure)
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        return this.fallbackSecureId();
     }
 
     static fallbackSecureId() {
         // Reasonably strong fallback if randomUUID not available
-        if (crypto?.getRandomValues) {
+        if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
             const bytes = new Uint8Array(16);
             crypto.getRandomValues(bytes);
             return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
         }
         
-        // Final fallback for very old browsers
+        // Final fallback for very old browsers (less secure but functional)
         return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
     }
 }

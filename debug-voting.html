@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Voting Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+        }
+        
+        .debug-info {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-family: monospace;
+        }
+        
+        #votingGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .vote-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-option, .project-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-option:hover, .project-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        .selected {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Voting Page</h1>
+    
+    <div class="debug-info">
+        <h3>Debug Information:</h3>
+        <div id="debugInfo">Loading...</div>
+    </div>
+    
+    <div id="votingGrid">
+        <div style="text-align: center; padding: 2rem;">
+            <h3>Initializing...</h3>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Debug page starting...');
+        
+        // Create mock data directly
+        const mockVotes = [
+            {
+                id: '1',
+                title: 'Executive Committee Elections 2026',
+                description: 'Annual elections for the leadership positions of the Innovation Club.',
+                type: 'leadership',
+                status: 'active',
+                start_date: '2026-01-27T00:00:00Z',
+                end_date: '2026-02-10T23:59:59Z',
+                total_voters: 150,
+                votes_cast: 89,
+                positions: [
+                    {
+                        id: 'p1',
+                        position_name: 'Club President',
+                        candidates: [
+                            { 
+                                id: 'c1', 
+                                name: 'John Doe', 
+                                course: 'Computer Science', 
+                                year: 3, 
+                                manifesto: 'Innovation for all members.',
+                                votes: 45
+                            },
+                            { 
+                                id: 'c2', 
+                                name: 'Jane Smith', 
+                                course: 'Mechatronics', 
+                                year: 4, 
+                                manifesto: 'Engineering a better future.',
+                                votes: 32
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '2',
+                title: 'Project Funding Priority Vote',
+                description: 'Vote on which projects should receive priority funding this semester.',
+                type: 'project',
+                status: 'active',
+                start_date: '2026-01-28T00:00:00Z',
+                end_date: '2026-02-05T23:59:59Z',
+                total_voters: 150,
+                votes_cast: 23,
+                max_selections: 3,
+                options: [
+                    {
+                        id: 'proj1',
+                        title: 'AI-Powered Campus Assistant',
+                        description: 'Develop an AI chatbot to help students navigate campus services.',
+                        budget_requested: 'KSh 50,000',
+                        team_lead: 'Tech Team Alpha',
+                        votes: 15
+                    },
+                    {
+                        id: 'proj2',
+                        title: 'Smart Irrigation System',
+                        description: 'IoT-based irrigation system for the university farm.',
+                        budget_requested: 'KSh 75,000',
+                        team_lead: 'AgriTech Squad',
+                        votes: 12
+                    }
+                ]
+            }
+        ];
+        
+        // Update debug info
+        function updateDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = `
+                <p>Mock votes available: ${mockVotes ? 'YES' : 'NO'}</p>
+                <p>Mock votes count: ${mockVotes ? mockVotes.length : 0}</p>
+                <p>Current time: ${new Date().toLocaleTimeString()}</p>
+                <p>Grid element found: ${document.getElementById('votingGrid') ? 'YES' : 'NO'}</p>
+            `;
+        }
+        
+        // Render votes
+        function renderVotes() {
+            const grid = document.getElementById('votingGrid');
+            
+            if (!mockVotes || mockVotes.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; padding: 2rem;"><h3>❌ No mock data available</h3></div>';
+                return;
+            }
+            
+            console.log('✅ Rendering', mockVotes.length, 'votes');
+            
+            const html = mockVotes.map(vote => {
+                if (vote.type === 'leadership') {
+                    return `
+                        <div class="vote-card">
+                            <h3 style="color: #10b981; margin-bottom: 1rem;">👑 ${vote.title}</h3>
+                            <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">${vote.description}</p>
+                            
+                            ${(vote.positions || []).map(position => `
+                                <div style="margin-bottom: 1rem;">
+                                    <h4 style="color: #3b82f6; margin-bottom: 0.5rem;">${position.position_name}</h4>
+                                    ${(position.candidates || []).map(candidate => `
+                                        <div class="candidate-option" onclick="selectCandidate(this, '${position.id}', '${candidate.id}')">
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <div style="width: 2rem; height: 2rem; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.875rem;">
+                                                    ${candidate.name.split(' ').map(n => n[0]).join('')}
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <div style="font-weight: 600;">${candidate.name}</div>
+                                                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.7);">${candidate.course} - Year ${candidate.year}</div>
+                                                </div>
+                                                <i class="fas fa-check vote-indicator" style="color: #10b981; opacity: 0; transition: opacity 0.3s;"></i>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `).join('')}
+                            
+                            <button onclick="alert('Leadership vote would be submitted!')" style="background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 0.75rem; padding: 0.875rem 2rem; color: white; font-weight: 600; cursor: pointer; width: 100%; margin-top: 1rem;">
+                                <i class="fas fa-vote-yea" style="margin-right: 0.5rem;"></i>Cast Your Vote
+                            </button>
+                        </div>
+                    `;
+                } else if (vote.type === 'project') {
+                    return `
+                        <div class="vote-card">
+                            <h3 style="color: #f59e0b; margin-bottom: 1rem;">💡 ${vote.title}</h3>
+                            <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">${vote.description}</p>
+                            <p style="color: #3b82f6; font-size: 0.875rem; margin-bottom: 1.5rem;">Select up to ${vote.max_selections || 3} projects</p>
+                            
+                            ${(vote.options || []).map(project => `
+                                <div class="project-option" onclick="selectProject(this, '${project.id}')">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600;">${project.title}</div>
+                                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0.25rem 0;">${project.description}</div>
+                                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                                ${project.budget_requested} - ${project.team_lead}
+                                            </div>
+                                        </div>
+                                        <i class="fas fa-check vote-indicator" style="color: #10b981; opacity: 0; transition: opacity 0.3s; margin-left: 1rem;"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            
+                            <div style="text-align: center; margin: 1rem 0; font-size: 0.875rem;">
+                                Selected: <span id="selected-count">0</span> of ${vote.max_selections || 3}
+                            </div>
+                            
+                            <button onclick="alert('Project votes would be submitted!')" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 0.75rem; padding: 0.875rem 2rem; color: white; font-weight: 600; cursor: pointer; width: 100%; margin-top: 1rem;">
+                                <i class="fas fa-lightbulb" style="margin-right: 0.5rem;"></i>Submit Project Votes
+                            </button>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+            
+            grid.innerHTML = html;
+            console.log('✅ Votes rendered successfully');
+        }
+        
+        // Selection functions
+        const selections = {
+            leadership: {},
+            projects: new Set()
+        };
+        
+        function selectCandidate(element, positionId, candidateId) {
+            console.log(`Selecting candidate ${candidateId} for position ${positionId}`);
+            
+            // Clear other selections for this position
+            const positionElements = document.querySelectorAll(`[onclick*="'${positionId}'"]`);
+            positionElements.forEach(el => {
+                el.classList.remove('selected');
+                const indicator = el.querySelector('.vote-indicator');
+                if (indicator) indicator.style.opacity = '0';
+            });
+            
+            // Select this candidate
+            element.classList.add('selected');
+            const indicator = element.querySelector('.vote-indicator');
+            if (indicator) indicator.style.opacity = '1';
+            
+            selections.leadership[positionId] = candidateId;
+            console.log('✅ Candidate selected:', selections.leadership);
+        }
+        
+        function selectProject(element, projectId) {
+            console.log(`Toggling project ${projectId}`);
+            
+            const indicator = element.querySelector('.vote-indicator');
+            const isSelected = selections.projects.has(projectId);
+            
+            if (isSelected) {
+                // Deselect
+                element.classList.remove('selected');
+                indicator.style.opacity = '0';
+                selections.projects.delete(projectId);
+            } else if (selections.projects.size < 3) {
+                // Select
+                element.classList.add('selected');
+                indicator.style.opacity = '1';
+                selections.projects.add(projectId);
+            } else {
+                alert('You can only select up to 3 projects!');
+                return;
+            }
+            
+            // Update counter
+            const counter = document.getElementById('selected-count');
+            if (counter) counter.textContent = selections.projects.size;
+            
+            console.log('✅ Project selection updated:', Array.from(selections.projects));
+        }
+        
+        // Initialize
+        setTimeout(() => {
+            updateDebugInfo();
+            renderVotes();
+        }, 100);
+        
+        // Update debug info every 2 seconds
+        setInterval(updateDebugInfo, 2000);
+    </script>
+</body>
+</html>

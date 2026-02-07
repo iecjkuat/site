@@ -34,6 +34,7 @@ const votingRoutes = require('./routes/voting');
 const communicationRoutes = require('./routes/communication');
 const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
+const activityFeedRoutes = require('./routes/activity-feed');
 const adminRoutes = require('./routes/admin');
 
 // Import validation middleware
@@ -44,20 +45,28 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
+// API versioning - Add v1 prefix to routes
+const apiVersion = '/api/v1';
+
 // Initialize WebSocket service
 const wsService = new WebSocketService(server);
 
 // Security middleware - Apply before other middleware
+const connectSrc = ["'self'", "https://*.supabase.co", "wss://*.supabase.co"];
+if (process.env.SUPABASE_URL) {
+  connectSrc.push(process.env.SUPABASE_URL);
+}
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      // Remove 'unsafe-inline' for better security
+      // TODO: Remove 'unsafe-inline' and use nonces/hashes for better security
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co", process.env.SUPABASE_URL || ""],
+      connectSrc,
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
@@ -67,11 +76,11 @@ app.use(helmet({
     }
   },
   crossOriginEmbedderPolicy: false, // Allow embedding for development
-  hsts: {
+  hsts: process.env.NODE_ENV === 'production' ? {
     maxAge: 31536000,
     includeSubDomains: true,
     preload: true
-  }
+  } : false // Disable HSTS in development to avoid localhost issues
 }));
 
 // CORS configuration with environment-specific origins
@@ -117,55 +126,83 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization - Apply after body parsing
 app.use(sanitizeInput);
 
-// CSRF Protection - Apply after sanitization, but skip for API endpoints in development
+// CSRF Protection - Skip for Bearer token APIs, apply only to cookie-based sessions
 app.use((req, res, next) => {
-  // Skip CSRF for API endpoints in development
-  if (process.env.NODE_ENV === 'development' && req.path.startsWith('/api/')) {
+  // Skip CSRF for API endpoints (Bearer token based) and development
+  if (req.path.startsWith('/api/') || process.env.NODE_ENV === 'development') {
     return next();
   }
+  // Apply CSRF only to cookie-based browser sessions
   return csrfMiddleware(req, res, next);
 });
 
-// Rate limiting - Different limits for different endpoints and roles
+// Rate limiting - Fixed to use proper versioned paths and remove fake admin check
 const createRoleBasedLimiter = (windowMs, max, message) => {
   return rateLimit({
     windowMs,
-    max: (req, res) => {
-      // Check user role from token (simplified)
-      const token = req.headers.authorization?.replace('Bearer ', '');
-      // In real implementation, decode token and check role
-      const isAdmin = req.path.includes('/admin') && token; // Simplified check
-      return isAdmin ? max * 2 : max; // Admins get higher limits
-    },
+    max, // Remove fake admin boost - proper auth should be handled in route middleware
     message: { error: message },
     standardHeaders: true,
     legacyHeaders: false,
   });
 };
 
-app.use('/api/auth', createRoleBasedLimiter(15 * 60 * 1000, 10, 'Too many auth attempts'));
-app.use('/api/admin', createRoleBasedLimiter(15 * 60 * 1000, 100, 'Too many admin requests'));
-app.use('/api/', createRoleBasedLimiter(15 * 60 * 1000, 1000, 'Too many API requests'));
+// Apply rate limits to correct versioned paths
+// In development, use higher limits for testing
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const authLimit = isDevelopment ? 100 : 10; // 100 in dev, 10 in production
+const adminLimit = isDevelopment ? 500 : 100;
+const apiLimit = isDevelopment ? 5000 : 1000;
 
-// Static files - serve pages from new structure
-// Add cache control for JavaScript files to prevent caching issues
-app.use('/shared', (req, res, next) => {
-  if (req.path.endsWith('.js')) {
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-  }
-  next();
-}, express.static('pages/shared'));
+app.use(`${apiVersion}/auth`, createRoleBasedLimiter(15 * 60 * 1000, authLimit, 'Too many auth attempts'));
+app.use(`${apiVersion}/admin`, createRoleBasedLimiter(15 * 60 * 1000, adminLimit, 'Too many admin requests'));
+app.use(`${apiVersion}`, createRoleBasedLimiter(15 * 60 * 1000, apiLimit, 'Too many API requests'));
 
+// Compatibility rate limits for non-versioned paths
+app.use('/api/auth', createRoleBasedLimiter(15 * 60 * 1000, authLimit, 'Too many auth attempts'));
+
+// Normalize trailing slashes - redirect /dashboard/ to /dashboard (but not root /)
 app.use((req, res, next) => {
-  if (req.path.endsWith('.js')) {
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
+  if (req.path.length > 1 && req.path.endsWith('/') && !req.path.startsWith('/api/')) {
+    const cleanPath = req.path.slice(0, -1);
+    console.log(`🔄 Redirecting ${req.path} → ${cleanPath}`);
+    return res.redirect(301, cleanPath);
   }
   next();
-}, express.static('pages'));
+});
+
+// Static files - Simple approach
+app.use('/shared', express.static('pages/shared'));
+
+// Serve CMS assets with proper configuration
+app.use('/cms', express.static(path.join(__dirname, 'pages', 'cms'), {
+  setHeaders: (res, filepath) => {
+    // Set correct MIME type for JavaScript modules
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    }
+    if (filepath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    }
+  },
+  redirect: false,
+  index: false
+}));
+
+// Serve page assets (CSS, JS, images) but block HTML files
+app.use((req, res, next) => {
+  // Block HTML files everywhere
+  if (req.path.endsWith('.html')) {
+    return res.status(404).send('Use clean URLs');
+  }
+  
+  // Serve other static files
+  if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    express.static('pages')(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // Serve essential files from shared assets
 app.get('/favicon.ico', (req, res) => {
@@ -183,15 +220,19 @@ app.get('/sw.js', (req, res) => {
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    // Test database connection
-    const { data, error } = await supabaseAdmin.from('clubs').select('count').limit(1);
+    // Test database connection with proper count query
+    const { count, error } = await supabaseAdmin
+      .from('clubs')
+      .select('*', { count: 'exact', head: true });
+    
     if (error) throw error;
 
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       database: 'connected',
-      version: '2.0.0-supabase'
+      version: '2.0.0-supabase',
+      dbRecords: count
     });
   } catch (error) {
     res.status(500).json({
@@ -203,27 +244,26 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Debug endpoint to check users table
-app.get('/debug/users', async (req, res) => {
-  try {
-    const { data, error } = await supabaseAdmin.from('users').select('id, email, name, email_verified').limit(10);
-    if (error) throw error;
+// Debug endpoint to check users table - DEV ONLY
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug/users', async (req, res) => {
+    try {
+      const { data, error } = await supabaseAdmin.from('users').select('id, email, name, email_verified').limit(10);
+      if (error) throw error;
 
-    res.json({
-      users: data,
-      count: data.length,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-// API versioning - Add v1 prefix to routes
-const apiVersion = '/api/v1';
+      res.json({
+        users: data,
+        count: data.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+}
 
 // Supabase configuration endpoint for frontend
 app.get('/api/config/supabase', (req, res) => {
@@ -256,14 +296,21 @@ app.use(`${apiVersion}/voting`, votingRoutes);
 app.use(`${apiVersion}/communication`, communicationRoutes);
 app.use(`${apiVersion}/stats`, statsRoutes);
 app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
+app.use(`${apiVersion}/activity-feed`, activityFeedRoutes);
 app.use(`${apiVersion}/admin`, adminRoutes);
 
-// Compatibility redirect for stats
+// Compatibility redirects for API v1
 app.get('/api/stats', (req, res) => res.redirect(`${apiVersion}/stats`));
+app.get('/api/testimonials', (req, res) => res.redirect(307, `${apiVersion}/testimonials${req.url.replace('/api/testimonials', '')}?${new URLSearchParams(req.query).toString()}`));
 
 // Serve HTML pages from new structure
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'home', 'index.html'));
+});
+
+// Redirect /home and /home/ to clean root URL
+app.get(['/home', '/home/'], (req, res) => {
+  res.redirect(301, '/');
 });
 
 app.get('/dashboard', (req, res) => {
@@ -282,6 +329,9 @@ app.get('/ideas', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'ideas', 'ideas.html'));
 });
 
+app.get('/news', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'news', 'news.html'));
+});
 
 app.get('/payment', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'payment', 'payment.html'));
@@ -308,7 +358,15 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/complete-registration', (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'complete-registration', 'complete-registration.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'complete-registration', 'complete-registration-new.html'));
+});
+
+app.get('/signup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'auth', 'signup.html'));
+});
+
+app.get('/signin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pages', 'auth', 'signin.html'));
 });
 
 
@@ -350,13 +408,15 @@ app.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'privacy', 'privacy.html'));
 });
 
-// WebSocket stats endpoint
-app.get('/api/websocket/stats', (req, res) => {
-  res.json({
-    websocket: wsService.getStats(),
-    timestamp: new Date().toISOString()
+// WebSocket stats endpoint - DEV ONLY for security
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/websocket/stats', (req, res) => {
+    res.json({
+      websocket: wsService.getStats(),
+      timestamp: new Date().toISOString()
+    });
   });
-});
+}
 
 // API documentation endpoint
 app.get(`${apiVersion}`, (req, res) => {
@@ -364,6 +424,7 @@ app.get(`${apiVersion}`, (req, res) => {
     name: 'JKUAT Clubs Platform API',
     version: '2.0.0-postgresql',
     description: 'Multi-club platform API with PostgreSQL + Supabase backend',
+    documentation: `Access API docs at: ${req.protocol}://${req.get('host')}${apiVersion}`,
     endpoints: {
       auth: {
         'POST /api/auth/register': 'Register new user',
@@ -483,40 +544,85 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404 handler - More specific handling
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
-    res.status(404).json({ message: 'API endpoint not found' });
+    res.status(404).json({ 
+      error: 'API endpoint not found',
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
   } else if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
     // Don't redirect static assets, return 404
     res.status(404).send('File not found');
   } else {
-    // Redirect to home page for unknown routes (HTML pages only)
-    res.redirect('/');
+    // For unknown HTML routes, serve a proper 404 page instead of redirecting
+    // TODO: Create a proper 404.html page
+    res.status(404).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Page Not Found</title></head>
+      <body>
+        <h1>404 - Page Not Found</h1>
+        <p>The page you're looking for doesn't exist.</p>
+        <a href="/">Go Home</a>
+      </body>
+      </html>
+    `);
   }
 });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('Received SIGINT. Graceful shutdown...');
-  process.exit(0);
-});
+// Graceful shutdown - Properly close resources
+const gracefulShutdown = async (signal) => {
+  console.log(`Received ${signal}. Graceful shutdown...`);
+  
+  try {
+    // Close HTTP server
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
+    console.log('HTTP server closed');
+    
+    // Close WebSocket service
+    if (wsService && wsService.close) {
+      await wsService.close();
+      console.log('WebSocket service closed');
+    }
+    
+    // Close any other resources (database connections, etc.)
+    console.log('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+};
 
-process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM. Graceful shutdown...');
-  process.exit(0);
-});
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start server
 server.listen(PORT, () => {
   console.log(`🚀 JKUAT Clubs Platform (Supabase) running on port ${PORT}`);
   console.log(`🔌 WebSocket server enabled for real-time updates`);
+  console.log(`🏠 Home: http://localhost:${PORT}`);
+  console.log(`📖 API Docs: http://localhost:${PORT}${apiVersion}`);
+  console.log(`💚 Health Check: http://localhost:${PORT}/health`);
+  console.log(`� Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`� Debug Users: http://localhost:${PORT}/debug/users`);
+    console.log(`📊 WebSocket Stats: http://localhost:${PORT}/api/websocket/stats`);
+  }
+  
   console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
-  console.log(`🏛️ Clubs: http://localhost:${PORT}/clubs`);
   console.log(`🏛️ Leadership: http://localhost:${PORT}/leadership`);
   console.log(`📅 Events: http://localhost:${PORT}/events`);
-  console.log(`💡 Ideas Hub: http://localhost:${PORT}/dashboard#ideas`);
-  console.log(`💳 Payments: http://localhost:${PORT}/payment`);
+  console.log(`� Projects: http://localhost:${PORT}/projects`);
+  console.log(`� News: http://localhost:${PORT}/news`);
+  console.log(`� Ideas Hub: http://localhost:${PORT}/ideas`);
+  console.log(`� Payments: http://localhost:${PORT}/payment`);
   console.log(`📚 Resources: http://localhost:${PORT}/resources`);
   console.log(`🎯 Opportunities: http://localhost:${PORT}/opportunities`);
   console.log(`🎧 Support: http://localhost:${PORT}/support`);

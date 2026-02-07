@@ -1,10 +1,10 @@
 /**
  * CMS Data Module
- * Handles all data operations with Supabase integration and fallback to in-memory mock storage
+ * Handles all data operations with REST API integration and fallback to in-memory mock storage
  * Enhanced with Delta content support and comprehensive security
  */
 
-import { CMSSupabase } from './cms-supabase.js';
+import { CMSAPI } from './cms-api.js';
 
 export class CMSData {
     static useSupabase = true;
@@ -38,8 +38,13 @@ export class CMSData {
     static storage = {
         articles: [],
         events: [],
+        projects: [],
         opportunities: [],
-        media: []
+        media: [],
+        ideas: [],
+        challenges: [],
+        messages: [],
+        members: []
     };
 
     // Seed once
@@ -48,6 +53,10 @@ export class CMSData {
         if (!this.storage.events.length) this.storage.events = [...this.mockEvents];
         if (!this.storage.opportunities.length) this.storage.opportunities = [...this.mockOpportunities];
         if (!this.storage.media.length) this.storage.media = [...this.mockMedia];
+        if (!this.storage.ideas.length) this.storage.ideas = [...this.mockIdeas];
+        if (!this.storage.challenges.length) this.storage.challenges = [...this.mockChallenges];
+        if (!this.storage.messages.length) this.storage.messages = [...this.mockMessages];
+        if (!this.storage.members.length) this.storage.members = [...this.mockMembers];
     }
     // ---------- Articles ----------
     static async getArticles(filters = {}) {
@@ -55,15 +64,15 @@ export class CMSData {
         const cached = this.getFromCache(cacheKey);
         if (cached) return cached;
 
-        // Try Supabase first
+        // Try API first
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getArticles(filters);
+                const data = await CMSAPI.getArticles(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
         } catch (error) {
-            console.warn('Supabase getArticles failed, using fallback:', error);
+            console.warn('API getArticles failed, using fallback:', error);
         }
 
         // Fallback
@@ -94,12 +103,12 @@ export class CMSData {
         // - title, category, status, featured_image, tags
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.createArticle(data);
+                const result = await CMSAPI.createArticle(data);
                 this.clearCache('articles');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase createArticle failed, using fallback:', error);
+            console.warn('API createArticle failed, using fallback:', error);
         }
 
         // Fallback
@@ -138,12 +147,12 @@ export class CMSData {
     static async updateArticle(id, data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.updateArticle(id, data);
+                const result = await CMSAPI.updateArticle(id, data);
                 this.clearCache('articles');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase updateArticle failed, using fallback:', error);
+            console.warn('API updateArticle failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -169,12 +178,12 @@ export class CMSData {
     static async deleteArticle(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteArticle(id);
+                await CMSAPI.deleteArticle(id);
                 this.clearCache('articles');
                 return true;
             }
         } catch (error) {
-            console.warn('Supabase deleteArticle failed, using fallback:', error);
+            console.warn('API deleteArticle failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -193,12 +202,12 @@ export class CMSData {
 
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getEvents(filters);
+                const data = await CMSAPI.getEvents(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
         } catch (error) {
-            console.warn('Supabase getEvents failed, using fallback:', error);
+            console.warn('API getEvents failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -228,12 +237,12 @@ export class CMSData {
     static async createEvent(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.createEvent(data);
+                const result = await CMSAPI.createEvent(data);
                 this.clearCache('events');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase createEvent failed, using fallback:', error);
+            console.warn('API createEvent failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -272,12 +281,12 @@ export class CMSData {
     static async updateEvent(id, data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.updateEvent(id, data);
+                const result = await CMSAPI.updateEvent(id, data);
                 this.clearCache('events');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase updateEvent failed, using fallback:', error);
+            console.warn('API updateEvent failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -308,12 +317,12 @@ export class CMSData {
     static async deleteEvent(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteEvent(id);
+                await CMSAPI.deleteEvent(id);
                 this.clearCache('events');
                 return true;
             }
         } catch (error) {
-            console.warn('Supabase deleteEvent failed, using fallback:', error);
+            console.warn('API deleteEvent failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -331,12 +340,12 @@ export class CMSData {
 
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getOpportunities(filters);
+                const data = await CMSAPI.getOpportunities(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
         } catch (error) {
-            console.warn('Supabase getOpportunities failed, using fallback:', error);
+            console.warn('API getOpportunities failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -368,12 +377,12 @@ export class CMSData {
     static async createOpportunity(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.createOpportunity(data);
+                const result = await CMSAPI.createOpportunity(data);
                 this.clearCache('opportunities');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase createOpportunity failed, using fallback:', error);
+            console.warn('API createOpportunity failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -409,12 +418,12 @@ export class CMSData {
     static async updateOpportunity(id, data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.updateOpportunity(id, data);
+                const result = await CMSAPI.updateOpportunity(id, data);
                 this.clearCache('opportunities');
                 return result;
             }
         } catch (error) {
-            console.warn('Supabase updateOpportunity failed, using fallback:', error);
+            console.warn('API updateOpportunity failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -443,12 +452,12 @@ export class CMSData {
     static async deleteOpportunity(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteOpportunity(id);
+                await CMSAPI.deleteOpportunity(id);
                 this.clearCache('opportunities');
                 return true;
             }
         } catch (error) {
-            console.warn('Supabase deleteOpportunity failed, using fallback:', error);
+            console.warn('API deleteOpportunity failed, using fallback:', error);
         }
 
         this.seedIfEmpty();
@@ -456,6 +465,138 @@ export class CMSData {
         if (idx === -1) return false;
         this.storage.opportunities.splice(idx, 1);
         this.clearCache('opportunities');
+        return true;
+    }
+
+    // ---------- Projects ----------
+    static async getProjects(filters = {}) {
+        const cacheKey = this.getCacheKey('projects', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getProjects(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('API getProjects failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        let items = this.storage.projects || [];
+
+        if (filters.status) items = items.filter(p => p.status === filters.status);
+        if (filters.category) items = items.filter(p => p.category === filters.category);
+
+        if (filters.search) {
+            const search = String(filters.search).toLowerCase();
+            items = items.filter(p =>
+                String(p.title || '').toLowerCase().includes(search) ||
+                String(p.description || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.limit) items = items.slice(0, filters.limit);
+
+        this.setCache(cacheKey, items);
+        return items;
+    }
+
+    static async createProject(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.createProject(data);
+                this.clearCache('projects');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API createProject failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        if (!this.storage.projects) this.storage.projects = [];
+        
+        const user = window.authManager?.getUser?.();
+
+        const newProject = {
+            id: this.generateId(),
+            title: this.safeText(data.title, 200),
+            description: this.safeText(data.description, 5000),
+            category: this.safeText(data.category, 50),
+            status: this.normalizeStatus(data.status, ['draft', 'published', 'active', 'completed', 'archived']),
+            tags: this.safeTags(data.tags),
+            github_url: data.github_url ? window.CMSSecurity?.toSafeHttpUrl?.(data.github_url) : null,
+            demo_url: data.demo_url ? window.CMSSecurity?.toSafeHttpUrl?.(data.demo_url) : null,
+            
+            author_id: user?.id || null,
+            author_name: (user?.first_name && user?.last_name)
+                ? `${user.first_name} ${user.last_name}`
+                : (user?.name || user?.email || 'Unknown Author'),
+            
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            views: 0,
+            likes: 0
+        };
+
+        this.storage.projects.unshift(newProject);
+        this.clearCache('projects');
+        return newProject;
+    }
+
+    static async updateProject(id, data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.updateProject(id, data);
+                this.clearCache('projects');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API updateProject failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        if (!this.storage.projects) this.storage.projects = [];
+        
+        const idx = this.storage.projects.findIndex(p => p.id === id);
+        if (idx === -1) throw new Error('Project not found');
+
+        this.storage.projects[idx] = {
+            ...this.storage.projects[idx],
+            title: data.title ? this.safeText(data.title, 200) : this.storage.projects[idx].title,
+            description: data.description ? this.safeText(data.description, 5000) : this.storage.projects[idx].description,
+            category: data.category ? this.safeText(data.category, 50) : this.storage.projects[idx].category,
+            status: data.status ? this.normalizeStatus(data.status, ['draft', 'published', 'active', 'completed', 'archived']) : this.storage.projects[idx].status,
+            tags: data.tags ? this.safeTags(data.tags) : this.storage.projects[idx].tags,
+            github_url: data.github_url ? window.CMSSecurity?.toSafeHttpUrl?.(data.github_url) : this.storage.projects[idx].github_url,
+            demo_url: data.demo_url ? window.CMSSecurity?.toSafeHttpUrl?.(data.demo_url) : this.storage.projects[idx].demo_url,
+            updated_at: new Date().toISOString()
+        };
+
+        this.clearCache('projects');
+        return this.storage.projects[idx];
+    }
+
+    static async deleteProject(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSAPI.deleteProject(id);
+                this.clearCache('projects');
+                return true;
+            }
+        } catch (error) {
+            console.warn('API deleteProject failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        if (!this.storage.projects) this.storage.projects = [];
+        
+        const idx = this.storage.projects.findIndex(p => p.id === id);
+        if (idx === -1) return false;
+        this.storage.projects.splice(idx, 1);
+        this.clearCache('projects');
         return true;
     }
 
@@ -539,6 +680,502 @@ export class CMSData {
         return true;
     }
 
+    // ---------- Ideas ----------
+    static async getIdeas(filters = {}) {
+        const cacheKey = this.getCacheKey('ideas', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getIdeas(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('API getIdeas failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        let items = [...this.storage.ideas];
+
+        if (filters.status) items = items.filter(i => i.status === filters.status);
+        if (filters.category) items = items.filter(i => i.category === filters.category);
+
+        if (filters.search) {
+            const search = String(filters.search).toLowerCase();
+            items = items.filter(i =>
+                String(i.title || '').toLowerCase().includes(search) ||
+                String(i.description || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.limit) items = items.slice(0, filters.limit);
+
+        this.setCache(cacheKey, items);
+        return items;
+    }
+
+    static async createIdea(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.createIdea(data);
+                this.clearCache('ideas');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase createIdea failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const user = window.authManager?.getUser?.();
+
+        const newIdea = {
+            id: this.generateId(),
+            title: this.safeText(data.title, 200),
+            description: this.safeText(data.description, 5000),
+            category: this.safeText(data.category, 50),
+            status: this.normalizeStatus(data.status, ['pending', 'approved', 'rejected', 'implemented']),
+            tags: this.safeTags(data.tags),
+            
+            submitter_id: user?.id || null,
+            submitter_name: (user?.first_name && user?.last_name)
+                ? `${user.first_name} ${user.last_name}`
+                : (user?.name || user?.email || 'Anonymous'),
+            
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            votes: 0,
+            comments_count: 0
+        };
+
+        this.storage.ideas.unshift(newIdea);
+        this.clearCache('ideas');
+        return newIdea;
+    }
+
+    static async updateIdea(id, data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.updateIdea(id, data);
+                this.clearCache('ideas');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API updateIdea failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.ideas.findIndex(i => i.id === id);
+        if (idx === -1) throw new Error('Idea not found');
+
+        this.storage.ideas[idx] = {
+            ...this.storage.ideas[idx],
+            title: data.title ? this.safeText(data.title, 200) : this.storage.ideas[idx].title,
+            description: data.description ? this.safeText(data.description, 5000) : this.storage.ideas[idx].description,
+            category: data.category ? this.safeText(data.category, 50) : this.storage.ideas[idx].category,
+            status: data.status ? this.normalizeStatus(data.status, ['pending', 'approved', 'rejected', 'implemented']) : this.storage.ideas[idx].status,
+            tags: data.tags ? this.safeTags(data.tags) : this.storage.ideas[idx].tags,
+            rejection_reason: data.rejection_reason ? this.safeText(data.rejection_reason, 500) : this.storage.ideas[idx].rejection_reason,
+            updated_at: new Date().toISOString()
+        };
+
+        this.clearCache('ideas');
+        return this.storage.ideas[idx];
+    }
+
+    static async deleteIdea(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSAPI.deleteIdea(id);
+                this.clearCache('ideas');
+                return true;
+            }
+        } catch (error) {
+            console.warn('API deleteIdea failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.ideas.findIndex(i => i.id === id);
+        if (idx === -1) return false;
+        this.storage.ideas.splice(idx, 1);
+        this.clearCache('ideas');
+        return true;
+    }
+
+    // ---------- Challenges ----------
+    static async getChallenges(filters = {}) {
+        const cacheKey = this.getCacheKey('challenges', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSSupabase.getChallenges(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('Supabase getChallenges failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        let items = [...this.storage.challenges];
+
+        if (filters.status) items = items.filter(c => c.status === filters.status);
+        if (filters.category) items = items.filter(c => c.category === filters.category);
+
+        if (filters.search) {
+            const search = String(filters.search).toLowerCase();
+            items = items.filter(c =>
+                String(c.title || '').toLowerCase().includes(search) ||
+                String(c.description || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.active) {
+            const now = new Date().toISOString();
+            items = items.filter(c => String(c.end_date || '') >= now);
+        }
+
+        if (filters.limit) items = items.slice(0, filters.limit);
+
+        this.setCache(cacheKey, items);
+        return items;
+    }
+
+    static async createChallenge(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.createChallenge(data);
+                this.clearCache('challenges');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase createChallenge failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const user = window.authManager?.getUser?.();
+
+        const newChallenge = {
+            id: this.generateId(),
+            title: this.safeText(data.title, 200),
+            description: this.safeText(data.description, 10000),
+            category: this.safeText(data.category, 50),
+            status: this.normalizeStatus(data.status, ['draft', 'published', 'active', 'completed', 'cancelled']),
+            start_date: this.normalizeIsoDate(data.start_date),
+            end_date: this.normalizeIsoDate(data.end_date),
+            prize: this.safeText(data.prize, 100),
+            max_participants: this.safeNumber(data.max_participants),
+            tags: this.safeTags(data.tags),
+            
+            creator_id: user?.id || null,
+            creator_name: (user?.first_name && user?.last_name)
+                ? `${user.first_name} ${user.last_name}`
+                : (user?.name || user?.email || 'Unknown Creator'),
+            
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            participants_count: 0,
+            submissions_count: 0
+        };
+
+        this.storage.challenges.unshift(newChallenge);
+        this.clearCache('challenges');
+        return newChallenge;
+    }
+
+    static async updateChallenge(id, data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.updateChallenge(id, data);
+                this.clearCache('challenges');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase updateChallenge failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.challenges.findIndex(c => c.id === id);
+        if (idx === -1) throw new Error('Challenge not found');
+
+        this.storage.challenges[idx] = {
+            ...this.storage.challenges[idx],
+            title: data.title ? this.safeText(data.title, 200) : this.storage.challenges[idx].title,
+            description: data.description ? this.safeText(data.description, 10000) : this.storage.challenges[idx].description,
+            category: data.category ? this.safeText(data.category, 50) : this.storage.challenges[idx].category,
+            status: data.status ? this.normalizeStatus(data.status, ['draft', 'published', 'active', 'completed', 'cancelled']) : this.storage.challenges[idx].status,
+            start_date: data.start_date ? this.normalizeIsoDate(data.start_date) : this.storage.challenges[idx].start_date,
+            end_date: data.end_date ? this.normalizeIsoDate(data.end_date) : this.storage.challenges[idx].end_date,
+            prize: data.prize ? this.safeText(data.prize, 100) : this.storage.challenges[idx].prize,
+            max_participants: data.max_participants !== undefined ? this.safeNumber(data.max_participants) : this.storage.challenges[idx].max_participants,
+            tags: data.tags ? this.safeTags(data.tags) : this.storage.challenges[idx].tags,
+            updated_at: new Date().toISOString()
+        };
+
+        this.clearCache('challenges');
+        return this.storage.challenges[idx];
+    }
+
+    static async deleteChallenge(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSSupabase.deleteChallenge(id);
+                this.clearCache('challenges');
+                return true;
+            }
+        } catch (error) {
+            console.warn('Supabase deleteChallenge failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.challenges.findIndex(c => c.id === id);
+        if (idx === -1) return false;
+        this.storage.challenges.splice(idx, 1);
+        this.clearCache('challenges');
+        return true;
+    }
+
+    // ---------- Messages ----------
+    static async getMessages(filters = {}) {
+        const cacheKey = this.getCacheKey('messages', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSSupabase.getMessages(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('Supabase getMessages failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        let items = [...this.storage.messages];
+
+        if (filters.type) items = items.filter(m => m.type === filters.type);
+        if (filters.status) items = items.filter(m => m.status === filters.status);
+
+        if (filters.search) {
+            const search = String(filters.search).toLowerCase();
+            items = items.filter(m =>
+                String(m.subject || '').toLowerCase().includes(search) ||
+                String(m.content || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.limit) items = items.slice(0, filters.limit);
+
+        this.setCache(cacheKey, items);
+        return items;
+    }
+
+    static async sendAnnouncement(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.sendAnnouncement(data);
+                this.clearCache('messages');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase sendAnnouncement failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const user = window.authManager?.getUser?.();
+
+        const newMessage = {
+            id: this.generateId(),
+            subject: this.safeText(data.subject, 200),
+            content: this.safeText(data.content, 10000),
+            type: 'announcement',
+            priority: this.normalizeStatus(data.priority, ['normal', 'high', 'urgent']),
+            recipients: this.safeText(data.recipients, 50),
+            method: this.normalizeStatus(data.method, ['notification', 'email', 'both']),
+            status: 'sent',
+            
+            sender_id: user?.id || null,
+            sender_name: (user?.first_name && user?.last_name)
+                ? `${user.first_name} ${user.last_name}`
+                : (user?.name || user?.email || 'Unknown Sender'),
+            
+            sent_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            recipients_count: this.getRecipientsCount(data.recipients),
+            opened_count: 0,
+            opened: false
+        };
+
+        this.storage.messages.unshift(newMessage);
+        this.clearCache('messages');
+        return newMessage;
+    }
+
+    static async sendMessage(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.sendMessage(data);
+                this.clearCache('messages');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase sendMessage failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const user = window.authManager?.getUser?.();
+
+        const newMessage = {
+            id: this.generateId(),
+            subject: this.safeText(data.subject, 200),
+            content: this.safeText(data.message, 10000),
+            type: data.type || 'direct',
+            recipient_id: data.recipient_id,
+            status: 'sent',
+            
+            sender_id: user?.id || null,
+            sender_name: (user?.first_name && user?.last_name)
+                ? `${user.first_name} ${user.last_name}`
+                : (user?.name || user?.email || 'Unknown Sender'),
+            
+            sent_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            recipients_count: 1,
+            opened_count: 0,
+            opened: false
+        };
+
+        this.storage.messages.unshift(newMessage);
+        this.clearCache('messages');
+        return newMessage;
+    }
+
+    static async resendMessage(id) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSSupabase.resendMessage(id);
+                this.clearCache('messages');
+                return result;
+            }
+        } catch (error) {
+            console.warn('Supabase resendMessage failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const message = this.storage.messages.find(m => m.id === id);
+        if (!message) throw new Error('Message not found');
+
+        // Create a copy with new timestamp
+        const resentMessage = {
+            ...message,
+            id: this.generateId(),
+            sent_at: new Date().toISOString(),
+            opened_count: 0,
+            opened: false
+        };
+
+        this.storage.messages.unshift(resentMessage);
+        this.clearCache('messages');
+        return resentMessage;
+    }
+
+    static async deleteMessage(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSSupabase.deleteMessage(id);
+                this.clearCache('messages');
+                return true;
+            }
+        } catch (error) {
+            console.warn('Supabase deleteMessage failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.messages.findIndex(m => m.id === id);
+        if (idx === -1) return false;
+        this.storage.messages.splice(idx, 1);
+        this.clearCache('messages');
+        return true;
+    }
+
+    // ---------- Members ----------
+    static async getMembers(filters = {}) {
+        const cacheKey = this.getCacheKey('members', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getMembers(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('API getMembers failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        let items = [...this.storage.members];
+
+        if (filters.role) items = items.filter(m => m.role === filters.role);
+        if (filters.college) items = items.filter(m => m.college === filters.college);
+        if (filters.status) items = items.filter(m => m.status === filters.status);
+
+        if (filters.search) {
+            const search = String(filters.search).toLowerCase();
+            items = items.filter(m =>
+                String(m.name || '').toLowerCase().includes(search) ||
+                String(m.email || '').toLowerCase().includes(search) ||
+                String(m.student_id || '').toLowerCase().includes(search)
+            );
+        }
+
+        if (filters.active) {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+            items = items.filter(m => String(m.last_active || '') >= thirtyDaysAgo);
+        }
+
+        if (filters.limit) items = items.slice(0, filters.limit);
+
+        this.setCache(cacheKey, items);
+        return items;
+    }
+
+    static async updateMember(id, data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.updateMember(id, data);
+                this.clearCache('members');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API updateMember failed, using fallback:', error);
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.members.findIndex(m => m.id === id);
+        if (idx === -1) throw new Error('Member not found');
+
+        this.storage.members[idx] = {
+            ...this.storage.members[idx],
+            name: data.name ? this.safeText(data.name, 100) : this.storage.members[idx].name,
+            email: data.email ? this.safeText(data.email, 255) : this.storage.members[idx].email,
+            role: data.role ? this.normalizeStatus(data.role, ['member', 'executive', 'admin']) : this.storage.members[idx].role,
+            college: data.college ? this.safeText(data.college, 100) : this.storage.members[idx].college,
+            year_of_study: data.year_of_study ? this.safeNumber(data.year_of_study) : this.storage.members[idx].year_of_study,
+            phone: data.phone ? this.safeText(data.phone, 20) : this.storage.members[idx].phone,
+            bio: data.bio ? this.safeText(data.bio, 500) : this.storage.members[idx].bio,
+            updated_at: new Date().toISOString()
+        };
+
+        this.clearCache('members');
+        return this.storage.members[idx];
+    }
+
     // ---------- Utilities ----------
     static generateId() {
         return (window.CMSSecurity?.generateSecureId?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
@@ -548,6 +1185,17 @@ export class CMSData {
         if (!tags) return [];
         if (Array.isArray(tags)) return tags;
         return String(tags).split(',').map(t => t.trim()).filter(Boolean);
+    }
+
+    static getRecipientsCount(recipients) {
+        // Mock recipient counts based on type
+        const counts = {
+            'all': 150,
+            'executives': 12,
+            'active': 89,
+            'new': 23
+        };
+        return counts[recipients] || 1;
     }
 
     // ---------- Input Validation & Normalization ----------
@@ -594,10 +1242,15 @@ export class CMSData {
         const t = String(type || '').toLowerCase();
         const map = { 
             article: 'articles', 
-            event: 'events', 
+            event: 'events',
+            project: 'projects',
             opportunity: 'opportunities', 
             media_file: 'media', 
-            media: 'media' 
+            media: 'media',
+            idea: 'ideas',
+            challenge: 'challenges',
+            message: 'messages',
+            member: 'members'
         };
         return map[t] || t;
     }
@@ -631,8 +1284,13 @@ export class CMSData {
         return {
             articles: this.storage.articles.length,
             events: this.storage.events.length,
+            projects: (this.storage.projects || []).length,
             opportunities: this.storage.opportunities.length,
-            media: this.storage.media.length
+            media: this.storage.media.length,
+            ideas: this.storage.ideas.length,
+            challenges: this.storage.challenges.length,
+            messages: this.storage.messages.length,
+            members: this.storage.members.length
         };
     }
 
@@ -689,8 +1347,13 @@ export class CMSData {
         const dataMap = {
             'articles': this.storage.articles,
             'events': this.storage.events,
+            'projects': this.storage.projects || [],
             'opportunities': this.storage.opportunities,
-            'media': this.storage.media
+            'media': this.storage.media,
+            'ideas': this.storage.ideas,
+            'challenges': this.storage.challenges,
+            'messages': this.storage.messages,
+            'members': this.storage.members
         };
         
         const data = dataMap[key];
@@ -702,8 +1365,13 @@ export class CMSData {
         const dataMap = {
             'articles': this.storage.articles,
             'events': this.storage.events,
+            'projects': this.storage.projects || [],
             'opportunities': this.storage.opportunities,
-            'media': this.storage.media
+            'media': this.storage.media,
+            'ideas': this.storage.ideas,
+            'challenges': this.storage.challenges,
+            'messages': this.storage.messages,
+            'members': this.storage.members
         };
         
         const data = dataMap[key];
@@ -723,8 +1391,12 @@ export class CMSData {
         const deleteMap = {
             'articles': () => this.deleteArticle(id),
             'events': () => this.deleteEvent(id),
+            'projects': () => this.deleteProject(id),
             'opportunities': () => this.deleteOpportunity(id),
-            'media': () => this.deleteMedia(id)
+            'media': () => this.deleteMedia(id),
+            'ideas': () => this.deleteIdea(id),
+            'challenges': () => this.deleteChallenge(id),
+            'messages': () => this.deleteMessage(id)
         };
         
         const deleteFunc = deleteMap[key];
@@ -966,6 +1638,232 @@ export class CMSData {
             created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
             uploader_name: 'Alice Wanjiru',
             uploaded_by: 'content2'
+        }
+    ];
+
+    static mockIdeas = [
+        {
+            id: '1',
+            title: 'Smart Campus Navigation App',
+            description: 'An AR-powered mobile app that helps students navigate the campus using their phone camera. It would show directions, building information, and available services in real-time.',
+            category: 'technology',
+            status: 'approved',
+            tags: ['mobile', 'AR', 'navigation', 'campus'],
+            submitter_id: 'student1',
+            submitter_name: 'Alice Wanjiru',
+            created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+            votes: 47,
+            comments_count: 12
+        },
+        {
+            id: '2',
+            title: 'Sustainable Energy Monitoring System',
+            description: 'IoT-based system to monitor and optimize energy consumption across campus buildings. Would include solar panel efficiency tracking and automated lighting controls.',
+            category: 'sustainability',
+            status: 'pending',
+            tags: ['IoT', 'energy', 'sustainability', 'monitoring'],
+            submitter_id: 'student2',
+            submitter_name: 'John Kamau',
+            created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            votes: 23,
+            comments_count: 5
+        },
+        {
+            id: '3',
+            title: 'Digital Student ID with NFC',
+            description: 'Replace physical student IDs with NFC-enabled digital cards on smartphones. Would work for library access, meal plans, and attendance tracking.',
+            category: 'technology',
+            status: 'approved',
+            tags: ['NFC', 'digital', 'student ID', 'mobile'],
+            submitter_id: 'student3',
+            submitter_name: 'Grace Muthoni',
+            created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+            votes: 89,
+            comments_count: 18
+        }
+    ];
+
+    static mockChallenges = [
+        {
+            id: '1',
+            title: 'Climate Change Solutions Challenge 2026',
+            description: 'Develop innovative solutions to address climate change impacts in Kenya. Focus areas include renewable energy, sustainable agriculture, water conservation, and carbon reduction technologies.',
+            category: 'sustainability',
+            status: 'active',
+            start_date: new Date(Date.now() - 7 * 86400000).toISOString(),
+            end_date: new Date(Date.now() + 53 * 86400000).toISOString(),
+            prize: 'KSh 100,000 + Incubation Support',
+            max_participants: 50,
+            tags: ['climate', 'sustainability', 'innovation', 'environment'],
+            creator_id: 'admin1',
+            creator_name: 'Dr. Sarah Kimani',
+            created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+            participants_count: 34,
+            submissions_count: 12
+        },
+        {
+            id: '2',
+            title: 'FinTech Innovation Challenge',
+            description: 'Create financial technology solutions that address the needs of underserved communities in Kenya. Solutions should focus on mobile payments, microfinance, or financial literacy.',
+            category: 'business',
+            status: 'published',
+            start_date: new Date(Date.now() + 14 * 86400000).toISOString(),
+            end_date: new Date(Date.now() + 74 * 86400000).toISOString(),
+            prize: 'KSh 75,000 + Mentorship',
+            max_participants: 30,
+            tags: ['fintech', 'mobile payments', 'innovation', 'business'],
+            creator_id: 'admin2',
+            creator_name: 'Prof. Michael Wanjiku',
+            created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+            participants_count: 0,
+            submissions_count: 0
+        }
+    ];
+
+    static mockMessages = [
+        {
+            id: '1',
+            subject: 'Welcome to the New Academic Year!',
+            content: 'Dear Innovation Club members, we are excited to welcome you to the 2026 academic year. This year promises to be filled with exciting opportunities, workshops, and competitions. Stay tuned for upcoming events and make sure to participate actively in our programs.',
+            type: 'announcement',
+            priority: 'normal',
+            recipients: 'all',
+            method: 'both',
+            status: 'sent',
+            sender_id: 'admin1',
+            sender_name: 'Dr. Sarah Kimani',
+            sent_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+            recipients_count: 150,
+            opened_count: 127,
+            opened: true
+        },
+        {
+            id: '2',
+            subject: 'Urgent: Workshop Registration Deadline Extended',
+            content: 'Due to popular demand, we have extended the registration deadline for the Web Development Bootcamp to Friday, February 7th. Don\'t miss this opportunity to learn React and Node.js from industry experts!',
+            type: 'announcement',
+            priority: 'high',
+            recipients: 'all',
+            method: 'notification',
+            status: 'sent',
+            sender_id: 'content1',
+            sender_name: 'James Mwangi',
+            sent_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            recipients_count: 150,
+            opened_count: 89,
+            opened: true
+        },
+        {
+            id: '3',
+            subject: 'Executive Meeting Minutes - January 2026',
+            content: 'Please find attached the minutes from our January executive meeting. Key decisions include the new mentorship program launch and budget allocation for upcoming events.',
+            type: 'announcement',
+            priority: 'normal',
+            recipients: 'executives',
+            method: 'email',
+            status: 'sent',
+            sender_id: 'admin1',
+            sender_name: 'Dr. Sarah Kimani',
+            sent_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+            recipients_count: 12,
+            opened_count: 12,
+            opened: true
+        }
+    ];
+
+    static mockMembers = [
+        {
+            id: '1',
+            name: 'Alice Wanjiru',
+            email: 'alice.wanjiru@student.jkuat.ac.ke',
+            student_id: 'EN251-0123/2023',
+            role: 'executive',
+            college: 'Engineering',
+            year_of_study: 3,
+            phone: '+254712345678',
+            bio: 'Passionate about mobile app development and UI/UX design. Currently working on AR applications for education.',
+            status: 'active',
+            last_active: new Date(Date.now() - 1 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 365 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            events_attended: 15,
+            projects_completed: 3
+        },
+        {
+            id: '2',
+            name: 'John Kamau',
+            email: 'john.kamau@student.jkuat.ac.ke',
+            student_id: 'EN251-0456/2024',
+            role: 'member',
+            college: 'Engineering',
+            year_of_study: 2,
+            phone: '+254723456789',
+            bio: 'Interested in IoT and sustainable technology solutions. Working on smart agriculture projects.',
+            status: 'active',
+            last_active: new Date(Date.now() - 2 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 180 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+            events_attended: 8,
+            projects_completed: 1
+        },
+        {
+            id: '3',
+            name: 'Grace Muthoni',
+            email: 'grace.muthoni@student.jkuat.ac.ke',
+            student_id: 'BU251-0789/2023',
+            role: 'member',
+            college: 'Business',
+            year_of_study: 3,
+            phone: '+254734567890',
+            bio: 'Business student with interest in fintech and digital innovation. Exploring entrepreneurship opportunities.',
+            status: 'active',
+            last_active: new Date(Date.now() - 3 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 300 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+            events_attended: 12,
+            projects_completed: 2
+        },
+        {
+            id: '4',
+            name: 'David Ochieng',
+            email: 'david.ochieng@student.jkuat.ac.ke',
+            student_id: 'AG251-0321/2024',
+            role: 'member',
+            college: 'Agriculture',
+            year_of_study: 1,
+            phone: '+254745678901',
+            bio: 'First-year agriculture student interested in agritech and precision farming solutions.',
+            status: 'active',
+            last_active: new Date(Date.now() - 7 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+            events_attended: 4,
+            projects_completed: 0
+        },
+        {
+            id: '5',
+            name: 'Sarah Njeri',
+            email: 'sarah.njeri@student.jkuat.ac.ke',
+            student_id: 'HS251-0654/2023',
+            role: 'executive',
+            college: 'Health Sciences',
+            year_of_study: 4,
+            phone: '+254756789012',
+            bio: 'Health sciences student passionate about digital health solutions and medical technology innovation.',
+            status: 'active',
+            last_active: new Date(Date.now() - 1 * 86400000).toISOString(),
+            created_at: new Date(Date.now() - 400 * 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+            events_attended: 20,
+            projects_completed: 4
         }
     ];
 

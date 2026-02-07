@@ -3,6 +3,13 @@
  * Handles payments, financial reports, pending payments, and financial analytics
  */
 
+// Import security utilities
+if (typeof SecurityUtils === 'undefined') {
+    const script = document.createElement('script');
+    script.src = '/shared/utils/security.js';
+    document.head.appendChild(script);
+}
+
 class FinancialManagement extends BaseManagement {
     constructor(adminDashboard) {
         super(adminDashboard);
@@ -219,7 +226,12 @@ class FinancialManagement extends BaseManagement {
             await this.renderPendingPayments();
         } catch (e) {
             console.error(e);
-            container.innerHTML = `<div class="alert alert-danger">Failed to load pending payments: ${e.message}</div>`;
+            // SECURITY FIX: Use safe error display
+            if (typeof SecurityUtils !== 'undefined') {
+                SecurityUtils.showError(container, e.message, 'Failed to load pending payments');
+            } else {
+                container.innerHTML = '<div class="alert alert-danger">Failed to load pending payments</div>';
+            }
         }
     }
 
@@ -306,7 +318,12 @@ class FinancialManagement extends BaseManagement {
             `;
         } catch (error) {
             console.error('Error rendering pending payments:', error);
-            container.innerHTML = `<div class="alert alert-danger">Error loading data: ${error.message}</div>`;
+            // SECURITY FIX: Use safe error display
+            if (typeof SecurityUtils !== 'undefined') {
+                SecurityUtils.showError(container, error.message, 'Error loading data');
+            } else {
+                container.innerHTML = '<div class="alert alert-danger">Error loading data</div>';
+            }
         }
     }
 
@@ -378,7 +395,12 @@ class FinancialManagement extends BaseManagement {
             `;
         } catch (error) {
             console.error('Error rendering reports:', error);
-            container.innerHTML = `<div class="alert alert-danger">Error loading reports: ${error.message}</div>`;
+            // SECURITY FIX: Use safe error display
+            if (typeof SecurityUtils !== 'undefined') {
+                SecurityUtils.showError(container, error.message, 'Error loading reports');
+            } else {
+                container.innerHTML = '<div class="alert alert-danger">Error loading reports</div>';
+            }
         }
     }
 

@@ -14,6 +14,19 @@ class ProjectsManager {
         this.init();
     }
 
+    // Utility method to get time ago
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+        return date.toLocaleDateString();
+    }
+
     // Security helper to prevent XSS attacks
     escapeHtml(text) {
         if (!text) return '';
@@ -222,13 +235,13 @@ class ProjectsManager {
             if (response.ok) {
                 this.projects = await response.json();
             } else {
-                // Use sample data if API not available
-                this.projects = this.getSampleProjects();
+                // Use mock data if API not available
+                this.projects = window.projectsMockData ? window.projectsMockData.getSampleProjects() : [];
             }
             this.renderProjects();
         } catch (error) {
             console.error('Error loading projects:', error);
-            this.projects = this.getSampleProjects();
+            this.projects = window.projectsMockData ? window.projectsMockData.getSampleProjects() : [];
             this.renderProjects();
         }
     }
@@ -239,12 +252,12 @@ class ProjectsManager {
             if (response.ok) {
                 this.hackathons = await response.json();
             } else {
-                this.hackathons = this.getSampleHackathons();
+                this.hackathons = window.projectsMockData ? window.projectsMockData.getSampleHackathons() : [];
             }
             this.renderHackathons();
         } catch (error) {
             console.error('Error loading hackathons:', error);
-            this.hackathons = this.getSampleHackathons();
+            this.hackathons = window.projectsMockData ? window.projectsMockData.getSampleHackathons() : [];
             this.renderHackathons();
         }
     }
@@ -255,12 +268,12 @@ class ProjectsManager {
             if (response.ok) {
                 this.incubationProjects = await response.json();
             } else {
-                this.incubationProjects = this.getSampleIncubationProjects();
+                this.incubationProjects = window.projectsMockData ? window.projectsMockData.getSampleIncubationProjects() : [];
             }
             this.renderIncubationProjects();
         } catch (error) {
             console.error('Error loading incubation projects:', error);
-            this.incubationProjects = this.getSampleIncubationProjects();
+            this.incubationProjects = window.projectsMockData ? window.projectsMockData.getSampleIncubationProjects() : [];
             this.renderIncubationProjects();
         }
     }
@@ -288,6 +301,12 @@ class ProjectsManager {
             filteredProjects = this.projects.filter(project =>
                 project.category.toLowerCase() === this.currentFilter.toLowerCase()
             );
+        }
+
+        // Hide loading state
+        const loadingContainer = grid.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.display = 'none';
         }
 
         if (filteredProjects.length === 0) {
@@ -353,6 +372,12 @@ class ProjectsManager {
     renderHackathons() {
         const grid = document.getElementById('hackathonsGrid');
         if (!grid) return;
+
+        // Hide loading state
+        const loadingContainer = grid.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+        }
 
         if (this.hackathons.length === 0) {
             grid.innerHTML = `
@@ -446,6 +471,12 @@ class ProjectsManager {
     renderIncubationProjects() {
         const grid = document.getElementById('incubationProjectsGrid');
         if (!grid) return;
+
+        // Hide loading state
+        const loadingContainer = grid.querySelector('.loading-container');
+        if (loadingContainer) {
+            loadingContainer.style.display = 'none';
+        }
 
         if (this.incubationProjects.length === 0) {
             grid.innerHTML = `
@@ -1430,10 +1461,14 @@ window.closeCollaborationRequestsModal = function () {
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Navigation
-    if (typeof window.Navigation === 'function' && !window.navInstance) {
-        window.navInstance = new Navigation();
+    // Ensure mock data is available
+    if (!window.projectsMockData) {
+        window.projectsMockData = new ProjectsMockData();
     }
+    
+    // Navigation is handled by global-navbar.js
+    // No need to initialize it here
 
+    // Initialize Projects Manager
     window.projectsManager = new ProjectsManager();
 });

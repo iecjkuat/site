@@ -110,10 +110,11 @@ class GlobalNavbar {
                         <!-- Navigation Links -->
                         <div class="nav-center">
                             ${this.getNavLink('/', '🏠 Home')}
+                            ${this.getNavLink('/dashboard', '📊 Dashboard')}
                             ${this.getNavLink('/events', '📅 Events')}
                             ${this.getNavLink('/projects', '🚀 Projects')}
                             ${this.getNavLink('/ideas', '💡 Ideas')}
-                            ${this.getNavLink('/dashboard', '📊 Dashboard')}
+                            ${this.getNavLink('/news', '📰 News')}
                             ${this.getDropdownMenu()}
                         </div>
 
@@ -133,14 +134,6 @@ class GlobalNavbar {
     }
 
     getDropdownMenu() {
-        // Check user role for navigation options
-        const user = window.authManager?.getUser();
-        const isAdmin = user && user.role === 'admin';
-        const isExecutive = user && user.role === 'executive';
-        
-        console.log('🔄 Creating dropdown menu for user:', user);
-        console.log('🔑 Is admin:', isAdmin, 'Is executive:', isExecutive);
-        
         return `
             <div class="nav-dropdown">
                 <button class="glass-button dropdown-toggle" id="navbar-more-menu">
@@ -149,37 +142,28 @@ class GlobalNavbar {
                 </button>
                 <div class="dropdown-menu" id="navbar-more-dropdown">
                     <!-- Community Section -->
-                    <div class="dropdown-section" style="display: block !important; visibility: visible !important;">
-                        <div class="dropdown-section-title" style="display: block !important; visibility: visible !important;">Community</div>
+                    <div class="dropdown-section">
+                        <div class="dropdown-section-title">Community</div>
                         ${this.getNavLink('/opportunities', '💼 Opportunities', true)}
                         ${this.getNavLink('/resources', '📚 Resources', true)}
                         ${this.getNavLink('/leadership', '👥 Leadership', true)}
                         ${this.getNavLink('/voting', '🗳️ Voting', true)}
                     </div>
                     
-                    <!-- Tools Section -->
-                    <div class="dropdown-section" style="display: block !important; visibility: visible !important;">
-                        <div class="dropdown-section-title" style="display: block !important; visibility: visible !important;">Tools & Support</div>
+                    <!-- Services Section -->
+                    <div class="dropdown-section">
+                        <div class="dropdown-section-title">Services</div>
+                        ${this.getNavLink('/payment', '💳 Payments', true)}
                         ${this.getNavLink('/feedback', '💬 Feedback', true)}
-                        ${this.getNavLink('/support', '🆘 Support', true)}
                         ${this.getNavLink('/settings', '⚙️ Settings', true)}
                     </div>
                     
-                    ${(isExecutive || isAdmin) ? `
-                    <!-- Content Management Section (executives and admins) -->
-                    <div class="dropdown-section" style="display: block !important; visibility: visible !important;">
-                        <div class="dropdown-section-title" style="display: block !important; visibility: visible !important;">Content Management</div>
+                    <!-- Management Section -->
+                    <div class="dropdown-section">
+                        <div class="dropdown-section-title">Management</div>
                         ${this.getNavLink('/cms', '📝 Content Hub', true)}
-                    </div>
-                    ` : ''}
-                    
-                    ${isAdmin ? `
-                    <!-- System Administration Section (admins only) -->
-                    <div class="dropdown-section" style="display: block !important; visibility: visible !important;">
-                        <div class="dropdown-section-title" style="display: block !important; visibility: visible !important;">System Administration</div>
                         ${this.getNavLink('/admin', '🔧 Admin Dashboard', true)}
                     </div>
-                    ` : ''}
                 </div>
             </div>
         `;
@@ -189,16 +173,40 @@ class GlobalNavbar {
         const isActive = this.isActivePage(href);
         const activeClass = isActive ? ' active' : '';
 
+        // Convert relative paths to proper relative paths based on current location
+        let actualHref = href;
+        if (href.startsWith('/')) {
+            // Use clean URLs instead of relative HTML paths
+            const pathMap = {
+                '/': '/',
+                '/dashboard': '/dashboard',
+                '/events': '/events',
+                '/projects': '/projects',
+                '/ideas': '/ideas',
+                '/news': '/news',
+                '/opportunities': '/opportunities',
+                '/resources': '/resources',
+                '/leadership': '/leadership',
+                '/voting': '/voting',
+                '/payment': '/payment',
+                '/feedback': '/feedback',
+                '/settings': '/settings',
+                '/cms': '/cms',
+                '/admin': '/admin'
+            };
+            actualHref = pathMap[href] || href;
+        }
+
         if (isDropdownItem) {
             return `
-                <a href="${href}" class="dropdown-item${activeClass}">
+                <a href="${actualHref}" class="dropdown-item${activeClass}">
                     ${text}
                 </a>
             `;
         }
 
         return `
-            <a href="${href}" class="glass-button${activeClass}">
+            <a href="${actualHref}" class="glass-button${activeClass}">
                 ${text}
             </a>
         `;
@@ -215,11 +223,15 @@ class GlobalNavbar {
 
     isActivePage(href) {
         const currentPath = this.options.activePagePath;
+        
+        // Handle home page
         if (href === '/') {
             return currentPath === '/' || currentPath.includes('/home/') || currentPath.includes('index.html');
         }
-        // For clean URLs, check if current path matches the route
-        return currentPath === href || currentPath.includes(href.substring(1));
+        
+        // For other pages, check if current path contains the page name
+        const pageName = href.substring(1); // Remove leading slash
+        return currentPath.includes(`/${pageName}/`) || currentPath.includes(`${pageName}.html`);
     }
 
     handleAuthButtonClick = async (e) => {
@@ -234,8 +246,10 @@ class GlobalNavbar {
                 await window.authManager.logout();
             }
         } else {
-            console.log('🔐 Login clicked');
-            this.showAuthModal('login');
+            console.log('🔐 Login clicked - redirecting to signin page');
+            // Store current page for redirect after login
+            const currentPage = window.location.pathname;
+            window.location.href = `/signin?redirect=${encodeURIComponent(currentPage)}`;
         }
     }
 
@@ -468,16 +482,9 @@ class GlobalNavbar {
     }
 
     updateDropdownMenu() {
-        console.log('🔄 Updating dropdown menu with current user role...');
+        console.log('🔄 Updating dropdown menu...');
         
-        // Debug current user state
-        const user = window.authManager?.getUser();
-        console.log('👤 Current user for dropdown update:', user);
-        console.log('🔑 User role:', user?.role);
-        console.log('🔍 Is admin:', user && user.role === 'admin');
-        console.log('🔍 Is executive:', user && user.role === 'executive');
-        
-        // Re-create the dropdown menu with updated role-based visibility
+        // Re-create the dropdown menu (now shows all pages to everyone)
         const dropdownContainer = document.querySelector('.nav-dropdown');
         if (dropdownContainer) {
             // Get the new dropdown HTML and extract just the inner content
@@ -498,9 +505,6 @@ class GlobalNavbar {
                 const title = section.querySelector('.dropdown-section-title');
                 const items = section.querySelectorAll('.dropdown-item');
                 console.log(`   ${index + 1}. ${title?.textContent || 'No title'} (${items.length} items)`);
-                console.log(`      Display: ${window.getComputedStyle(section).display}`);
-                console.log(`      Visibility: ${window.getComputedStyle(section).visibility}`);
-                console.log(`      Opacity: ${window.getComputedStyle(section).opacity}`);
             });
             
             // Re-setup dropdown event listeners

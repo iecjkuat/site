@@ -12,97 +12,169 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
 
     <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
-    <script src="/home/supabase-client.js"></script>
-    <script src="/shared/global-navbar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"
+        defer></script>
+    <script src="/shared/auth.js" defer></script>
+    <script src="/shared/global-navbar.js" defer></script>
+    <script src="/shared/supabase-client.js" defer></script>
 
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-          crossorigin="anonymous" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    <link href="../shared/core/theme.css" rel="stylesheet">
-    <link href="../shared/components/navigation.css" rel="stylesheet">
-    <link href="../shared/components/notifications.css" rel="stylesheet">
-    <link href="voting.css?v=2025010803" rel="stylesheet">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+        crossorigin="anonymous" rel="stylesheet">
+    <!-- Core Stylesheets -->
+    <link href="/shared/core/base.css" rel="stylesheet">
+    <link href="/shared/core/theme.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
+    <link href="/voting/voting.css" rel="stylesheet">
+
     <!-- Override conflicting navbar styles -->
     <style>
-        body { padding-top: 140px !important; }
+        :root {
+            --nav-height: 80px;
+        }
+
+        body {
+            padding-top: 100px !important;
+            margin: 0;
+            background: #0f172a;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
-<body>
+<body class="voting-page">
+    <!-- Skip link for accessibility -->
+    <a class="skip-link" href="#main">Skip to content</a>
+
     <!-- Global Background -->
     <div class="global-bg"></div>
-
 
     <!-- Navigation -->
     <div id="navigation-placeholder"></div>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main id="main" class="main-content">
         <!-- Header Section -->
-        <header class="mb-12 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gradient">Voting Portal</h1>
-            <p class="text-xl text-gray-200">Participate in shaping the future of JKUAT Innovation Club</p>
+        <header class="page-header">
+            <h1 class="page-title text-gradient">Voting Portal</h1>
+            <p class="page-subtitle">Participate in shaping the future of JKUAT Innovation Club</p>
         </header>
 
+        <!-- Active Election Banner -->
+        <div id="activeElectionBanner" class="hidden election-banner">
+            <div class="glass-card banner-content">
+                <div class="banner-inner">
+                    <div class="banner-left">
+                        <div class="banner-icon">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="banner-text">
+                            <h3 class="banner-title">🚨 Active Elections</h3>
+                            <p class="banner-message" id="bannerMessage">2 votes are live — deadline in 6h 20m</p>
+                        </div>
+                    </div>
+                    <button id="voteNowBanner" class="btn btn-primary banner-button">
+                        <i class="fas fa-vote-yea"></i>Vote Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Election Status Overview -->
-        <div id="electionStatus" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <!-- Stats items like "Active Votes", "Upcoming", "Total Votes" -->
-            <div class="glass-card p-6 text-center">
-                <i class="fas fa-vote-yea text-3xl text-emerald-400 mb-3"></i>
-                <div class="text-2xl font-bold" id="activeCount">0</div>
-                <div class="text-gray-300">Active Votes</div>
+        <div id="electionStatus" class="stats-grid">
+            <!-- Stats items with click handlers and better descriptions -->
+            <div class="glass-card stats-card" data-filter="active" role="button" tabindex="0"
+                aria-label="View active votes">
+                <i class="fas fa-vote-yea stats-icon emerald"></i>
+                <div class="stats-number" id="activeCount">0</div>
+                <div class="stats-label">Active Votes</div>
+                <div class="stats-meta" id="activeLastUpdated">Updated now</div>
             </div>
-            <div class="glass-card p-6 text-center">
-                <i class="fas fa-hourglass-half text-3xl text-yellow-400 mb-3"></i>
-                <div class="text-2xl font-bold" id="upcomingCount">0</div>
-                <div class="text-gray-300">Upcoming</div>
+            <div class="glass-card stats-card" data-filter="upcoming" role="button" tabindex="0"
+                aria-label="View upcoming votes">
+                <i class="fas fa-hourglass-half stats-icon yellow"></i>
+                <div class="stats-number" id="upcomingCount">0</div>
+                <div class="stats-label">Upcoming</div>
+                <div class="stats-meta">Next 30 days</div>
             </div>
-            <div class="glass-card p-6 text-center">
-                <i class="fas fa-check-circle text-3xl text-green-400 mb-3"></i>
-                <div class="text-2xl font-bold" id="myVotesCount">0</div>
-                <div class="text-gray-300">My Votes Cast</div>
+            <div class="glass-card stats-card" data-action="show-my-votes" role="button" tabindex="0"
+                aria-label="View your voting history">
+                <i class="fas fa-check-circle stats-icon green"></i>
+                <div class="stats-number" id="myVotesCount">0</div>
+                <div class="stats-label">My Votes Cast</div>
+                <div class="stats-meta">This academic year</div>
+            </div>
+            <div class="glass-card stats-card" data-action="show-participation-details" role="button" tabindex="0"
+                aria-label="View participation details">
+                <i class="fas fa-users stats-icon blue"></i>
+                <div class="stats-number" id="participationRate">0%</div>
+                <div class="stats-label">Participation</div>
+                <div class="stats-meta">Club-wide average</div>
+            </div>
+        </div>
+
+        <!-- Voting Reminders -->
+        <div id="votingReminders" class="reminders-section hidden">
+            <div class="glass-card reminders-card">
+                <div class="reminders-content">
+                    <i class="fas fa-bell reminders-icon"></i>
+                    <div class="reminders-text">
+                        <h3 class="reminders-title">Voting Reminders</h3>
+                        <div id="remindersList">
+                            <!-- Dynamic reminders will be inserted here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Voting List -->
         <section id="votingListSection">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                <h2 class="text-2xl font-semibold">Current & Upcoming Votes</h2>
-                <div class="flex gap-2 flex-wrap">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="active">Active</button>
-                    <button class="filter-btn" data-filter="upcoming">Upcoming</button>
-                    <button class="filter-btn" data-filter="completed">Results</button>
-                    <button class="filter-btn" data-filter="leadership">Leadership</button>
-                    <button class="filter-btn" data-filter="project">Projects</button>
-                    <button class="filter-btn" data-filter="decision">Decisions</button>
+            <div class="voting-header">
+                <h2 class="section-title">Current & Upcoming Votes</h2>
+
+                <!-- Search and Sort Controls -->
+                <div class="search-sort-container">
+                    <div class="search-input-container">
+                        <input type="text" id="voteSearch" placeholder="Search votes..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <select id="voteSort" class="sort-select">
+                        <option value="ending-soon">Ending Soon</option>
+                        <option value="newest">Newest</option>
+                        <option value="most-popular">Most Popular</option>
+                        <option value="alphabetical">A-Z</option>
+                    </select>
                 </div>
             </div>
 
-            <div id="votingGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Voting Cards will be injected here -->
-                <div class="loading-state flex flex-col items-center py-12">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-                    <p class="mt-4">Loading votes...</p>
-                </div>
+            <!-- Filter Buttons -->
+            <div class="filter-buttons-container">
+                <button class="filter-btn active" data-filter="all" aria-pressed="true">All</button>
+                <button class="filter-btn" data-filter="active" aria-pressed="false">Active</button>
+                <button class="filter-btn" data-filter="upcoming" aria-pressed="false">Upcoming</button>
+                <button class="filter-btn" data-filter="completed" aria-pressed="false">Results</button>
+                <button class="filter-btn" data-filter="leadership" aria-pressed="false">Leadership</button>
+                <button class="filter-btn" data-filter="project" aria-pressed="false">Projects</button>
+                <button class="filter-btn" data-filter="decision" aria-pressed="false">Decisions</button>
+            </div>
+
+            <div id="votingGrid">
+                <!-- Voting Cards will be injected here by JavaScript -->
             </div>
         </section>
 
         <!-- Dynamic Content Area (Candidate View / Voting Form) -->
-        <section id="voteDetailSection" class="hidden mt-12">
-            <button id="backToList"
-                class="flex items-center gap-2 text-emerald-300 hover:text-white mb-6 transition-colors">
+        <section id="voteDetailSection" class="hidden detail-section">
+            <button id="backToList" class="back-button">
                 <i class="fas fa-arrow-left"></i> Back to All Votes
             </button>
             <div id="voteDetailContent">
@@ -114,10 +186,23 @@
     <!-- Footer Area -->
     <div id="footer-placeholder"></div>
 
-    <!-- Scripts -->
-    <script src="../shared/components/navigation.js"></script>
-    <script src="mock-data.js"></script>
-    <script src="voting.js"></script>
+    <script>
+        // Immediately show a simple loading message
+        setTimeout(() => {
+            const grid = document.getElementById('votingGrid');
+            if (grid && grid.innerHTML.trim() === '') {
+                grid.innerHTML = `
+                    <div class="no-votes-message">
+                        <i class="fas fa-vote-yea no-votes-icon animate-pulse"></i>
+                        <h3 class="no-votes-title">Loading Voting Portal</h3>
+                        <p class="no-votes-text">Please wait while we load the voting options...</p>
+                    </div>
+                `;
+            }
+        }, 50);
+    </script>
+    <script src="/voting/mock-data.js"></script>
+    <script src="/voting/voting.js"></script>
 </body>
 
 </html>
