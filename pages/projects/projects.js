@@ -336,10 +336,10 @@ class ProjectsManager {
     createProjectCard(project) {
         // Determine project type badge
         const isClubProject = project.project_type === 'club';
-        const projectTypeBadge = isClubProject 
+        const projectTypeBadge = isClubProject
             ? '<span class="project-type-badge club-project"><i class="fas fa-building"></i> Club Project</span>'
             : '<span class="project-type-badge personal-project"><i class="fas fa-user"></i> Personal Project</span>';
-        
+
         return `
             <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
                 <div class="project-header">
@@ -837,49 +837,30 @@ class ProjectsManager {
     // Modal methods
     showProjectModal(project) {
         console.log('showProjectModal called for:', project.title);
-        
-        // Get or create modal
+
         let modal = document.getElementById('projectModal');
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'projectModal';
+            modal.className = 'modal-backdrop';
             document.body.appendChild(modal);
         }
-        
-        // Move modal to body if not already there
+
         if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
         }
-        
-        // Set modal styles (matching event modal exactly)
-        modal.style.cssText = `
-            display: block;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 10000;
-            overflow-y: auto;
-            padding: 2rem;
-        `;
-        
-        // Prevent body scroll
+
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        
-        // Build modal content HTML (matching event modal structure)
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 900px; margin: 0 auto; background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95)); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); position: relative;">
-                
-                <!-- Close Button -->
-                <button class="modal-close-btn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 1.25rem; transition: all 0.3s ease; z-index: 10;">
-                    <i class="fas fa-times"></i>
-                </button>
-                
-                <!-- Modal Header -->
-                <div class="modal-header" style="padding: 2rem 2rem 1rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+
+        const modalTitle = document.getElementById('projectModalTitle');
+        const modalContent = document.getElementById('projectModalContent');
+
+        if (modalTitle) modalTitle.textContent = project.title;
+
+        const contentHtml = `
+            <div class="modal-body">
+                <div class="project-detail-header" style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
                     <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                         <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #10b981); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-project-diagram" style="color: white; font-size: 1.25rem;"></i>
@@ -889,107 +870,40 @@ class ProjectsManager {
                             <h2 style="color: white; font-size: 1.75rem; margin: 0.25rem 0 0 0; font-weight: 700; line-height: 1.3;">${this.escapeHtml(project.title)}</h2>
                         </div>
                     </div>
-                    
-                    <!-- Project Meta Info -->
-                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-tag" style="color: #3b82f6;"></i>
-                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.category)}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-chart-line" style="color: #10b981;"></i>
-                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.progress_percentage || 0)}% Complete</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-user" style="color: #f59e0b;"></i>
-                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
-                        </div>
-                        ${project.project_type ? `
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-${project.project_type === 'club' ? 'building' : 'user'}" style="color: #8b5cf6;"></i>
-                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${project.project_type === 'club' ? 'Club Project' : 'Personal Project'}</span>
-                        </div>
-                        ` : ''}
-                    </div>
                 </div>
-                
-                <!-- Modal Body -->
-                <div class="modal-body" style="padding: 2rem; max-height: 60vh; overflow-y: auto;">
-                    
-                    <!-- Description -->
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Description</h3>
-                        <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8; font-size: 0.95rem;">${this.escapeHtml(project.description)}</p>
-                    </div>
-                    
-                    ${project.technologies && project.technologies.length > 0 ? `
-                    <!-- Technologies -->
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Technologies</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            ${project.technologies.map(tech => `
-                                <span style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: #60a5fa; font-size: 0.875rem; font-weight: 500;">
-                                    ${this.escapeHtml(tech)}
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <!-- Project Details Grid -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
-                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Status</div>
-                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(project.status || 'Active')}</div>
-                        </div>
-                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Progress</div>
-                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(project.progress_percentage || 0)}%</div>
-                        </div>
-                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Created</div>
-                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button class="modal-close-btn-footer" style="padding: 0.875rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                        Close
-                    </button>
-                    <button class="modal-join-btn" data-project-id="${this.escapeHtml(project.id)}" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
-                        <i class="fas fa-handshake"></i> Request to Join
-                    </button>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Description</h3>
+                    <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8; font-size: 0.95rem;">${this.escapeHtml(project.description)}</p>
                 </div>
             </div>
+            <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="modal-close-btn-footer" style="padding: 0.875rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Close</button>
+                <button class="modal-join-btn" data-project-id="${this.escapeHtml(project.id)}" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Join Project</button>
+            </div>
         `;
-        
-        // Setup close handlers
+
+        if (modalContent) {
+            modalContent.innerHTML = contentHtml;
+        } else {
+            modal.innerHTML = `<div class="modal-content">${contentHtml}</div>`;
+        }
+
+        modal.classList.add('active');
+
         const closeModal = () => {
+            modal.classList.remove('active');
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
         };
-        
-        modal.querySelector('.modal-close-btn').onclick = closeModal;
-        modal.querySelector('.modal-close-btn-footer').onclick = closeModal;
-        modal.querySelector('.modal-join-btn').onclick = () => {
-            closeModal();
-            this.joinProject(project.id);
-        };
-        
-        // Close on background click
-        modal.onclick = (e) => {
-            if (e.target === modal) closeModal();
-        };
-        
-        // Close on Escape key
-        const escapeHandler = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escapeHandler);
-            }
-        };
+
+        const closeBtn = modal.querySelector('.modal-close') || modal.querySelector('.modal-close-btn');
+        if (closeBtn) closeBtn.onclick = closeModal;
+        const footerBtn = modal.querySelector('.modal-close-btn-footer');
+        if (footerBtn) footerBtn.onclick = closeModal;
+
+        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+        const escapeHandler = (e) => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escapeHandler); } };
         document.addEventListener('keydown', escapeHandler);
     }
 
@@ -1001,7 +915,7 @@ class ProjectsManager {
         const isRegistrationOpen = now < registrationDeadline;
 
         const modalHtml = `
-            <div class="project-detail-header">
+            < div class="project-detail-header" >
                 <div class="project-detail-meta">
                     <span class="project-status ${isRegistrationOpen ? 'active' : 'completed'}">${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}</span>
                     ${hackathon.theme ? `<span class="project-owner">Theme: ${this.escapeHtml(hackathon.theme)}</span>` : ''}
@@ -1019,14 +933,14 @@ class ProjectsManager {
                         <span>KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</span>
                     </div>
                 </div>
-            </div>
-            
+            </div >
+
             <div class="project-detail-content">
                 <section class="detail-section">
                     <h3>Description</h3>
                     <p>${this.escapeHtml(hackathon.description)}</p>
                 </section>
-                
+
                 <div class="detail-grid">
                     <section class="detail-section">
                         <h3>Start Date</h3>
@@ -1045,7 +959,7 @@ class ProjectsManager {
                         <p>${this.escapeHtml(hackathon.venue || 'TBA')}</p>
                     </section>
                 </div>
-                
+
                 <div class="project-detail-actions">
                     ${isRegistrationOpen ? `
                         <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
@@ -1083,6 +997,95 @@ class ProjectsManager {
             modal.classList.add('active');
         }
     }
+    showHackathonModal(hackathon) {
+        const startDate = new Date(hackathon.start_date);
+        const endDate = new Date(hackathon.end_date);
+        const registrationDeadline = new Date(hackathon.registration_deadline);
+        const now = new Date();
+        const isRegistrationOpen = now < registrationDeadline;
+
+        const modalHtml = `
+            <div class="modal-body">
+                <div class="project-detail-header">
+                    <div class="project-detail-meta">
+                        <span class="project-status ${isRegistrationOpen ? 'active' : 'completed'}">${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}</span>
+                        ${hackathon.theme ? `<span class="project-owner">Theme: ${this.escapeHtml(hackathon.theme)}</span>` : ''}
+                    </div>
+                    
+                    <h1 class="project-detail-title">${this.escapeHtml(hackathon.title)}</h1>
+                    
+                    <div class="project-detail-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <span>${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)} Participants</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-money-bill"></i>
+                            <span>KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="project-detail-content">
+                    <section class="detail-section">
+                        <h3>Description</h3>
+                        <p>${this.escapeHtml(hackathon.description)}</p>
+                    </section>
+                    
+                    <div class="detail-grid">
+                        <section class="detail-section">
+                            <h3>Start Date</h3>
+                            <p>${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}</p>
+                        </section>
+                        <section class="detail-section">
+                            <h3>End Date</h3>
+                            <p>${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}</p>
+                        </section>
+                        <section class="detail-section">
+                            <h3>Registration Deadline</h3>
+                            <p>${registrationDeadline.toLocaleDateString()} at ${registrationDeadline.toLocaleTimeString()}</p>
+                        </section>
+                        <section class="detail-section">
+                            <h3>Venue</h3>
+                            <p>${this.escapeHtml(hackathon.venue || 'TBA')}</p>
+                        </section>
+                    </div>
+                    
+                    <div class="project-detail-actions">
+                        ${isRegistrationOpen ? `
+                            <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
+                                <i class="fas fa-user-plus"></i>
+                                Register Now
+                            </button>
+                        ` : `
+                            <button class="btn btn-secondary opacity-50" disabled>
+                                <i class="fas fa-lock"></i>
+                                Registration Closed
+                            </button>
+                        `}
+                        <button class="btn btn-outline" data-action="share-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
+                            <i class="fas fa-share"></i>
+                            Share Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Update modal content and title
+        const modalContent = document.getElementById('projectModalContent');
+        const modalTitle = document.getElementById('projectModalTitle');
+
+        if (modalContent) modalContent.innerHTML = modalHtml;
+        if (modalTitle) modalTitle.textContent = 'Hackathon Details';
+
+        // Show modal
+        const modal = document.getElementById('projectModal');
+        if (modal) {
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
+    }
 
     showCollaborationModal(project) {
         // Update modal content
@@ -1101,159 +1104,127 @@ class ProjectsManager {
                         </div>
                         <p class="lead-highlight-name">${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</p>
                     </div>
+                </div >
+
+                    <form id="collaborationForm" data-project-id="${this.escapeHtml(project.id)}">
+                        <div class="form-group">
+                            <label class="form-label">Your Role in the Project *</label>
+                            <select name="role" class="glass-input" required>
+                                <option value="">Select your role</option>
+                                <option value="developer">Developer</option>
+                                <option value="designer">UI/UX Designer</option>
+                                <option value="researcher">Researcher</option>
+                                <option value="marketing">Marketing Specialist</option>
+                                <option value="business">Business Analyst</option>
+                                <option value="mentor">Mentor/Advisor</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Skills You Bring *</label>
+                            <input type="text" name="skills" class="glass-input" placeholder="e.g., React, Python, Machine Learning, Project Management" required>
+                            <small class="empty-state-text">Separate multiple skills with commas</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Why do you want to collaborate? *</label>
+                            <textarea name="message" class="glass-input" rows="4" placeholder="Tell the project lead why you're interested and how you can contribute..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Time Commitment *</label>
+                            <select name="timeCommitment" class="glass-input" required>
+                                <option value="">Select time commitment</option>
+                                <option value="part-time">Part-time (5-10 hours/week)</option>
+                                <option value="significant">Significant (10-20 hours/week)</option>
+                                <option value="full-time">Full-time (20+ hours/week)</option>
+                                <option value="flexible">Flexible schedule</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Contact Email *</label>
+                            <input type="email" name="email" class="glass-input" placeholder="your.email@example.com" required>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" data-action="close-modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-handshake"></i>Send Collaboration Request
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                
-                <form id="collaborationForm" data-project-id="${this.escapeHtml(project.id)}">
-                    <div class="form-group">
-                        <label class="form-label">Your Role in the Project *</label>
-                        <select name="role" class="glass-input" required>
-                            <option value="">Select your role</option>
-                            <option value="developer">Developer</option>
-                            <option value="designer">UI/UX Designer</option>
-                            <option value="researcher">Researcher</option>
-                            <option value="marketing">Marketing Specialist</option>
-                            <option value="business">Business Analyst</option>
-                            <option value="mentor">Mentor/Advisor</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Skills You Bring *</label>
-                        <input type="text" name="skills" class="glass-input" placeholder="e.g., React, Python, Machine Learning, Project Management" required>
-                        <small class="empty-state-text">Separate multiple skills with commas</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Why do you want to collaborate? *</label>
-                        <textarea name="message" class="glass-input" rows="4" placeholder="Tell the project lead why you're interested and how you can contribute..." required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Time Commitment *</label>
-                        <select name="timeCommitment" class="glass-input" required>
-                            <option value="">Select time commitment</option>
-                            <option value="part-time">Part-time (5-10 hours/week)</option>
-                            <option value="significant">Significant (10-20 hours/week)</option>
-                            <option value="full-time">Full-time (20+ hours/week)</option>
-                            <option value="flexible">Flexible schedule</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Contact Email *</label>
-                        <input type="email" name="email" class="glass-input" placeholder="your.email@example.com" required>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" data-action="close-modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-handshake"></i>Send Collaboration Request
-                        </button>
-                    </div>
-                </form>
             `;
         }
 
-        // Show modal
         const modal = document.getElementById('collaborationModal');
         if (modal) {
-            // Move modal to body if not already there to ensure position:fixed works
-            if (modal.parentElement !== document.body) {
-                document.body.appendChild(modal);
-            }
-            
-            // Prevent body scroll when modal is open
             document.body.style.overflow = 'hidden';
-            
             modal.classList.add('active');
-            // Force visibility with inline styles using setProperty with important
-            modal.style.setProperty('display', 'flex', 'important');
-            modal.style.setProperty('position', 'fixed', 'important');
-            modal.style.setProperty('top', '0', 'important');
-            modal.style.setProperty('left', '0', 'important');
-            modal.style.setProperty('right', '0', 'important');
-            modal.style.setProperty('bottom', '0', 'important');
-            modal.style.setProperty('width', '100vw', 'important');
-            modal.style.setProperty('height', '100vh', 'important');
-            modal.style.setProperty('z-index', '999999', 'important');
-            modal.style.setProperty('align-items', 'center', 'important');
-            modal.style.setProperty('justify-content', 'center', 'important');
-            modal.style.setProperty('background-color', 'rgba(0, 0, 0, 0.85)', 'important');
-            modal.style.setProperty('opacity', '1', 'important');
-            modal.style.setProperty('visibility', 'visible', 'important');
-            modal.style.setProperty('pointer-events', 'auto', 'important');
-            
-            // Also make the modal content visible
-            const modalContent = modal.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.style.setProperty('opacity', '1', 'important');
-                modalContent.style.setProperty('visibility', 'visible', 'important');
-            }
+            modal.style.display = 'flex';
         }
     }
 
     showIncubationModal(project) {
         const modalHtml = `
-            <div class="project-detail-header">
-                <div class="project-detail-meta">
-                    <span class="project-status planning">Incubation Program</span>
-                    <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || project.founder || 'Founder')}</span>
+            <div class="modal-body">
+                <div class="project-detail-header">
+                    <div class="project-detail-meta">
+                        <span class="project-status planning">Incubation Program</span>
+                        <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || project.founder || 'Founder')}</span>
+                    </div>
+                    
+                    <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
+                    
+                    <div class="project-detail-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>${this.escapeHtml(project.stage || 'Validation')}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-money-bill"></i>
+                            <span>KSh ${this.escapeHtml(project.funding || '0')} Funding</span>
+                        </div>
+                    </div>
                 </div>
                 
-                <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
-                
-                <div class="project-detail-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>${this.escapeHtml(project.stage || 'Validation')}</span>
+                <div class="project-detail-content">
+                    <section class="detail-section">
+                        <h3>Description</h3>
+                        <p>${this.escapeHtml(project.description)}</p>
+                    </section>
+                    
+                    <section class="detail-section">
+                        <h3>Current Stage</h3>
+                        <p>${this.escapeHtml(project.stage || 'Validation')}</p>
+                    </section>
+                    
+                    <div class="project-detail-actions">
+                        <button class="btn btn-primary" data-action="contact-founder" data-project-id="${this.escapeHtml(project.id)}">
+                            <i class="fas fa-envelope"></i>
+                            Contact Founder
+                        </button>
+                        <button class="btn btn-outline" data-action="share-incubation" data-project-id="${this.escapeHtml(project.id)}">
+                            <i class="fas fa-share"></i>
+                            Share Project
+                        </button>
                     </div>
-                    <div class="stat-item">
-                        <i class="fas fa-money-bill"></i>
-                        <span>KSh ${this.escapeHtml(project.funding || '0')} Funding</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="project-detail-content">
-                <section class="detail-section">
-                    <h3>Description</h3>
-                    <p>${this.escapeHtml(project.description)}</p>
-                </section>
-                
-                <section class="detail-section">
-                    <h3>Current Stage</h3>
-                    <p>${this.escapeHtml(project.stage || 'Validation')}</p>
-                </section>
-                
-                <div class="project-detail-actions">
-                    <button class="btn btn-primary" data-action="contact-founder" data-project-id="${this.escapeHtml(project.id)}">
-                        <i class="fas fa-envelope"></i>
-                        Contact Founder
-                    </button>
-                    <button class="btn btn-outline" data-action="share-incubation" data-project-id="${this.escapeHtml(project.id)}">
-                        <i class="fas fa-share"></i>
-                        Share Project
-                    </button>
                 </div>
             </div>
         `;
 
-        // Update modal content and title
         const modalContent = document.getElementById('projectModalContent');
         const modalTitle = document.getElementById('projectModalTitle');
 
-        if (modalContent) {
-            modalContent.innerHTML = modalHtml;
-        }
-        if (modalTitle) {
-            modalTitle.textContent = 'Incubation Project';
-        }
+        if (modalContent) modalContent.innerHTML = modalHtml;
+        if (modalTitle) modalTitle.textContent = 'Incubation Project';
 
-        // Show modal
         const modal = document.getElementById('projectModal');
         if (modal) {
             modal.classList.add('active');
+            modal.style.display = 'flex';
         }
     }
 

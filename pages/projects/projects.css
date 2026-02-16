@@ -42,7 +42,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: 
+    background:
         radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
         radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
     z-index: -1;
@@ -878,12 +878,12 @@
     height: 100vh !important;
     background: rgba(0, 0, 0, 0.85) !important;
     backdrop-filter: blur(10px) !important;
-    z-index: 99999 !important;
+    z-index: 100000 !important;
     display: none !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 0 !important;
-    overflow: hidden !important;
+    padding: 2rem !important;
+    pointer-events: auto !important;
 }
 
 .modal-backdrop.active {
@@ -894,14 +894,23 @@
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
     backdrop-filter: blur(20px) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 20px !important;
-    padding: 2.5rem !important;
-    width: 90% !important;
-    max-width: 700px !important;
-    max-height: 85vh !important;
-    overflow-y: auto !important;
+    border-radius: 24px !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 900px !important;
+    max-height: calc(100vh - 4rem) !important;
+    margin: auto !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
     position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.modal-body {
+    padding: 2rem !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
 }
 
 .modal-large {
@@ -1343,6 +1352,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -1353,6 +1363,7 @@
         opacity: 0;
         transform: scale(0.95) translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
