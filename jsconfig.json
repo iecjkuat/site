@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "checkJs": false,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "**/*.js",
+    "pages/**/*.js",
+    "routes/**/*.js",
+    "lib/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

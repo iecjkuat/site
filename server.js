@@ -36,6 +36,7 @@ const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
 const activityFeedRoutes = require('./routes/activity-feed');
 const adminRoutes = require('./routes/admin');
+const uploadRoutes = require('./routes/upload');
 
 // Import validation middleware
 const { rateLimits, sanitizeInput } = require('./middleware/validation');
@@ -298,6 +299,7 @@ app.use(`${apiVersion}/stats`, statsRoutes);
 app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
 app.use(`${apiVersion}/activity-feed`, activityFeedRoutes);
 app.use(`${apiVersion}/admin`, adminRoutes);
+app.use(`${apiVersion}/upload`, uploadRoutes);
 
 // Compatibility redirects for API v1
 app.get('/api/stats', (req, res) => res.redirect(`${apiVersion}/stats`));

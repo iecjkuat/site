@@ -198,41 +198,30 @@ export class CMSData {
     static async getEvents(filters = {}) {
         const cacheKey = this.getCacheKey('events', filters);
         const cached = this.getFromCache(cacheKey);
-        if (cached) return cached;
+        if (cached) {
+            console.log('📦 Using cached events:', cached.length);
+            return cached;
+        }
 
         try {
             if (this.useSupabase) {
+                console.log('🔄 Calling CMSAPI.getEvents...');
                 const data = await CMSAPI.getEvents(filters);
+                console.log('✅ CMSAPI returned:', data.length, 'events');
+                
+                if (data && data.length > 0) {
+                    console.log('📝 Sample event from API:', data[0]);
+                }
+                
                 this.setCache(cacheKey, data);
                 return data;
             }
         } catch (error) {
-            console.warn('API getEvents failed, using fallback:', error);
+            console.error('❌ API getEvents failed:', error);
+            throw error; // Don't fall back to mock data
         }
 
-        this.seedIfEmpty();
-        let items = [...this.storage.events];
-
-        if (filters.status) items = items.filter(e => e.status === filters.status);
-        if (filters.type) items = items.filter(e => e.type === filters.type);
-
-        if (filters.search) {
-            const search = String(filters.search).toLowerCase();
-            items = items.filter(e =>
-                String(e.title || '').toLowerCase().includes(search) ||
-                String(e.description_html || e.description || '').toLowerCase().includes(search)
-            );
-        }
-
-        if (filters.upcoming) {
-            const now = new Date().toISOString();
-            items = items.filter(e => String(e.start_date || '') >= now);
-        }
-
-        if (filters.limit) items = items.slice(0, filters.limit);
-
-        this.setCache(cacheKey, items);
-        return items;
+        throw new Error('Supabase is disabled or API call failed');
     }
     static async createEvent(data) {
         try {
@@ -1268,7 +1257,35 @@ export class CMSData {
     }
 
     // Legacy compatibility methods
-    static getStats() {
+    static async getStats() {
+        if (this.useSupabase) {
+            try {
+                // Fetch real counts from API
+                const [articles, events, opportunities, ideas, members] = await Promise.all([
+                    CMSAPI.getArticles().catch(() => []),
+                    CMSAPI.getEvents().catch(() => []),
+                    CMSAPI.getOpportunities().catch(() => []),
+                    CMSAPI.getIdeas().catch(() => []),
+                    CMSAPI.getMembers().catch(() => [])
+                ]);
+                
+                return {
+                    articles: articles.length,
+                    events: events.length,
+                    projects: 0, // TODO: Add projects API
+                    opportunities: opportunities.length,
+                    media: 0, // TODO: Add media API
+                    ideas: ideas.length,
+                    challenges: 0, // TODO: Add challenges API
+                    messages: 0, // TODO: Add messages API
+                    members: members.length
+                };
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+        
+        // Fallback to local storage
         return {
             articles: this.storage.articles.length,
             events: this.storage.events.length,
@@ -1348,8 +1365,40 @@ export class CMSData {
         return data ? data.find(item => item.id === id) : null;
     }
 
-    static updateItem(type, id, updates) {
+    static async updateItem(type, id, updates) {
         const key = this.normalizeType(type);
+        
+        // For members and events, use the API
+        if ((key === 'members' || key === 'events') && this.useSupabase) {
+            try {
+                const endpoint = key === 'members' ? 'users' : 'events';
+                console.log(`🔄 Updating ${key} via API:`, id, updates);
+                const response = await fetch(`${window.location.origin}/api/v1/admin/${endpoint}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(updates)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `Failed to update ${key}`);
+                }
+                
+                const data = await response.json();
+                console.log(`✅ ${key} updated successfully:`, data);
+                
+                this.clearCache(key);
+                return data.event || data.user || data;
+            } catch (error) {
+                console.error(`❌ Failed to update ${key}:`, error);
+                throw error;
+            }
+        }
+        
+        // For other types, use local storage
         const dataMap = {
             'articles': this.storage.articles,
             'events': this.storage.events,
@@ -1367,7 +1416,7 @@ export class CMSData {
             const index = data.findIndex(item => item.id === id);
             if (index !== -1) {
                 data[index] = { ...data[index], ...updates, updated_at: new Date().toISOString() };
-                this.clearCache(String(key)); // Fix cache invalidation bug
+                this.clearCache(String(key));
                 return data[index];
             }
         }
@@ -1376,6 +1425,33 @@ export class CMSData {
 
     static async deleteItem(type, id) {
         const key = this.normalizeType(type);
+        
+        // For members, use the API
+        if (key === 'members' && this.useSupabase) {
+            try {
+                console.log('🗑️ Deleting member via API:', id);
+                const response = await fetch(`${window.location.origin}/api/v1/admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to delete member');
+                }
+                
+                console.log('✅ Member deleted successfully');
+                this.clearCache('members');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to delete member:', error);
+                throw error;
+            }
+        }
+        
         const deleteMap = {
             'articles': () => this.deleteArticle(id),
             'events': () => this.deleteEvent(id),

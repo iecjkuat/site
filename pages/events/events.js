@@ -49,21 +49,66 @@ class EventsManager {
             console.log('🔧 Setting up event listeners...');
             this.setupEventListeners();
             
-            console.log('📊 Loading events...');
+            console.log('📊 Loading events from database...');
             await this.loadEvents();
             console.log('📊 Events loaded:', this.events.length);
-            console.log('📊 Sample events:', this.events.map(e => e.title));
             
-            console.log('🎨 Rendering events...');
-            this.renderEvents();
-            
-            console.log('📈 Updating stats...');
-            this.updateStats();
+            if (this.events.length > 0) {
+                console.log('📊 Sample events:', this.events.map(e => e.title));
+                console.log('🎨 Rendering events...');
+                this.renderEvents();
+                console.log('📈 Updating stats...');
+                this.updateStats();
+            } else {
+                console.log('📭 No events found in database');
+                this.showEmptyState();
+            }
             
             console.log('✅ Events Manager initialized successfully');
         } catch (error) {
             console.error('❌ Error in init():', error);
-            throw error;
+            this.showErrorState(error);
+        }
+    }
+    
+    showEmptyState() {
+        const container = this.querySelector('#eventsGrid');
+        const loading = this.querySelector('#eventsLoading');
+        
+        if (loading) loading.style.display = 'none';
+        
+        if (container) {
+            container.innerHTML = `
+                <div class="glass-card" style="text-align: center; padding: 3rem; color: white; grid-column: 1 / -1;">
+                    <i class="fas fa-calendar" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">No Events Yet</h3>
+                    <p style="opacity: 0.7; margin-bottom: 1.5rem;">Check back soon for upcoming events!</p>
+                    <a href="/" class="btn" style="display: inline-block; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; text-decoration: none; border-radius: 25px; font-weight: 600;">
+                        Back to Home
+                    </a>
+                </div>
+            `;
+        }
+    }
+    
+    showErrorState(error) {
+        const container = this.querySelector('#eventsGrid');
+        const loading = this.querySelector('#eventsLoading');
+        
+        if (loading) loading.style.display = 'none';
+        
+        if (container) {
+            container.innerHTML = `
+                <div class="glass-card" style="text-align: center; padding: 3rem; color: white; grid-column: 1 / -1;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem; margin-bottom: 1rem; color: #ef4444;"></i>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Failed to Load Events</h3>
+                    <p style="opacity: 0.7; margin-bottom: 0.5rem;">Unable to connect to the server.</p>
+                    <p style="font-size: 0.875rem; opacity: 0.5; margin-bottom: 1.5rem;">${error.message}</p>
+                    <button onclick="window.location.reload()" class="btn" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                </div>
+            `;
         }
     }
 
@@ -115,6 +160,9 @@ class EventsManager {
                 break;
             case 'show-more-comments':
                 this.showMoreComments(eventId);
+                break;
+            case 'view-event-details':
+                this.viewEventDetails(eventId);
                 break;
         }
     }
@@ -210,27 +258,56 @@ class EventsManager {
     async loadEvents() {
         console.log('📊 loadEvents() called');
         try {
-            console.log('🌐 Attempting to fetch from API...');
+            console.log('🌐 Fetching events from API...');
             const response = await fetch('/api/v1/events');
             console.log('🌐 API response status:', response.status);
             
-            if (response.ok) {
-                const data = await response.json();
-                console.log('🌐 API data received:', data);
-                this.events = data.events || data || [];
-                console.log('✅ Events loaded from API:', this.events.length);
-            } else {
+            if (!response.ok) {
                 throw new Error(`API responded with status ${response.status}`);
             }
+            
+            const data = await response.json();
+            console.log('🌐 API data received:', data);
+            
+            // Map database events to UI format
+            const rawEvents = data.events || data || [];
+            this.events = rawEvents.map(event => ({
+                ...event,
+                // Map banner_image to media format
+                media: event.banner_image ? {
+                    type: 'image',
+                    primary: event.banner_image
+                } : null,
+                // Map tags to hashtags
+                hashtags: event.tags ? event.tags.map(tag => tag.startsWith('#') ? tag : `#${tag}`) : [],
+                // Ensure numeric fields
+                likes: event.likes || 0,
+                shares: event.shares || 0,
+                comments: event.comments || [],
+                // Map description_html to description if needed
+                description: event.description || this.stripHtml(event.description_html || ''),
+                // Ensure current_attendees exists
+                current_attendees: event.current_attendees || event.stats?.totalAttendees || 0
+            }));
+            
+            console.log('✅ Events loaded from API:', this.events.length);
+            if (this.events.length > 0) {
+                console.log('📝 Sample mapped event:', this.events[0]);
+            }
         } catch (error) {
-            console.log('⚠️ API not available, using sample data. Error:', error.message);
-            console.log('🎭 Calling getSampleEvents()...');
-            this.events = this.getSampleEvents();
-            console.log('✅ Sample events loaded:', this.events.length);
-            console.log('📋 Sample events titles:', this.events.map(e => e.title));
+            console.error('❌ Failed to load events from API:', error);
+            this.events = [];
+            throw error; // Re-throw to show error in UI
         }
         
         console.log('📊 Final events array:', this.events);
+    }
+    
+    // Helper to strip HTML tags from description
+    stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
     }
 
     renderEvents() {
@@ -1087,184 +1164,217 @@ class EventsManager {
         return statusMap[status] || '📅 Event';
     }
 
-    getSampleEvents() {
-        console.log('🎭 getSampleEvents() called');
-        const sampleEvents = [
-            {
-                id: '1',
-                title: 'AI & Machine Learning Workshop',
-                description: 'Join us for an intensive workshop on artificial intelligence and machine learning. Learn the fundamentals of AI, explore popular ML algorithms, and build your first neural network. Perfect for beginners and intermediate developers looking to dive into the world of AI.',
-                event_type: 'workshop',
-                start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
-                location: 'JKUAT Innovation Lab',
-                max_attendees: 50,
-                current_attendees: 23,
-                fee: 0,
-                status: 'active',
-                likes: 42,
-                shares: 12,
-                hashtags: ['#AI', '#MachineLearning', '#Workshop', '#JKUAT'],
-                media: {
-                    type: 'carousel',
-                    primary: '/images/ai-workshop-1.jpg',
-                    gallery: [
-                        '/images/ai-workshop-1.jpg',
-                        '/images/ai-workshop-2.jpg',
-                        '/images/ai-workshop-3.jpg'
-                    ]
-                },
-                comments: [
-                    {
-                        id: 'c1',
-                        user: 'student_dev',
-                        message: 'This looks amazing! Can\'t wait to attend 🚀',
-                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                        likes: 3,
-                        isLiked: false
-                    },
-                    {
-                        id: 'c2',
-                        user: 'tech_enthusiast',
-                        message: 'Will there be hands-on coding sessions?',
-                        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-                        likes: 1,
-                        isLiked: true
-                    },
-                    {
-                        id: 'c3',
-                        user: 'ai_researcher',
-                        message: 'Great initiative! Looking forward to the neural network section.',
-                        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-                        likes: 5,
-                        isLiked: false
-                    }
-                ],
-                created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                id: '2',
-                title: 'Blockchain Workshop - Completed',
-                description: 'An intensive workshop covering blockchain technology, cryptocurrency fundamentals, and smart contract development. Participants gained hands-on experience with Ethereum development.',
-                event_type: 'workshop',
-                start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                end_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(),
-                location: 'JKUAT Blockchain Lab',
-                max_attendees: 40,
-                current_attendees: 38,
-                fee: 800,
-                status: 'completed',
-                likes: 124,
-                shares: 28,
-                hashtags: ['#Blockchain', '#Cryptocurrency', '#SmartContracts', '#JKUAT'],
-                media: {
-                    type: 'image',
-                    primary: '/images/blockchain-workshop.jpg'
-                },
-                comments: [
-                    {
-                        id: 'c4',
-                        user: 'crypto_student',
-                        message: 'Best workshop ever! Learned so much about DeFi 💎',
-                        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-                        likes: 8,
-                        isLiked: false
-                    },
-                    {
-                        id: 'c5',
-                        user: 'blockchain_dev',
-                        message: 'The smart contract deployment was mind-blowing! 🤯',
-                        timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                        likes: 12,
-                        isLiked: true
-                    }
-                ],
-                recap: {
-                    summary: 'The Blockchain & Cryptocurrency Workshop was a huge success! Participants gained hands-on experience with blockchain development and learned about the future of decentralized finance.',
-                    highlights: [
-                        'Built and deployed smart contracts on Ethereum testnet',
-                        'Created personal cryptocurrency wallets',
-                        'Learned about DeFi protocols and yield farming',
-                        'Networked with blockchain industry professionals',
-                        'Received certificates of completion'
-                    ],
-                    stats: {
-                        attendees: 38,
-                        satisfaction: '4.8/5',
-                        projects: 12
-                    },
-                    photos: [
-                        { url: '/images/blockchain-recap-1.jpg', caption: 'Group photo with certificates' },
-                        { url: '/images/blockchain-recap-2.jpg', caption: 'Smart contract deployment demo' },
-                        { url: '/images/blockchain-recap-3.jpg', caption: 'Networking session' },
-                        { url: '/images/blockchain-recap-4.jpg', caption: 'Hands-on coding' },
-                        { url: '/images/blockchain-recap-5.jpg', caption: 'Final presentations' },
-                        { url: '/images/blockchain-recap-6.jpg', caption: 'Team collaboration' }
-                    ],
-                    resources: [
-                        {
-                            title: 'Workshop Slides',
-                            description: 'Complete presentation materials',
-                            icon: '📊',
-                            url: '/resources/blockchain-slides.pdf'
-                        },
-                        {
-                            title: 'Code Repository',
-                            description: 'All workshop code examples',
-                            icon: '💻',
-                            url: 'https://github.com/jkuat-innovation/blockchain-workshop'
-                        },
-                        {
-                            title: 'Certificate Template',
-                            description: 'Downloadable certificate',
-                            icon: '🏆',
-                            url: '/resources/blockchain-certificate.pdf'
-                        }
-                    ]
-                },
-                created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                id: '3',
-                title: 'Innovation Pitch Competition',
-                description: 'Present your innovative ideas to a panel of industry experts and investors. Win cash prizes, mentorship opportunities, and potential funding for your startup. Open to all students with groundbreaking ideas.',
-                event_type: 'competition',
-                start_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-                end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
-                location: 'JKUAT Main Auditorium',
-                max_attendees: 200,
-                current_attendees: 87,
-                fee: 0,
-                status: 'active',
-                likes: 156,
-                shares: 45,
-                hashtags: ['#Innovation', '#Pitch', '#Competition', '#Startup', '#JKUAT'],
-                comments: [
-                    {
-                        id: 'c6',
-                        user: 'entrepreneur_jane',
-                        message: 'This is exactly what we need! Time to pitch my fintech idea 💡',
-                        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-                        likes: 7,
-                        isLiked: false
-                    },
-                    {
-                        id: 'c7',
-                        user: 'startup_founder',
-                        message: 'Who are the judges? Any VCs on the panel?',
-                        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                        likes: 2,
-                        isLiked: false
-                    }
-                ],
-                created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-            }
-        ];
+    viewEventDetails(eventId) {
+        const event = this.events.find(e => this.normalizeId(e.id) === eventId);
+        if (!event) {
+            console.error('Event not found:', eventId);
+            return;
+        }
+
+        // Create beautiful event details modal
+        const modal = document.createElement('div');
+        modal.id = 'eventDetailsModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        const startDate = new Date(event.start_date || event.event_date);
+        const bannerImage = event.banner_image || (event.media && event.media.primary);
         
-        console.log('🎭 Sample events created:', sampleEvents.length);
-        console.log('🎭 Sample event titles:', sampleEvents.map(e => e.title));
-        return sampleEvents;
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-calendar-alt" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">${this.escapeHTML(event.title)}</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">JKUAT Innovation Club</p>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 16px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-calendar" style="color: #3b82f6;"></i>
+                        <span>${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-clock" style="color: #3b82f6;"></i>
+                        <span>${startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-map-marker-alt" style="color: #3b82f6;"></i>
+                        <span>${this.escapeHTML(event.location)}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-tag" style="color: #3b82f6;"></i>
+                        <span>${event.fee || event.registration_fee ? `KSh ${event.fee || event.registration_fee}` : 'Free'}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-users" style="color: #3b82f6;"></i>
+                        <span>${event.current_attendees || 0}/${event.max_attendees || 'Unlimited'} registered</span>
+                    </div>
+                </div>
+
+                ${bannerImage ? `
+                    <div style="margin-bottom: 2rem;">
+                        <img src="${this.escapeHTML(bannerImage)}" alt="${this.escapeHTML(event.title)}" 
+                             style="width: 100%; height: 300px; object-fit: cover; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                        Description
+                    </h3>
+                    <div style="color: rgba(255, 255, 255, 0.8); line-height: 1.8; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+                        ${event.description || event.description_html || 'No description available.'}
+                    </div>
+                </div>
+
+                ${event.requirements && Array.isArray(event.requirements) && event.requirements.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-clipboard-list" style="color: #3b82f6;"></i>
+                            Requirements
+                        </h3>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                            ${event.requirements.map(req => `
+                                <li style="display: flex; align-items: start; gap: 0.75rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                                    <i class="fas fa-check-circle" style="color: #10b981; margin-top: 0.25rem; flex-shrink: 0;"></i>
+                                    <span>${this.escapeHTML(req)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+
+                ${event.agenda && Array.isArray(event.agenda) && event.agenda.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-list-ul" style="color: #3b82f6;"></i>
+                            Event Agenda
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            ${event.agenda.map(item => `
+                                <div style="display: flex; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border-left: 3px solid #3b82f6;">
+                                    <div style="flex-shrink: 0; width: 80px; color: #3b82f6; font-weight: 600; font-size: 0.875rem;">
+                                        ${this.escapeHTML(item.time)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        ${item.day ? `<div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">${this.escapeHTML(item.day)}</div>` : ''}
+                                        <div style="color: white; font-weight: 600;">${this.escapeHTML(item.title)}</div>
+                                        ${item.description ? `<div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem; margin-top: 0.25rem;">${this.escapeHTML(item.description)}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${event.tags && event.tags.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                            ${event.tags.map(tag => `
+                                <span style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 20px; color: #3b82f6; font-size: 0.875rem; font-weight: 500;">
+                                    ${tag.startsWith('#') ? this.escapeHTML(tag) : '#' + this.escapeHTML(tag)}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-images" style="color: #3b82f6;"></i>
+                        Event Gallery
+                    </h3>
+                    <div id="eventGallery" style="min-height: 200px;">
+                        ${event.gallery && Array.isArray(event.gallery) && event.gallery.length > 0 ? `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                                ${event.gallery.map(media => `
+                                    <div style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                        ${media.type === 'video' ? `
+                                            <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                                        ` : `
+                                            <img src="${this.escapeHTML(media.url)}" alt="Event photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 3rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 2px dashed rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-camera" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 1rem; display: block;"></i>
+                                <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">No photos or videos yet</p>
+                                <p style="color: rgba(255, 255, 255, 0.4); font-size: 0.875rem; margin: 0.5rem 0 0 0;">Event photos will appear here after the event</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button id="modalCloseBtn" style="padding: 0.75rem 2rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.style.overflow = 'hidden';
     }
+
 }
 
 // Initialize when DOM is ready

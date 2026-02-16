@@ -244,15 +244,20 @@ const cmsActions = {
     },
     
     showCreateEvent: () => {
-        if (typeof window.cmsManager?.showCreateForm === 'function') {
-            window.cmsManager.showCreateForm('event');
+        // Open the detailed HTML modal instead of generic form
+        const modal = document.getElementById('createEventModal');
+        if (modal) {
+            modal.classList.remove('hidden');
         } else if (isDevelopment()) {
-            console.warn('CMS Manager not ready or missing showCreateForm method');
+            console.warn('Event modal not found');
         }
     },
     
     showCreateOpportunity: () => {
-        if (typeof window.cmsManager?.showCreateForm === 'function') {
+        const modal = document.getElementById('createOpportunityModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        } else if (typeof window.cmsManager?.showCreateForm === 'function') {
             window.cmsManager.showCreateForm('opportunity');
         } else if (isDevelopment()) {
             console.warn('CMS Manager not ready or missing showCreateForm method');

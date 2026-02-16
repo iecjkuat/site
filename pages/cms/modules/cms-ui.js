@@ -311,10 +311,12 @@ export class CMSUI {
                     handlers.onView?.(data, type);
                     break;
                 case 'edit':
-                    handlers.onEdit?.(data, type);
+                    // Pass just the ID for edit (the function will fetch the data)
+                    handlers.onEdit?.(id);
                     break;
                 case 'delete':
-                    handlers.onDelete?.(data, type);
+                    // Pass just the ID for delete
+                    handlers.onDelete?.(id);
                     break;
                 default:
                     console.warn('Unknown action:', action);
@@ -2444,13 +2446,22 @@ export class CMSUI {
             detailsDiv.appendChild(regValue);
             
             const descriptionDiv = document.createElement('div');
-            descriptionDiv.style.cssText = 'line-height: 1.6; max-height: 300px; overflow-y: auto; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;';
+            descriptionDiv.style.cssText = 'line-height: 1.6; max-height: 400px; overflow-y: auto; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px;';
             
-            // Safe content rendering for events
-            if (window.CMSSecurity?.renderContent) {
-                window.CMSSecurity.renderContent(descriptionDiv, data);
+            // Get description content - try multiple field names
+            const descriptionContent = data.description || data.description_html || data.content || data.content_html || 'No description available.';
+            
+            // Safe content rendering for events using DOMPurify
+            if (window.DOMPurify && typeof descriptionContent === 'string' && descriptionContent.includes('<')) {
+                // It's HTML content, sanitize and render
+                const sanitized = window.DOMPurify.sanitize(descriptionContent, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'span'],
+                    ALLOWED_ATTR: ['href', 'title', 'target', 'rel']
+                });
+                descriptionDiv.innerHTML = sanitized;
             } else {
-                descriptionDiv.textContent = data.description || data.description_html || 'No description available.';
+                // Plain text or no DOMPurify available
+                descriptionDiv.textContent = descriptionContent;
             }
             
             body.appendChild(typeDiv);

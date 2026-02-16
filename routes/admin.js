@@ -161,16 +161,29 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         const { data, error } = await query;
         if (error) throw error;
 
-        // Map to frontend expectation
+        console.log('📊 Raw user data from database (first user):', data[0]);
+
+        // Return all user fields for CMS
         const users = data.map(u => ({
             id: u.id,
             name: u.name || 'Unknown',
             email: u.email,
-            college: u.college || 'N/A',
-            role: u.role || 'Member',
-            status: u.membership_status || 'Active', // Assuming 'status' column exists, else default Active
-            joinDate: new Date(u.created_at).toLocaleDateString()
+            phone: u.phone || u.phone_number || null,
+            registration_number: u.registration_number || u.student_id || null,
+            student_id: u.student_id || u.registration_number || null,
+            course: u.course || null,
+            year_of_study: u.year_of_study || null,
+            college: u.college || null,
+            role: u.role || 'member',
+            membership_status: u.membership_status || 'pending',
+            created_at: u.created_at,
+            updated_at: u.updated_at,
+            last_active: u.last_active || u.last_login || null,
+            profile_picture: u.profile_picture || null,
+            bio: u.bio || null
         }));
+
+        console.log('📤 Mapped user data (first user):', users[0]);
 
         res.json({ users });
     } catch (error) {
@@ -374,14 +387,30 @@ router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) =>
 
 router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const { name, email, role, college, status } = req.body;
+        const { 
+            name, 
+            email, 
+            phone, 
+            registration_number, 
+            course, 
+            year_of_study, 
+            college, 
+            role, 
+            membership_status 
+        } = req.body;
 
         const updates = {};
-        if (name) updates.name = name;
-        if (email) updates.email = email;
-        if (role) updates.role = role;
-        if (college) updates.college = college;
-        if (status) updates.membership_status = status;
+        if (name !== undefined) updates.name = name;
+        if (email !== undefined) updates.email = email;
+        if (phone !== undefined) updates.phone = phone;
+        if (registration_number !== undefined) updates.registration_number = registration_number;
+        if (course !== undefined) updates.course = course;
+        if (year_of_study !== undefined) updates.year_of_study = year_of_study;
+        if (college !== undefined) updates.college = college;
+        if (role !== undefined) updates.role = role;
+        if (membership_status !== undefined) updates.membership_status = membership_status;
+        
+        updates.updated_at = new Date().toISOString();
 
         const { data, error } = await supabase
             .from('users')
@@ -394,7 +423,7 @@ router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
         res.json({ message: 'User updated successfully', user: data });
     } catch (error) {
         console.error('Error updating user:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
@@ -481,16 +510,42 @@ router.post('/events', authenticateToken, requireAdmin, async (req, res) => {
 
 router.put('/events/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const { title, date, type, description, status, location } = req.body;
+        const { 
+            title, date, type, description, status, location,
+            start_date, end_date, event_type, max_attendees, fee,
+            gallery, banner_image, tags, requirements, agenda
+        } = req.body;
+
+        console.log('📝 Updating event:', req.params.id);
+        console.log('📦 Gallery data received:', gallery ? `Array with ${gallery.length} items` : 'No gallery data');
+        if (gallery && gallery.length > 0) {
+            console.log('📸 First gallery item:', {
+                type: gallery[0].type,
+                name: gallery[0].name,
+                urlLength: gallery[0].url ? gallery[0].url.length : 0
+            });
+        }
 
         const updates = {};
-        if (title) updates.title = title;
-        if (date) updates.start_date = date;
-        if (type) updates.event_type = type;
-        if (description) updates.description = description;
-        if (status) updates.status = status;
-        if (location) updates.location = location;
+        if (title !== undefined) updates.title = title;
+        if (start_date !== undefined) updates.start_date = start_date;
+        if (date !== undefined) updates.start_date = date; // Backward compatibility
+        if (end_date !== undefined) updates.end_date = end_date;
+        if (event_type !== undefined) updates.event_type = event_type;
+        if (type !== undefined) updates.event_type = type; // Backward compatibility
+        if (description !== undefined) updates.description = description;
+        if (status !== undefined) updates.status = status;
+        if (location !== undefined) updates.location = location;
+        if (max_attendees !== undefined) updates.max_attendees = max_attendees;
+        if (fee !== undefined) updates.fee = fee;
+        if (gallery !== undefined) updates.gallery = gallery;
+        if (banner_image !== undefined) updates.banner_image = banner_image;
+        if (tags !== undefined) updates.tags = tags;
+        if (requirements !== undefined) updates.requirements = requirements;
+        if (agenda !== undefined) updates.agenda = agenda;
         updates.updated_at = new Date();
+
+        console.log('📝 Updates object keys:', Object.keys(updates));
 
         const { data, error } = await supabase
             .from('events')
@@ -499,7 +554,14 @@ router.put('/events/:id', authenticateToken, requireAdmin, async (req, res) => {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Supabase error:', error);
+            throw error;
+        }
+
+        console.log('✅ Event updated successfully');
+        console.log('📦 Returned gallery:', data.gallery ? `Array with ${data.gallery.length} items` : 'No gallery');
+
         res.json({ message: 'Event updated successfully', event: data });
     } catch (error) {
         console.error('Error updating event:', error);

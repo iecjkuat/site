@@ -1059,18 +1059,26 @@ export class SecureCMSManager {
 
     // Dashboard methods
     async updateDashboardStats() {
-        const stats = CMSData.getStats();
-        
-        // Update counters with animation
-        CMSUI.animateCounter('articles-count', stats.articles);
-        CMSUI.animateCounter('events-count', stats.events);
-        CMSUI.animateCounter('opportunities-count', stats.opportunities);
-        CMSUI.animateCounter('ideas-count', stats.ideas || 0);
-        CMSUI.animateCounter('members-count', stats.members || 0);
-        CMSUI.animateCounter('media-count', stats.media);
-        
-        // Load recent activity
-        await this.loadRecentActivity();
+        try {
+            // Fetch real stats from database
+            const stats = await CMSData.getStats();
+            
+            console.log('📊 Dashboard stats:', stats);
+            
+            // Update counters with animation
+            CMSUI.animateCounter('articles-count', stats.articles);
+            CMSUI.animateCounter('events-count', stats.events);
+            CMSUI.animateCounter('projects-count', stats.projects || 0);
+            CMSUI.animateCounter('opportunities-count', stats.opportunities);
+            CMSUI.animateCounter('ideas-count', stats.ideas || 0);
+            CMSUI.animateCounter('members-count', stats.members || 0);
+            CMSUI.animateCounter('media-count', stats.media || 0);
+            
+            // Load recent activity
+            await this.loadRecentActivity();
+        } catch (error) {
+            console.error('Failed to update dashboard stats:', error);
+        }
     }
 
     async loadRecentActivity() {
@@ -1144,14 +1152,62 @@ export class SecureCMSManager {
         container.appendChild(CMSUI.createLoadingElement());
 
         try {
-            const realEvents = await CMSData.getEvents();
-            const allEvents = CMSMockData.mergeWithRealData(realEvents, 'events');
-            const filteredEvents = this.filterItems(allEvents);
+            // Clear cache to get fresh data
+            CMSData.clearCache('events');
+            
+            // Load ONLY real events from database
+            const events = await CMSData.getEvents();
+            
+            console.log(`📅 Loaded ${events.length} real events from database`);
+            
+            // Fetch likes and comments for each event
+            const eventsWithStats = await Promise.all(events.map(async event => {
+                try {
+                    const [likesData, commentsData] = await Promise.all([
+                        fetch(`/api/v1/events/${event.id}/likes`).then(r => r.json()).catch(() => ({ count: 0 })),
+                        fetch(`/api/v1/events/${event.id}/comments`).then(r => r.json()).catch(() => ({ comments: [] }))
+                    ]);
+                    
+                    return {
+                        ...event,
+                        likes_count: likesData.count || 0,
+                        comments_count: (commentsData.comments || []).length
+                    };
+                } catch (error) {
+                    console.error(`Error fetching stats for event ${event.id}:`, error);
+                    return {
+                        ...event,
+                        likes_count: 0,
+                        comments_count: 0
+                    };
+                }
+            }));
+            
+            if (eventsWithStats.length > 0) {
+                console.log('📝 Sample event with stats:', eventsWithStats[0]);
+            }
+            
+            const filteredEvents = this.filterItems(eventsWithStats);
             this.renderEvents(filteredEvents);
+            
+            if (eventsWithStats.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #666;">
+                        <i class="fas fa-calendar" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No events found</p>
+                        <p style="font-size: 0.9rem; opacity: 0.7;">Create your first event to get started</p>
+                    </div>
+                `;
+            }
         } catch (error) {
-            console.error('Error loading events:', error);
-            const mockEvents = CMSMockData.get('events');
-            this.renderEvents(mockEvents);
+            console.error('❌ Error loading events:', error);
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #e74c3c;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Failed to load events</p>
+                    <p style="font-size: 0.9rem; opacity: 0.7;">${error.message}</p>
+                </div>
+            `;
         }
     }
 
@@ -1537,14 +1593,21 @@ export class SecureCMSManager {
             return;
         }
 
-        // Create table wrapper
+        // Remove grid styling and padding from container
+        container.className = '';
+        container.style.cssText = 'padding: 0; margin: 0;';
+
+        // Create table wrapper with horizontal scroll - full width
         const tableWrapper = document.createElement('div');
         tableWrapper.className = 'members-table-wrapper';
         tableWrapper.style.cssText = `
             background: white;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: visible;
+            margin: 0;
+            width: 100%;
         `;
 
         // Create table
@@ -1552,22 +1615,27 @@ export class SecureCMSManager {
         table.className = 'members-table';
         table.style.cssText = `
             width: 100%;
+            min-width: 1400px;
             border-collapse: collapse;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
         `;
 
         // Create table header
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Name</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap; position: sticky; left: 0; background: #f8f9fa; z-index: 10;">Name</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Email</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Phone</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Student ID</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Course</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Year</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">College</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Role</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Status</th>
                 <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Joined</th>
-                <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #495057; white-space: nowrap;">Actions</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Last Active</th>
+                <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #495057; white-space: nowrap; position: sticky; right: 0; background: #f8f9fa; z-index: 10;">Actions</th>
             </tr>
         `;
         table.appendChild(thead);
@@ -1581,27 +1649,35 @@ export class SecureCMSManager {
                 border-bottom: 1px solid #e9ecef;
                 transition: background-color 0.2s;
             `;
+            const bgColor = index % 2 === 0 ? 'white' : '#fafbfc';
             row.onmouseenter = () => row.style.backgroundColor = '#f8f9fa';
-            row.onmouseleave = () => row.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafbfc';
-            row.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafbfc';
+            row.onmouseleave = () => row.style.backgroundColor = bgColor;
+            row.style.backgroundColor = bgColor;
 
-            // Format date
+            // Format dates
             const joinDate = member.created_at ? new Date(member.created_at).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'short', 
                 day: 'numeric' 
             }) : 'N/A';
 
-            // Status badge
+            const lastActive = member.last_active ? new Date(member.last_active).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            }) : 'Never';
+
+            // Status badge colors
             const statusColors = {
                 'active': '#28a745',
                 'pending': '#ffc107',
                 'inactive': '#6c757d',
-                'suspended': '#dc3545'
+                'suspended': '#dc3545',
+                'pending_invitation': '#17a2b8'
             };
             const statusColor = statusColors[member.membership_status] || '#6c757d';
 
-            // Role badge
+            // Role badge colors
             const roleColors = {
                 'admin': '#007bff',
                 'executive': '#6f42c1',
@@ -1610,105 +1686,101 @@ export class SecureCMSManager {
             };
             const roleColor = roleColors[member.role] || '#17a2b8';
 
+            // Create row cells
             row.innerHTML = `
-                <td style="padding: 12px 16px; color: #212529; font-weight: 500;">
+                <td style="padding: 12px 16px; color: #212529; font-weight: 500; white-space: nowrap; position: sticky; left: 0; background: ${bgColor}; z-index: 5;">
                     ${this.sanitizeInput(member.name || 'N/A')}
                 </td>
-                <td style="padding: 12px 16px; color: #495057;">
+                <td style="padding: 12px 16px; color: #495057; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${this.sanitizeInput(member.email || '')}">
                     ${this.sanitizeInput(member.email || 'N/A')}
                 </td>
-                <td style="padding: 12px 16px; color: #495057; font-family: monospace;">
+                <td style="padding: 12px 16px; color: #495057; white-space: nowrap;">
+                    ${this.sanitizeInput(member.phone || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057; font-family: monospace; white-space: nowrap;">
                     ${this.sanitizeInput(member.registration_number || member.student_id || 'N/A')}
                 </td>
-                <td style="padding: 12px 16px; color: #495057;">
+                <td style="padding: 12px 16px; color: #495057; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${this.sanitizeInput(member.course || '')}">
+                    ${this.sanitizeInput(member.course || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057; text-align: center;">
+                    ${this.sanitizeInput(member.year_of_study || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057; white-space: nowrap;">
                     ${this.sanitizeInput(member.college || 'N/A')}
                 </td>
                 <td style="padding: 12px 16px;">
                     <span style="
                         display: inline-block;
-                        padding: 4px 8px;
-                        border-radius: 4px;
+                        padding: 4px 10px;
+                        border-radius: 12px;
                         font-size: 0.75rem;
                         font-weight: 600;
                         text-transform: uppercase;
                         background: ${roleColor}15;
                         color: ${roleColor};
+                        white-space: nowrap;
                     ">${this.sanitizeInput(member.role || 'member')}</span>
                 </td>
                 <td style="padding: 12px 16px;">
                     <span style="
                         display: inline-block;
-                        padding: 4px 8px;
-                        border-radius: 4px;
+                        padding: 4px 10px;
+                        border-radius: 12px;
                         font-size: 0.75rem;
                         font-weight: 600;
                         text-transform: capitalize;
                         background: ${statusColor}15;
                         color: ${statusColor};
-                    ">${this.sanitizeInput(member.membership_status || 'pending')}</span>
+                        white-space: nowrap;
+                    ">${this.sanitizeInput((member.membership_status || 'pending').replace(/_/g, ' '))}</span>
                 </td>
-                <td style="padding: 12px 16px; color: #6c757d; font-size: 0.85rem;">
+                <td style="padding: 12px 16px; color: #6c757d; font-size: 0.85rem; white-space: nowrap;">
                     ${joinDate}
                 </td>
-                <td style="padding: 12px 16px; text-align: center;">
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <button 
-                            onclick="window.cmsManager.viewMember(${JSON.stringify(member).replace(/"/g, '&quot;')})"
-                            style="
-                                padding: 6px 12px;
-                                background: #007bff;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 0.8rem;
-                                transition: background 0.2s;
-                            "
-                            onmouseover="this.style.background='#0056b3'"
-                            onmouseout="this.style.background='#007bff'"
-                            title="View Details"
-                        >
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button 
-                            onclick="window.cmsManager.messageMember('${member.id}')"
-                            style="
-                                padding: 6px 12px;
-                                background: #28a745;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 0.8rem;
-                                transition: background 0.2s;
-                            "
-                            onmouseover="this.style.background='#218838'"
-                            onmouseout="this.style.background='#28a745'"
-                            title="Send Message"
-                        >
-                            <i class="fas fa-envelope"></i>
-                        </button>
-                        <button 
-                            onclick="window.cmsManager.editMember('${member.id}')"
-                            style="
-                                padding: 6px 12px;
-                                background: #ffc107;
-                                color: #212529;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 0.8rem;
-                                transition: background 0.2s;
-                            "
-                            onmouseover="this.style.background='#e0a800'"
-                            onmouseout="this.style.background='#ffc107'"
-                            title="Edit Member"
-                        >
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </div>
+                <td style="padding: 12px 16px; color: #6c757d; font-size: 0.85rem; white-space: nowrap;">
+                    ${lastActive}
                 </td>
             `;
+
+            // Create actions cell with proper event listeners
+            const actionsCell = document.createElement('td');
+            actionsCell.style.cssText = `padding: 12px 16px; text-align: center; position: sticky; right: 0; background: ${bgColor}; z-index: 5;`;
+            
+            const actionsDiv = document.createElement('div');
+            actionsDiv.style.cssText = 'display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap;';
+
+            // View button
+            const viewBtn = this.createActionButton('eye', '#007bff', 'View Details');
+            viewBtn.addEventListener('click', () => this.viewMember(member));
+            actionsDiv.appendChild(viewBtn);
+
+            // Activate button (only for non-active members)
+            if (member.membership_status !== 'active') {
+                const activateBtn = this.createActionButton('check', '#28a745', 'Activate Membership');
+                activateBtn.addEventListener('click', () => this.activateMember(member.id));
+                actionsDiv.appendChild(activateBtn);
+            }
+
+            // Suspend button (only for active members)
+            if (member.membership_status === 'active') {
+                const suspendBtn = this.createActionButton('pause', '#ffc107', 'Suspend Member', '#212529');
+                suspendBtn.addEventListener('click', () => this.suspendMember(member.id));
+                actionsDiv.appendChild(suspendBtn);
+            }
+
+            // Edit button
+            const editBtn = this.createActionButton('edit', '#6c757d', 'Edit Member');
+            editBtn.addEventListener('click', () => this.editMember(member.id));
+            actionsDiv.appendChild(editBtn);
+
+            // Remove button
+            const removeBtn = this.createActionButton('trash', '#dc3545', 'Remove Member');
+            removeBtn.addEventListener('click', () => this.removeMember(member.id, member.name));
+            actionsDiv.appendChild(removeBtn);
+
+            actionsCell.appendChild(actionsDiv);
+            row.appendChild(actionsCell);
 
             tbody.appendChild(row);
         });
@@ -1728,14 +1800,65 @@ export class SecureCMSManager {
             justify-content: space-between;
             align-items: center;
         `;
+        
+        const activeCount = members.filter(m => m.membership_status === 'active').length;
+        const pendingCount = members.filter(m => m.membership_status === 'pending' || m.membership_status === 'pending_invitation').length;
+        const suspendedCount = members.filter(m => m.membership_status === 'suspended').length;
+        
         footer.innerHTML = `
             <span>Showing ${members.length} member${members.length !== 1 ? 's' : ''}</span>
-            <span>Total Members: ${members.length}</span>
+            <div style="display: flex; gap: 16px;">
+                <span><i class="fas fa-check-circle" style="color: #28a745;"></i> Active: ${activeCount}</span>
+                <span><i class="fas fa-clock" style="color: #ffc107;"></i> Pending: ${pendingCount}</span>
+                <span><i class="fas fa-pause-circle" style="color: #dc3545;"></i> Suspended: ${suspendedCount}</span>
+            </div>
         `;
         tableWrapper.appendChild(footer);
 
         container.replaceChildren(tableWrapper);
         container.style.padding = '0';
+    }
+
+    createActionButton(icon, bgColor, title, textColor = 'white') {
+        const button = document.createElement('button');
+        button.style.cssText = `
+            padding: 6px 10px;
+            background: ${bgColor};
+            color: ${textColor};
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        `;
+        button.title = title;
+        button.innerHTML = `<i class="fas fa-${icon}"></i>`;
+        
+        // Hover effects
+        const hoverColor = this.darkenColor(bgColor);
+        button.addEventListener('mouseenter', () => {
+            button.style.background = hoverColor;
+            button.style.transform = 'translateY(-1px)';
+        });
+        button.addEventListener('mouseleave', () => {
+            button.style.background = bgColor;
+            button.style.transform = 'translateY(0)';
+        });
+        
+        return button;
+    }
+
+    darkenColor(color) {
+        // Simple color darkening
+        const colorMap = {
+            '#007bff': '#0056b3',
+            '#28a745': '#218838',
+            '#ffc107': '#e0a800',
+            '#6c757d': '#5a6268',
+            '#dc3545': '#c82333'
+        };
+        return colorMap[color] || color;
     }
 
     updateMemberStats(members) {
@@ -1794,13 +1917,231 @@ export class SecureCMSManager {
         console.log(`📖 Creating modal for ${type}:`, data.title);
         
         try {
-            const modal = CMSUI.createContentModal(data, type);
-            document.body.appendChild(modal);
-            console.log(`✅ Modal created and added to DOM`);
+            // For events, use the beautiful detailed modal
+            if (type === 'event') {
+                this.viewEventDetails(data);
+            } else {
+                // For other content types, use the standard modal
+                const modal = CMSUI.createContentModal(data, type);
+                document.body.appendChild(modal);
+                console.log(`✅ Modal created and added to DOM`);
+            }
         } catch (error) {
             console.error(`❌ Error creating modal:`, error);
             this.notifications.show(`Error displaying content: ${error.message}`, 'error');
         }
+    }
+
+    viewEventDetails(event) {
+        // Create beautiful event details modal (same as events page)
+        const modal = document.createElement('div');
+        modal.id = 'eventDetailsModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        const startDate = new Date(event.start_date || event.event_date);
+        const bannerImage = event.banner_image || (event.media && event.media.primary);
+        
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-calendar-alt" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">${this.escapeHTML(event.title)}</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">JKUAT Innovation Club</p>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 16px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-calendar" style="color: #3b82f6;"></i>
+                        <span>${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-clock" style="color: #3b82f6;"></i>
+                        <span>${startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-map-marker-alt" style="color: #3b82f6;"></i>
+                        <span>${this.escapeHTML(event.location)}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-tag" style="color: #3b82f6;"></i>
+                        <span>${event.fee || event.registration_fee ? `KSh ${event.fee || event.registration_fee}` : 'Free'}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-users" style="color: #3b82f6;"></i>
+                        <span>${event.current_attendees || 0}/${event.max_attendees || 'Unlimited'} registered</span>
+                    </div>
+                </div>
+
+                ${bannerImage ? `
+                    <div style="margin-bottom: 2rem;">
+                        <img src="${this.escapeHTML(bannerImage)}" alt="${this.escapeHTML(event.title)}" 
+                             style="width: 100%; height: 300px; object-fit: cover; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                        Description
+                    </h3>
+                    <div style="color: rgba(255, 255, 255, 0.8); line-height: 1.8; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+                        ${event.description || event.description_html || 'No description available.'}
+                    </div>
+                </div>
+
+                ${event.requirements && Array.isArray(event.requirements) && event.requirements.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-clipboard-list" style="color: #3b82f6;"></i>
+                            Requirements
+                        </h3>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                            ${event.requirements.map(req => `
+                                <li style="display: flex; align-items: start; gap: 0.75rem; color: rgba(255, 255, 255, 0.8); line-height: 1.6;">
+                                    <i class="fas fa-check-circle" style="color: #10b981; margin-top: 0.25rem; flex-shrink: 0;"></i>
+                                    <span>${this.escapeHTML(req)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+
+                ${event.agenda && Array.isArray(event.agenda) && event.agenda.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-list-ul" style="color: #3b82f6;"></i>
+                            Event Agenda
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            ${event.agenda.map(item => `
+                                <div style="display: flex; gap: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border-left: 3px solid #3b82f6;">
+                                    <div style="flex-shrink: 0; width: 80px; color: #3b82f6; font-weight: 600; font-size: 0.875rem;">
+                                        ${this.escapeHTML(item.time)}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        ${item.day ? `<div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-bottom: 0.25rem;">${this.escapeHTML(item.day)}</div>` : ''}
+                                        <div style="color: white; font-weight: 600;">${this.escapeHTML(item.title)}</div>
+                                        ${item.description ? `<div style="color: rgba(255, 255, 255, 0.7); font-size: 0.875rem; margin-top: 0.25rem;">${this.escapeHTML(item.description)}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${event.tags && event.tags.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                            ${event.tags.map(tag => `
+                                <span style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 20px; color: #3b82f6; font-size: 0.875rem; font-weight: 500;">
+                                    ${tag.startsWith('#') ? this.escapeHTML(tag) : '#' + this.escapeHTML(tag)}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-images" style="color: #3b82f6;"></i>
+                        Event Gallery
+                    </h3>
+                    <div id="eventGallery" style="min-height: 200px;">
+                        ${event.gallery && event.gallery.length > 0 ? `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                                ${event.gallery.map(media => `
+                                    <div style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                        ${media.type === 'video' ? `
+                                            <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                                        ` : `
+                                            <img src="${this.escapeHTML(media.url)}" alt="Event photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 3rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 2px dashed rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-camera" style="font-size: 3rem; color: rgba(255, 255, 255, 0.3); margin-bottom: 1rem; display: block;"></i>
+                                <p style="color: rgba(255, 255, 255, 0.6); margin: 0;">No photos or videos yet</p>
+                                <p style="color: rgba(255, 255, 255, 0.4); font-size: 0.875rem; margin: 0.5rem 0 0 0;">Event photos will appear here after the event</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button id="modalCloseBtn" style="padding: 0.75rem 2rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.style.overflow = 'hidden';
+    }
+
+    escapeHTML(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     viewMedia(file) {
@@ -1855,22 +2196,40 @@ export class SecureCMSManager {
         console.log(`✏️ Editing event with ID:`, id);
         
         try {
-            const event = CMSData.findById('events', id);
+            // Try to find in cache first
+            let event = CMSData.findById('events', id);
+            
+            // If not found in cache, try to find in the loaded events list
             if (!event) {
+                console.log('Event not in cache, searching in loaded events...');
+                const eventsContainer = document.getElementById('events-list');
+                if (eventsContainer) {
+                    // Get all event cards and find the one with matching ID
+                    const eventCards = eventsContainer.querySelectorAll('[data-id]');
+                    for (const card of eventCards) {
+                        if (card.dataset.id === id) {
+                            // Found the card, now fetch the event data from API
+                            console.log('Found event card, fetching from API...');
+                            this.fetchAndEditEvent(id);
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            if (!event) {
+                console.error('Event not found with ID:', id);
                 this.notifications.show('Event not found', 'error');
                 return;
             }
             
             console.log(`✅ Found event:`, event.title);
             
-            // Create proper edit modal instead of prompt()
-            this.showEditModal('event', event, async (updatedData) => {
+            // Use specialized event edit modal
+            this.showEventEditModal(event, async (updatedData) => {
                 try {
                     // Validate input
                     this.validateTitle(updatedData.title);
-                    if (updatedData.content) {
-                        this.validateContent(updatedData.content);
-                    }
                     
                     // Update with validated data
                     await CMSData.updateItem('events', id, updatedData);
@@ -1890,6 +2249,388 @@ export class SecureCMSManager {
             this.notifications.show(`Error editing event: ${error.message}`, 'error');
         }
     }
+
+    async fetchAndEditEvent(id) {
+        try {
+            // Fetch event directly from API
+            const response = await fetch(`/api/v1/events/${id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch event');
+            }
+            const event = await response.json();
+            
+            console.log(`✅ Fetched event from API:`, event.title);
+            console.log(`📦 Event gallery:`, event.gallery);
+            
+            // Now call showEventEditModal with the fetched event
+            this.showEventEditModal(event, async (updatedData) => {
+                try {
+                    this.validateTitle(updatedData.title);
+                    
+                    console.log(`📤 Sending update with gallery:`, updatedData.gallery ? `${updatedData.gallery.length} items` : 'No gallery');
+                    if (updatedData.gallery && updatedData.gallery.length > 0) {
+                        console.log(`📸 First gallery item:`, {
+                            type: updatedData.gallery[0].type,
+                            name: updatedData.gallery[0].name,
+                            urlLength: updatedData.gallery[0].url ? updatedData.gallery[0].url.length : 0
+                        });
+                    }
+                    
+                    await CMSData.updateItem('events', id, updatedData);
+                    this.notifications.show('Event updated successfully!', 'success');
+                    this.loadEvents();
+                    console.log(`✅ Event updated:`, updatedData.title);
+                    
+                } catch (error) {
+                    console.error(`❌ Error updating event:`, error);
+                    this.notifications.show(`Update failed: ${error.message}`, 'error');
+                    throw error;
+                }
+            });
+            
+        } catch (error) {
+            console.error(`❌ Error fetching event:`, error);
+            this.notifications.show(`Error loading event: ${error.message}`, 'error');
+        }
+    }
+
+    showEventEditModal(event, onSave) {
+        // Create comprehensive event edit modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; padding: 1rem; overflow-y: auto;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; padding: 2rem; max-width: 800px; width: 100%;
+            max-height: 90vh; overflow-y: auto;
+        `;
+        
+        modalContent.innerHTML = `
+            <h2 style="color: white; margin-bottom: 2rem; text-align: center; font-size: 1.75rem;">
+                <i class="fas fa-edit"></i> Edit Event
+            </h2>
+            
+            <form id="eventEditForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Title -->
+                <div>
+                    <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                        Event Title <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" name="title" value="${this.escapeHTML(event.title || '')}" required
+                           style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                </div>
+
+                <!-- Location -->
+                <div>
+                    <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                        Location
+                    </label>
+                    <input type="text" name="location" value="${this.escapeHTML(event.location || '')}"
+                           style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                </div>
+
+                <!-- Date and Time -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            Start Date & Time
+                        </label>
+                        <input type="datetime-local" name="start_date" value="${event.start_date ? new Date(event.start_date).toISOString().slice(0, 16) : ''}"
+                               style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            End Date & Time
+                        </label>
+                        <input type="datetime-local" name="end_date" value="${event.end_date ? new Date(event.end_date).toISOString().slice(0, 16) : ''}"
+                               style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                    </div>
+                </div>
+
+                <!-- Event Type and Status -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            Event Type
+                        </label>
+                        <select name="event_type" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                            <option value="workshop" ${event.event_type === 'workshop' ? 'selected' : ''}>Workshop</option>
+                            <option value="seminar" ${event.event_type === 'seminar' ? 'selected' : ''}>Seminar</option>
+                            <option value="competition" ${event.event_type === 'competition' ? 'selected' : ''}>Competition</option>
+                            <option value="hackathon" ${event.event_type === 'hackathon' ? 'selected' : ''}>Hackathon</option>
+                            <option value="meeting" ${event.event_type === 'meeting' ? 'selected' : ''}>Meeting</option>
+                            <option value="social" ${event.event_type === 'social' ? 'selected' : ''}>Social Event</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            Status
+                        </label>
+                        <select name="status" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                            <option value="published" ${event.status === 'published' ? 'selected' : ''}>Published</option>
+                            <option value="draft" ${event.status === 'draft' ? 'selected' : ''}>Draft</option>
+                            <option value="upcoming" ${event.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+                            <option value="completed" ${event.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Max Attendees and Fee -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            Max Attendees
+                        </label>
+                        <input type="number" name="max_attendees" value="${event.max_attendees || ''}" min="0"
+                               style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            Registration Fee (KSh)
+                        </label>
+                        <input type="number" name="fee" value="${event.fee || event.registration_fee || 0}" min="0"
+                               style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                        Description
+                    </label>
+                    <textarea name="description" rows="6"
+                              style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; resize: vertical;">${this.escapeHTML(event.description || '')}</textarea>
+                </div>
+
+                <!-- Gallery Management -->
+                <div>
+                    <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                        <i class="fas fa-images"></i> Event Gallery
+                    </label>
+                    <div id="galleryManager" style="padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div id="galleryPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; margin-bottom: 1rem;">
+                            <!-- Gallery items will be added here -->
+                        </div>
+                        <input type="file" id="galleryUpload" accept="image/*,video/*" multiple style="display: none;">
+                        <button type="button" id="addGalleryBtn" style="width: 100%; padding: 0.75rem; background: rgba(59, 130, 246, 0.2); border: 1px dashed rgba(59, 130, 246, 0.5); border-radius: 8px; color: #3b82f6; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-plus"></i> Add Photos/Videos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button type="button" id="cancelBtn" style="padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                        Cancel
+                    </button>
+                    <button type="submit" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Initialize gallery with existing data
+        const galleryData = Array.isArray(event.gallery) ? [...event.gallery] : [];
+        let isUploading = false;
+        
+        const renderGallery = () => {
+            const preview = document.getElementById('galleryPreview');
+            if (!preview) return;
+
+            preview.innerHTML = galleryData.map((item, index) => `
+                <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, 0.3);">
+                    ${item.uploading ? `
+                        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.5);">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: white; margin-bottom: 0.5rem;"></i>
+                            <span style="color: white; font-size: 0.75rem;">Uploading...</span>
+                        </div>
+                    ` : item.type === 'video' ? `
+                        <video src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <i class="fas fa-play-circle" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; color: white; opacity: 0.8;"></i>
+                    ` : `
+                        <img src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;">
+                    `}
+                    ${!item.uploading ? `
+                        <button type="button" data-index="${index}" class="remove-gallery-item"
+                                style="position: absolute; top: 0.25rem; right: 0.25rem; background: rgba(239, 68, 68, 0.9); border: none; border-radius: 50%; width: 24px; height: 24px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">
+                            ×
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            // Add event listeners to remove buttons
+            preview.querySelectorAll('.remove-gallery-item').forEach(btn => {
+                btn.onclick = async () => {
+                    const index = parseInt(btn.dataset.index);
+                    const item = galleryData[index];
+                    
+                    // If it's a storage URL, delete from storage
+                    if (item.url && item.url.includes('supabase.co/storage')) {
+                        try {
+                            const urlParts = item.url.split('/');
+                            const fileName = urlParts[urlParts.length - 1];
+                            const eventFolder = urlParts[urlParts.length - 2];
+                            
+                            await fetch(`/api/v1/upload/event-gallery/${eventFolder}/${fileName}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error deleting file from storage:', error);
+                        }
+                    }
+                    
+                    galleryData.splice(index, 1);
+                    renderGallery();
+                };
+            });
+        };
+
+        renderGallery();
+
+        // Gallery upload handler
+        document.getElementById('addGalleryBtn').onclick = () => {
+            if (isUploading) {
+                this.notifications.show('Please wait for current uploads to complete', 'warning');
+                return;
+            }
+            document.getElementById('galleryUpload').click();
+        };
+
+        document.getElementById('galleryUpload').onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            isUploading = true;
+            const uploadBtn = document.getElementById('addGalleryBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.style.opacity = '0.5';
+
+            // Add placeholder items for each file
+            const placeholderIndexes = [];
+            files.forEach(file => {
+                const index = galleryData.length;
+                placeholderIndexes.push(index);
+                galleryData.push({
+                    type: file.type.startsWith('video') ? 'video' : 'image',
+                    url: '',
+                    name: file.name,
+                    uploading: true
+                });
+            });
+            renderGallery();
+
+            // Upload files to Supabase Storage
+            try {
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+
+                const response = await fetch(`/api/v1/upload/event-gallery/${event.id}/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const result = await response.json();
+                
+                // Replace placeholders with actual uploaded files
+                if (result.files && result.files.length > 0) {
+                    result.files.forEach((uploadedFile, i) => {
+                        const placeholderIndex = placeholderIndexes[i];
+                        if (placeholderIndex !== undefined) {
+                            galleryData[placeholderIndex] = uploadedFile;
+                        }
+                    });
+                }
+
+                // Show errors if any
+                if (result.errors && result.errors.length > 0) {
+                    result.errors.forEach(err => {
+                        this.notifications.show(`Failed to upload ${err.name}: ${err.error}`, 'error');
+                    });
+                }
+
+                renderGallery();
+                this.notifications.show(`Uploaded ${result.files.length} file(s) successfully!`, 'success');
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                this.notifications.show('Failed to upload files. Please try again.', 'error');
+                
+                // Remove placeholder items
+                placeholderIndexes.reverse().forEach(index => {
+                    galleryData.splice(index, 1);
+                });
+                renderGallery();
+            } finally {
+                isUploading = false;
+                uploadBtn.disabled = false;
+                uploadBtn.style.opacity = '1';
+                e.target.value = '';
+            }
+        };
+
+        // Form submission
+        document.getElementById('eventEditForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const updatedData = {
+                title: formData.get('title'),
+                location: formData.get('location'),
+                start_date: formData.get('start_date'),
+                end_date: formData.get('end_date'),
+                event_type: formData.get('event_type'),
+                status: formData.get('status'),
+                max_attendees: parseInt(formData.get('max_attendees')) || null,
+                fee: parseFloat(formData.get('fee')) || 0,
+                description: formData.get('description'),
+                gallery: galleryData
+            };
+
+            try {
+                await onSave(updatedData);
+                modal.remove();
+            } catch (error) {
+                // Error handled by onSave
+            }
+        };
+
+        // Cancel button
+        document.getElementById('cancelBtn').onclick = () => modal.remove();
+
+        // Close on escape
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
+
 
     editOpportunity(id) {
         console.log(`✏️ Editing opportunity with ID:`, id);
@@ -2514,6 +3255,7 @@ export class SecureCMSManager {
     async exportContent() {
         try {
             let data;
+            let exportType = 'json';
             
             if (this.selectedItems.size > 0) {
                 // Export selected items
@@ -2534,31 +3276,99 @@ export class SecureCMSManager {
                     data = await CMSData.getEvents();
                 } else if (this.currentTab === 'opportunities') {
                     data = await CMSData.getOpportunities();
+                } else if (this.currentTab === 'members') {
+                    data = await CMSData.getMembers();
+                    exportType = 'csv'; // Export members as CSV
                 } else {
                     this.notifications.show('Export is not available on this tab.', 'info');
                     return;
                 }
             }
             
-            // Create and download JSON file
-            const jsonData = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+            if (!data || data.length === 0) {
+                this.notifications.show('No data to export', 'info');
+                return;
+            }
             
+            let blob, filename;
+            
+            if (exportType === 'csv' && this.currentTab === 'members') {
+                // Export members as CSV
+                const csv = this.convertMembersToCSV(data);
+                blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                filename = `members-export-${new Date().toISOString().split('T')[0]}.csv`;
+            } else {
+                // Export as JSON
+                const jsonData = JSON.stringify(data, null, 2);
+                blob = new Blob([jsonData], { type: 'application/json' });
+                filename = `cms-${this.currentTab}-export-${new Date().toISOString().split('T')[0]}.json`;
+            }
+            
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `cms-${this.currentTab}-export-${new Date().toISOString().split('T')[0]}.json`;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
             URL.revokeObjectURL(url);
             
-            this.notifications.show('Content exported successfully', 'success');
+            this.notifications.show(`Exported ${data.length} ${this.currentTab} successfully`, 'success');
             
         } catch (error) {
+            console.error('Export error:', error);
             this.notifications.show(`Failed to export content: ${error.message}`, 'error');
         }
+    }
+
+    convertMembersToCSV(members) {
+        // Define CSV headers
+        const headers = [
+            'Name',
+            'Email',
+            'Phone',
+            'Student ID',
+            'Course',
+            'Year',
+            'College',
+            'Role',
+            'Status',
+            'Joined Date',
+            'Last Active'
+        ];
+        
+        // Create CSV rows
+        const rows = members.map(member => {
+            const joinDate = member.created_at ? new Date(member.created_at).toLocaleDateString() : 'N/A';
+            const lastActive = member.last_active ? new Date(member.last_active).toLocaleDateString() : 'Never';
+            
+            return [
+                this.escapeCSV(member.name || ''),
+                this.escapeCSV(member.email || ''),
+                this.escapeCSV(member.phone || ''),
+                this.escapeCSV(member.registration_number || member.student_id || ''),
+                this.escapeCSV(member.course || ''),
+                member.year_of_study || '',
+                this.escapeCSV(member.college || ''),
+                member.role || 'member',
+                member.membership_status || 'pending',
+                joinDate,
+                lastActive
+            ].join(',');
+        });
+        
+        // Combine headers and rows
+        return [headers.join(','), ...rows].join('\n');
+    }
+
+    escapeCSV(value) {
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
     }
 
     // Auto-save functionality
@@ -2928,8 +3738,92 @@ export class SecureCMSManager {
         }
     }
 
+    async activateMember(id) {
+        console.log(`✅ Activating member with ID:`, id);
+        
+        if (!confirm('Are you sure you want to activate this member? They will gain full access to the platform.')) {
+            return;
+        }
+        
+        try {
+            // Update member status to active
+            await CMSData.updateItem('members', id, { 
+                membership_status: 'active',
+                updated_at: new Date().toISOString()
+            });
+            
+            this.notifications.show('Member activated successfully!', 'success');
+            this.loadMembers();
+            
+        } catch (error) {
+            console.error(`❌ Error activating member:`, error);
+            this.notifications.show(`Failed to activate member: ${error.message}`, 'error');
+        }
+    }
+
+    async suspendMember(id) {
+        console.log(`⏸️ Suspending member with ID:`, id);
+        
+        const reason = prompt('Please provide a reason for suspension (optional):');
+        if (reason === null) return; // User cancelled
+        
+        if (!confirm('Are you sure you want to suspend this member? They will lose access to the platform.')) {
+            return;
+        }
+        
+        try {
+            // Update member status to suspended
+            await CMSData.updateItem('members', id, { 
+                membership_status: 'suspended',
+                suspension_reason: reason || 'No reason provided',
+                suspended_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+            
+            this.notifications.show('Member suspended successfully!', 'warning');
+            this.loadMembers();
+            
+        } catch (error) {
+            console.error(`❌ Error suspending member:`, error);
+            this.notifications.show(`Failed to suspend member: ${error.message}`, 'error');
+        }
+    }
+
+    async removeMember(id, memberName) {
+        console.log(`🗑️ Removing member with ID:`, id);
+        
+        const confirmation = prompt(
+            `⚠️ WARNING: This will permanently delete ${memberName} from the system.\n\n` +
+            `This action CANNOT be undone. All their data, including:\n` +
+            `- Profile information\n` +
+            `- Event registrations\n` +
+            `- Ideas and contributions\n` +
+            `- Activity history\n\n` +
+            `Type "DELETE" to confirm:`
+        );
+        
+        if (confirmation !== 'DELETE') {
+            if (confirmation !== null) {
+                this.notifications.show('Deletion cancelled - confirmation text did not match', 'info');
+            }
+            return;
+        }
+        
+        try {
+            // Delete member from database
+            await CMSData.deleteItem('members', id);
+            
+            this.notifications.show(`${memberName} has been permanently removed`, 'success');
+            this.loadMembers();
+            
+        } catch (error) {
+            console.error(`❌ Error removing member:`, error);
+            this.notifications.show(`Failed to remove member: ${error.message}`, 'error');
+        }
+    }
+
     showMemberEditModal(member, onSave) {
-        // Create dedicated member edit modal with proper fields (name, email, role, status)
+        // Create dedicated member edit modal with proper fields
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
         modal.style.cssText = `
@@ -2942,7 +3836,7 @@ export class SecureCMSManager {
         const modalContent = document.createElement('div');
         modalContent.style.cssText = `
             background: #1f2937; border: 2px solid #374151; border-radius: 12px;
-            padding: 2rem; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;
+            padding: 2rem; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
         `;
         
         const title = document.createElement('h2');
@@ -2952,81 +3846,74 @@ export class SecureCMSManager {
         const form = document.createElement('form');
         form.style.cssText = 'display: flex; flex-direction: column; gap: 1rem;';
         
-        // Name field
-        const nameLabel = document.createElement('label');
-        nameLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
-        nameLabel.textContent = 'Name';
-        
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.name = 'name';
-        nameInput.value = member.name || '';
-        nameInput.required = true;
-        nameInput.style.cssText = `
+        const inputStyle = `
             padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
-            background: #374151; color: white; font-size: 1rem;
+            background: #374151; color: white; font-size: 1rem; width: 100%;
         `;
         
-        // Email field
-        const emailLabel = document.createElement('label');
-        emailLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
-        emailLabel.textContent = 'Email';
+        const labelStyle = 'color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.25rem;';
         
-        const emailInput = document.createElement('input');
-        emailInput.type = 'email';
-        emailInput.name = 'email';
-        emailInput.value = member.email || '';
-        emailInput.required = true;
-        emailInput.style.cssText = `
-            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
-            background: #374151; color: white; font-size: 1rem;
-        `;
+        // Helper function to create form field
+        const createField = (label, name, type, value, required = false, options = null) => {
+            const container = document.createElement('div');
+            container.style.cssText = 'display: flex; flex-direction: column;';
+            
+            const labelEl = document.createElement('label');
+            labelEl.style.cssText = labelStyle;
+            labelEl.textContent = label;
+            
+            let input;
+            if (options) {
+                input = document.createElement('select');
+                input.style.cssText = inputStyle;
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.label;
+                    option.selected = value === opt.value;
+                    input.appendChild(option);
+                });
+            } else {
+                input = document.createElement('input');
+                input.type = type;
+                input.style.cssText = inputStyle;
+                input.value = value || '';
+            }
+            
+            input.name = name;
+            input.required = required;
+            
+            container.appendChild(labelEl);
+            container.appendChild(input);
+            return container;
+        };
         
-        // Role field
-        const roleLabel = document.createElement('label');
-        roleLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
-        roleLabel.textContent = 'Role';
+        // Create form fields
+        form.appendChild(createField('Name', 'name', 'text', member.name, true));
+        form.appendChild(createField('Email', 'email', 'email', member.email, true));
+        form.appendChild(createField('Phone', 'phone', 'tel', member.phone, false));
+        form.appendChild(createField('Student ID', 'registration_number', 'text', member.registration_number || member.student_id, false));
+        form.appendChild(createField('Course', 'course', 'text', member.course, false));
+        form.appendChild(createField('Year of Study', 'year_of_study', 'number', member.year_of_study, false));
+        form.appendChild(createField('College', 'college', 'text', member.college, false));
         
-        const roleSelect = document.createElement('select');
-        roleSelect.name = 'role';
-        roleSelect.style.cssText = `
-            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
-            background: #374151; color: white; font-size: 1rem;
-        `;
+        form.appendChild(createField('Role', 'role', null, member.role, true, [
+            { value: 'member', label: 'Member' },
+            { value: 'executive', label: 'Executive' },
+            { value: 'admin', label: 'Admin' }
+        ]));
         
-        const roles = ['member', 'executive', 'admin'];
-        roles.forEach(role => {
-            const option = document.createElement('option');
-            option.value = role;
-            option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-            option.selected = member.role === role;
-            roleSelect.appendChild(option);
-        });
-        
-        // Status field
-        const statusLabel = document.createElement('label');
-        statusLabel.style.cssText = 'color: rgba(255, 255, 255, 0.9); font-weight: 600;';
-        statusLabel.textContent = 'Status';
-        
-        const statusSelect = document.createElement('select');
-        statusSelect.name = 'status';
-        statusSelect.style.cssText = `
-            padding: 0.75rem; border: 1px solid #374151; border-radius: 0.5rem;
-            background: #374151; color: white; font-size: 1rem;
-        `;
-        
-        const statuses = ['active', 'inactive', 'suspended'];
-        statuses.forEach(status => {
-            const option = document.createElement('option');
-            option.value = status;
-            option.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-            option.selected = member.status === status;
-            statusSelect.appendChild(option);
-        });
+        form.appendChild(createField('Membership Status', 'membership_status', null, member.membership_status, true, [
+            { value: 'active', label: 'Active' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'pending_invitation', label: 'Pending Invitation' },
+            { value: 'inactive', label: 'Inactive' },
+            { value: 'suspended', label: 'Suspended' }
+        ]));
         
         // Button container
         const buttonContainer = document.createElement('div');
-        buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;';
+        buttonContainer.style.cssText = 'display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;';
         
         const cancelButton = document.createElement('button');
         cancelButton.type = 'button';
@@ -3034,15 +3921,21 @@ export class SecureCMSManager {
         cancelButton.style.cssText = `
             padding: 0.75rem 1.5rem; border: 1px solid #6b7280; border-radius: 0.5rem;
             background: #374151; color: white; cursor: pointer; font-weight: 600;
+            transition: background 0.2s;
         `;
+        cancelButton.onmouseover = () => cancelButton.style.background = '#4b5563';
+        cancelButton.onmouseout = () => cancelButton.style.background = '#374151';
         
         const saveButton = document.createElement('button');
         saveButton.type = 'submit';
         saveButton.textContent = 'Save Changes';
         saveButton.style.cssText = `
             padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem;
-            background: var(--ig-success); color: white; cursor: pointer; font-weight: 600;
+            background: #10b981; color: white; cursor: pointer; font-weight: 600;
+            transition: background 0.2s;
         `;
+        saveButton.onmouseover = () => saveButton.style.background = '#059669';
+        saveButton.onmouseout = () => saveButton.style.background = '#10b981';
         
         // Event handlers
         cancelButton.addEventListener('click', () => modal.remove());
@@ -3054,9 +3947,22 @@ export class SecureCMSManager {
             const updatedData = {
                 name: formData.get('name'),
                 email: formData.get('email'),
+                phone: formData.get('phone'),
+                registration_number: formData.get('registration_number'),
+                course: formData.get('course'),
+                year_of_study: formData.get('year_of_study'),
+                college: formData.get('college'),
                 role: formData.get('role'),
-                status: formData.get('status')
+                membership_status: formData.get('membership_status'),
+                updated_at: new Date().toISOString()
             };
+            
+            // Remove empty fields
+            Object.keys(updatedData).forEach(key => {
+                if (updatedData[key] === '' || updatedData[key] === null) {
+                    delete updatedData[key];
+                }
+            });
             
             try {
                 await onSave(updatedData);
@@ -3065,16 +3971,6 @@ export class SecureCMSManager {
                 // Error already handled by onSave, don't close modal
             }
         });
-        
-        // Assemble modal
-        form.appendChild(nameLabel);
-        form.appendChild(nameInput);
-        form.appendChild(emailLabel);
-        form.appendChild(emailInput);
-        form.appendChild(roleLabel);
-        form.appendChild(roleSelect);
-        form.appendChild(statusLabel);
-        form.appendChild(statusSelect);
         
         buttonContainer.appendChild(cancelButton);
         buttonContainer.appendChild(saveButton);
@@ -3086,7 +3982,7 @@ export class SecureCMSManager {
         
         document.body.appendChild(modal);
         
-        setTimeout(() => nameInput.focus(), 100);
+        setTimeout(() => form.querySelector('input[name="name"]').focus(), 100);
     }
 
     showMessageModal(member) {
