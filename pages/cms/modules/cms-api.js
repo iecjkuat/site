@@ -227,7 +227,7 @@ export class CMSAPI {
      */
     static async getProjects(filters = {}) {
         try {
-            const data = await this.get('/projects', filters);
+            const data = await this.get('/admin/projects', filters);
             return data.projects || data.data || [];
         } catch (error) {
             console.error('Failed to fetch projects:', error);
@@ -253,7 +253,7 @@ export class CMSAPI {
      */
     static async createProject(projectData) {
         try {
-            const data = await this.post('/projects', projectData);
+            const data = await this.post('/admin/projects', projectData);
             return data.project || data.data;
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -266,7 +266,7 @@ export class CMSAPI {
      */
     static async updateProject(id, projectData) {
         try {
-            const data = await this.put(`/projects/${id}`, projectData);
+            const data = await this.put(`/admin/projects/${id}`, projectData);
             return data.project || data.data;
         } catch (error) {
             console.error(`Failed to update project ${id}:`, error);
@@ -279,7 +279,7 @@ export class CMSAPI {
      */
     static async deleteProject(id) {
         try {
-            await this.delete(`/projects/${id}`);
+            await this.delete(`/admin/projects/${id}`);
             return true;
         } catch (error) {
             console.error(`Failed to delete project ${id}:`, error);

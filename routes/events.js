@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
+const { enrichEventsWithStatus, enrichEventWithStatus } = require('../utils/event-status');
 
 // Import sub-route modules
 const attendanceRoutes = require('./events-attendance');
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
         id, title, description, event_type, start_date, end_date, location,
         venue_details, is_virtual, meeting_link, registration_required,
         registration_deadline, max_attendees, current_attendees, fee, currency,
-        status, banner_image, tags, requirements, agenda, created_at, updated_at, published_at
+        status, banner_image, gallery, tags, requirements, agenda, created_at, updated_at, published_at
       `)
       .order('start_date', { ascending: true });
 
@@ -77,6 +78,9 @@ router.get('/', async (req, res) => {
       }
     }
 
+    // Enrich events with calculated status based on dates
+    eventsWithStats = enrichEventsWithStatus(eventsWithStats);
+
     res.json({
       events: eventsWithStats,
       pagination: {
@@ -116,7 +120,7 @@ router.get('/:id', async (req, res) => {
       `)
       .eq('event_id', id);
 
-    const eventWithStats = {
+    let eventWithStats = {
       ...event,
       attendees: attendees || [],
       stats: {
@@ -125,6 +129,9 @@ router.get('/:id', async (req, res) => {
       }
     };
 
+    // Enrich with calculated status
+    eventWithStats = enrichEventWithStatus(eventWithStats);
+
     res.json(eventWithStats);
   } catch (error) {
     console.error('Error fetching event:', error);
@@ -132,7 +139,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Register for event
+// OLD REGISTRATION ROUTE - DEPRECATED
+// This route has been replaced by the event-registration.js routes
+// which provide better functionality including QR codes, waitlists, etc.
+// Keeping commented for reference
+/*
 router.post('/:id/register', [
   body('userId').isUUID().withMessage('Valid user ID is required')
 ], async (req, res) => {
@@ -213,6 +224,7 @@ router.post('/:id/register', [
     res.status(500).json({ message: 'Server error' });
   }
 });
+*/
 
 // Get event categories
 router.get('/categories/list', async (req, res) => {

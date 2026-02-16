@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { enrichEventsWithStatus, enrichEventWithStatus } = require('../utils/event-status');
 const router = express.Router();
 
 // Use the proper authentication middleware from middleware/auth.js
@@ -470,7 +471,11 @@ router.get('/events', authenticateToken, requireAdmin, async (req, res) => {
             .order('start_date', { ascending: true });
 
         if (error) throw error;
-        res.json({ events });
+        
+        // Enrich events with calculated status
+        const enrichedEvents = enrichEventsWithStatus(events);
+        
+        res.json({ events: enrichedEvents });
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ message: 'Server error' });
@@ -494,14 +499,18 @@ router.post('/events', authenticateToken, requireAdmin, async (req, res) => {
                 event_type: type || 'meeting', // Map 'type' to 'event_type'
                 description: description || '',
                 location: location || '',
-                status: 'upcoming',
+                status: 'published', // Default to published, actual status calculated from dates
                 created_at: new Date()
             }])
             .select()
             .single();
 
         if (error) throw error;
-        res.status(201).json({ message: 'Event created successfully', event: data });
+        
+        // Enrich with calculated status before returning
+        const enrichedEvent = enrichEventWithStatus(data);
+        
+        res.status(201).json({ message: 'Event created successfully', event: enrichedEvent });
     } catch (error) {
         console.error('Error creating event:', error);
         res.status(500).json({ message: 'Server error' });
@@ -562,7 +571,10 @@ router.put('/events/:id', authenticateToken, requireAdmin, async (req, res) => {
         console.log('✅ Event updated successfully');
         console.log('📦 Returned gallery:', data.gallery ? `Array with ${data.gallery.length} items` : 'No gallery');
 
-        res.json({ message: 'Event updated successfully', event: data });
+        // Enrich with calculated status before returning
+        const enrichedEvent = enrichEventWithStatus(data);
+
+        res.json({ message: 'Event updated successfully', event: enrichedEvent });
     } catch (error) {
         console.error('Error updating event:', error);
         res.status(500).json({ message: 'Server error' });
@@ -580,6 +592,120 @@ router.delete('/events/:id', authenticateToken, requireAdmin, async (req, res) =
         res.json({ message: 'Event deleted successfully' });
     } catch (error) {
         console.error('Error deleting event:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// --- Project Management ---
+router.get('/projects', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { data: projects, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        // Enrich projects with any additional data if needed
+        res.json({ projects });
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.post('/projects', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { 
+            title, description, category, status, project_type,
+            github_url, demo_url, tech_stack, team_members,
+            start_date, end_date, banner_image, gallery
+        } = req.body;
+
+        // Basic validation
+        if (!title) {
+            return res.status(400).json({ message: 'Title is required' });
+        }
+
+        const { data, error } = await supabase
+            .from('projects')
+            .insert([{
+                title,
+                description: description || '',
+                category: category || 'innovation',
+                status: status || 'planning',
+                project_type: project_type || 'club',
+                github_url,
+                demo_url,
+                tech_stack,
+                team_members,
+                start_date,
+                end_date,
+                banner_image,
+                gallery,
+                created_at: new Date()
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.status(201).json({ message: 'Project created successfully', project: data });
+    } catch (error) {
+        console.error('Error creating project:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.put('/projects/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { 
+            title, description, category, status, project_type,
+            github_url, demo_url, tech_stack, team_members,
+            start_date, end_date, banner_image, gallery
+        } = req.body;
+
+        const updates = {};
+        if (title !== undefined) updates.title = title;
+        if (description !== undefined) updates.description = description;
+        if (category !== undefined) updates.category = category;
+        if (status !== undefined) updates.status = status;
+        if (project_type !== undefined) updates.project_type = project_type;
+        if (github_url !== undefined) updates.github_url = github_url;
+        if (demo_url !== undefined) updates.demo_url = demo_url;
+        if (tech_stack !== undefined) updates.tech_stack = tech_stack;
+        if (team_members !== undefined) updates.team_members = team_members;
+        if (start_date !== undefined) updates.start_date = start_date;
+        if (end_date !== undefined) updates.end_date = end_date;
+        if (banner_image !== undefined) updates.banner_image = banner_image;
+        if (gallery !== undefined) updates.gallery = gallery;
+        updates.updated_at = new Date();
+
+        const { data, error } = await supabase
+            .from('projects')
+            .update(updates)
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ message: 'Project updated successfully', project: data });
+    } catch (error) {
+        console.error('Error updating project:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.delete('/projects/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('projects')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+        res.json({ message: 'Project deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting project:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

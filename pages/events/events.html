@@ -813,8 +813,11 @@
         }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
+    <script src="/shared/lightbox.js"></script>
+    <script src="/shared/event-registration.js"></script>
     
     <!-- Embed Events JavaScript directly -->
     <script>
@@ -978,10 +981,11 @@
                     // Map database events to UI format
                     const rawEvents = data.events || data || [];
                     this.events = await Promise.all(rawEvents.map(async event => {
-                        // Fetch likes and comments for each event
-                        const [likesData, commentsData] = await Promise.all([
+                        // Fetch likes, comments, and registration status for each event
+                        const [likesData, commentsData, registration] = await Promise.all([
                             fetch(`/api/v1/events/${event.id}/likes`).then(r => r.json()).catch(() => ({ count: 0, likes: [] })),
-                            fetch(`/api/v1/events/${event.id}/comments`).then(r => r.json()).catch(() => ({ comments: [] }))
+                            fetch(`/api/v1/events/${event.id}/comments`).then(r => r.json()).catch(() => ({ comments: [] })),
+                            window.eventRegistration.getRegistration(event.id).catch(() => null)
                         ]);
                         
                         // Check if current user has liked this event
@@ -1019,7 +1023,9 @@
                             // Store full description for "View Details"
                             fullDescription: event.description || event.description_html || '',
                             // Ensure current_attendees exists
-                            current_attendees: event.current_attendees || event.stats?.totalAttendees || 0
+                            current_attendees: event.current_attendees || event.stats?.totalAttendees || 0,
+                            // Store registration status
+                            registration: registration
                         };
                     }));
                     
@@ -2268,33 +2274,76 @@
             }
 
             // Handle Registration
-            handleRegistration(eventId, button) {
+            async handleRegistration(eventId, button) {
                 const event = this.events.find(e => this.normalizeId(e.id) === eventId);
                 if (!event) return;
                 
-                // Check if event is full
-                if (event.current_attendees >= event.max_attendees) {
-                    this.showToast('Event is full!', 'error');
-                    return;
+                try {
+                    // Check if event has started
+                    const now = new Date();
+                    const eventStartDate = new Date(event.start_date);
+                    
+                    if (now >= eventStartDate) {
+                        this.showToast('Registration is closed. This event has already started.', 'error');
+                        button.textContent = '🔒 Registration Closed';
+                        button.style.background = 'rgba(107, 114, 128, 0.3)';
+                        button.style.cursor = 'not-allowed';
+                        button.disabled = true;
+                        return;
+                    }
+
+                    // Check if user is logged in using the correct token key
+                    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                    const user = window.authManager?.getUser();
+                    
+                    if (!token || !user) {
+                        this.showToast('Please sign in to register for events', 'error');
+                        setTimeout(() => window.location.href = '/signin', 1500);
+                        return;
+                    }
+
+                    // Disable button during registration
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+
+                    // Use the event registration system
+                    const result = await window.eventRegistration.register(event.id);
+                    
+                    if (result.waitlisted) {
+                        this.showToast('Event is full. You have been added to the waitlist.', 'info');
+                    } else if (result.requiresPayment) {
+                        this.showToast('Registration pending payment', 'info');
+                    } else {
+                        this.showToast('Successfully registered for event!', 'success');
+                    }
+
+                    // Show registration modal with QR code
+                    if (result.registration) {
+                        await window.eventRegistration.showRegistrationModal(result.registration);
+                    }
+
+                    // Update button state
+                    button.innerHTML = '<i class="fas fa-check"></i> Registered';
+                    button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    
+                    // Reload events to update counts
+                    await this.loadEvents();
+                    
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    
+                    // Check if it's a registration closed error
+                    if (error.message.includes('already started') || error.message.includes('closed')) {
+                        button.textContent = '🔒 Registration Closed';
+                        button.style.background = 'rgba(107, 114, 128, 0.3)';
+                        button.style.cursor = 'not-allowed';
+                        button.disabled = true;
+                    } else {
+                        this.showToast(error.message || 'Registration failed. Please try again.', 'error');
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-calendar-plus"></i> Register Now';
+                    }
                 }
-                
-                // Simulate registration
-                event.current_attendees = (event.current_attendees || 0) + 1;
-                
-                // Update button
-                button.innerHTML = '<i class="fas fa-check"></i> Registered';
-                button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                button.disabled = true;
-                
-                // Update attendee count in the card
-                const eventCard = button.closest('.event-card');
-                const attendeeInfo = eventCard?.querySelector('.detail-item:last-child span');
-                if (attendeeInfo) {
-                    attendeeInfo.textContent = `${event.current_attendees}/${event.max_attendees} registered`;
-                }
-                
-                this.showToast('Successfully registered for event!', 'success');
-                this.updateStats();
             }
 
             initFilterTabs() {
@@ -2470,12 +2519,20 @@
                             <div id="eventGallery" style="min-height: 200px;">
                                 ${event.gallery && Array.isArray(event.gallery) && event.gallery.length > 0 ? `
                                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
-                                        ${event.gallery.map(media => `
-                                            <div style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                        ${event.gallery.map((media, index) => `
+                                            <div class="gallery-item" data-index="${index}" style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" 
+                                                 onmouseover="this.style.transform='scale(1.05)'" 
+                                                 onmouseout="this.style.transform='scale(1)'">
                                                 ${media.type === 'video' ? `
-                                                    <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                                                    <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"></video>
+                                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                                                        <i class="fas fa-play" style="color: white; font-size: 1.5rem; margin-left: 3px;"></i>
+                                                    </div>
                                                 ` : `
                                                     <img src="${this.escapeHTML(media.url)}" alt="Event photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                                    <div style="position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="fas fa-search-plus" style="color: white; font-size: 2rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;"></i>
+                                                    </div>
                                                 `}
                                             </div>
                                         `).join('')}
@@ -2500,6 +2557,17 @@
 
                 modal.appendChild(modalContent);
                 document.body.appendChild(modal);
+
+                // Add click handlers to gallery items
+                const galleryItems = modal.querySelectorAll('.gallery-item');
+                galleryItems.forEach(item => {
+                    item.onclick = () => {
+                        const index = parseInt(item.dataset.index);
+                        if (window.lightbox) {
+                            window.lightbox.open(index, event.gallery);
+                        }
+                    };
+                });
 
                 // Close handlers
                 const closeModal = () => {

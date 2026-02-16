@@ -16,6 +16,7 @@ const WebSocketService = require('./routes/websocket-service');
 const authRoutes = require('./routes/auth');
 const clubsRoutes = require('./routes/clubs');
 const eventsRoutes = require('./routes/events');
+const eventRegistrationRoutes = require('./routes/event-registration');
 const paymentsRoutes = require('./routes/payments');
 const membershipRoutes = require('./routes/membership');
 const leadershipRoutes = require('./routes/leadership');
@@ -173,7 +174,8 @@ app.use((req, res, next) => {
 });
 
 // Static files - Simple approach
-app.use('/shared', express.static('pages/shared'));
+app.use('/shared', express.static('shared')); // Serve from root shared folder
+app.use('/shared', express.static('pages/shared')); // Also serve from pages/shared for backwards compatibility
 
 // Serve CMS assets with proper configuration
 app.use('/cms', express.static(path.join(__dirname, 'pages', 'cms'), {
@@ -279,6 +281,7 @@ app.use(`${apiVersion}/auth`, authRoutes);
 app.use('/api/auth', authRoutes); // Compatibility route for frontend
 app.use(`${apiVersion}/clubs`, clubsRoutes);
 app.use(`${apiVersion}/events`, eventsRoutes);
+app.use(`${apiVersion}/events`, eventRegistrationRoutes); // Event registration endpoints
 app.use(`${apiVersion}/payments`, paymentsRoutes);
 app.use(`${apiVersion}/membership`, membershipRoutes);
 app.use(`${apiVersion}/leadership`, leadershipRoutes);

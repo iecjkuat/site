@@ -1285,13 +1285,13 @@ export class SecureCMSManager {
 
         try {
             const realProjects = await CMSAPI.getProjects();
-            const allProjects = CMSMockData.mergeWithRealData(realProjects, 'projects');
-            const filteredProjects = this.filterItems(allProjects);
+            console.log('📦 Loaded projects from database:', realProjects.length);
+            const filteredProjects = this.filterItems(realProjects);
             this.renderProjects(filteredProjects);
         } catch (error) {
             console.error('Error loading projects:', error);
-            const mockProjects = CMSMockData.get('projects');
-            this.renderProjects(mockProjects);
+            container.replaceChildren();
+            container.appendChild(CMSUI.createEmptyState('Failed to load projects. Please try again.'));
         }
     }
 
@@ -2083,12 +2083,20 @@ export class SecureCMSManager {
                     <div id="eventGallery" style="min-height: 200px;">
                         ${event.gallery && event.gallery.length > 0 ? `
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
-                                ${event.gallery.map(media => `
-                                    <div style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                ${event.gallery.map((media, index) => `
+                                    <div class="gallery-item" data-index="${index}" style="position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease;" 
+                                         onmouseover="this.style.transform='scale(1.05)'" 
+                                         onmouseout="this.style.transform='scale(1)'">
                                         ${media.type === 'video' ? `
-                                            <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover;" controls></video>
+                                            <video src="${this.escapeHTML(media.url)}" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;"></video>
+                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                                                <i class="fas fa-play" style="color: white; font-size: 1.5rem; margin-left: 3px;"></i>
+                                            </div>
                                         ` : `
                                             <img src="${this.escapeHTML(media.url)}" alt="Event photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.3s ease; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(0,0,0,0.3)'" onmouseout="this.style.background='rgba(0,0,0,0)'">
+                                                <i class="fas fa-search-plus" style="color: white; font-size: 2rem; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;"></i>
+                                            </div>
                                         `}
                                     </div>
                                 `).join('')}
@@ -2113,6 +2121,17 @@ export class SecureCMSManager {
 
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
+
+        // Add click handlers to gallery items
+        const galleryItems = modal.querySelectorAll('.gallery-item');
+        galleryItems.forEach(item => {
+            item.onclick = () => {
+                const index = parseInt(item.dataset.index);
+                if (window.lightbox) {
+                    window.lightbox.open(index, event.gallery);
+                }
+            };
+        });
 
         // Close handlers
         const closeModal = () => {
@@ -2371,14 +2390,19 @@ export class SecureCMSManager {
                     </div>
                     <div>
                         <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
-                            Status
+                            Visibility Status
+                            <span style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); font-weight: 400; margin-left: 0.5rem;">
+                                (Upcoming/Live/Completed auto-calculated from dates)
+                            </span>
                         </label>
                         <select name="status" style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem;">
-                            <option value="published" ${event.status === 'published' ? 'selected' : ''}>Published</option>
-                            <option value="draft" ${event.status === 'draft' ? 'selected' : ''}>Draft</option>
-                            <option value="upcoming" ${event.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
-                            <option value="completed" ${event.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="published" ${event.status === 'published' || (!event.status || (event.status !== 'draft' && event.status !== 'cancelled')) ? 'selected' : ''}>Published (Auto Status)</option>
+                            <option value="draft" ${event.status === 'draft' ? 'selected' : ''}>Draft (Hidden)</option>
+                            <option value="cancelled" ${event.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                         </select>
+                        <p style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin-top: 0.5rem; margin-bottom: 0;">
+                            Status is automatically set based on event dates: Upcoming (before start), Live (during event), Completed (after end)
+                        </p>
                     </div>
                 </div>
 
@@ -2515,6 +2539,9 @@ export class SecureCMSManager {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
 
+            console.log('📤 Starting upload of', files.length, 'files');
+            console.log('📦 Files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+
             isUploading = true;
             const uploadBtn = document.getElementById('addGalleryBtn');
             uploadBtn.disabled = true;
@@ -2539,19 +2566,28 @@ export class SecureCMSManager {
                 const formData = new FormData();
                 files.forEach(file => formData.append('files', file));
 
-                const response = await fetch(`/api/v1/upload/event-gallery/${event.id}/batch`, {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                const uploadUrl = `/api/v1/upload/event-gallery/${event.id}/batch`;
+                
+                console.log('🌐 Uploading to:', uploadUrl);
+                console.log('🔑 Auth token:', token ? 'Present' : 'Missing');
+
+                const response = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                        'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error('Upload failed');
-                }
-
+                console.log('📡 Response status:', response.status);
+                
                 const result = await response.json();
+                console.log('📦 Response data:', result);
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Upload failed');
+                }
                 
                 // Replace placeholders with actual uploaded files
                 if (result.files && result.files.length > 0) {
@@ -2574,7 +2610,7 @@ export class SecureCMSManager {
                 this.notifications.show(`Uploaded ${result.files.length} file(s) successfully!`, 'success');
 
             } catch (error) {
-                console.error('Upload error:', error);
+                console.error('❌ Upload error:', error);
                 this.notifications.show('Failed to upload files. Please try again.', 'error');
                 
                 // Remove placeholder items

@@ -5,6 +5,44 @@ const path = require('path');
 
 const router = express.Router();
 
+// Test endpoint to check if storage bucket exists
+router.get('/test-storage', async (req, res) => {
+    try {
+        console.log('🧪 Testing storage bucket access...');
+        
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        
+        if (error) {
+            console.error('❌ Error listing buckets:', error);
+            return res.status(500).json({ 
+                success: false,
+                message: 'Failed to list buckets',
+                error: error.message 
+            });
+        }
+        
+        const eventGalleryBucket = buckets.find(b => b.name === 'event-gallery');
+        
+        console.log('✅ Buckets found:', buckets.map(b => b.name));
+        console.log('📦 event-gallery bucket:', eventGalleryBucket ? 'EXISTS' : 'NOT FOUND');
+        
+        res.json({
+            success: true,
+            buckets: buckets.map(b => ({ name: b.name, public: b.public })),
+            eventGalleryExists: !!eventGalleryBucket,
+            eventGalleryBucket: eventGalleryBucket
+        });
+        
+    } catch (error) {
+        console.error('❌ Test storage error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error',
+            error: error.message 
+        });
+    }
+});
+
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({

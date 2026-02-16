@@ -42,7 +42,15 @@ const authenticateToken = async (req, res, next) => {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+        console.log('🔐 Auth middleware:', {
+            hasAuthHeader: !!authHeader,
+            hasToken: !!token,
+            path: req.path,
+            method: req.method
+        });
+
         if (!token) {
+            console.log('❌ No token provided');
             return res.status(401).json({ message: 'Access token required' });
         }
 
@@ -54,8 +62,15 @@ const authenticateToken = async (req, res, next) => {
             audience: 'jkuat-platform'
         });
 
+        console.log('✅ Token decoded:', {
+            userId: decoded.userId,
+            role: decoded.role,
+            exp: new Date(decoded.exp * 1000).toISOString()
+        });
+
         // Validate token structure
         if (!decoded.userId || !decoded.exp) {
+            console.log('❌ Invalid token structure');
             return res.status(401).json({ message: 'Invalid token structure' });
         }
 

@@ -86,6 +86,7 @@ class ProjectsManager {
             if (e.target.matches('[data-action="view-project"]') || e.target.closest('[data-action="view-project"]')) {
                 const button = e.target.matches('[data-action="view-project"]') ? e.target : e.target.closest('[data-action="view-project"]');
                 const projectId = button.dataset.projectId;
+                console.log('View project clicked:', projectId);
                 this.viewProject(projectId);
             }
 
@@ -93,6 +94,7 @@ class ProjectsManager {
             if (e.target.matches('[data-action="join-project"]') || e.target.closest('[data-action="join-project"]')) {
                 const button = e.target.matches('[data-action="join-project"]') ? e.target : e.target.closest('[data-action="join-project"]');
                 const projectId = button.dataset.projectId;
+                console.log('Join project clicked:', projectId);
                 this.joinProject(projectId);
             }
 
@@ -130,12 +132,16 @@ class ProjectsManager {
                 const modal = e.target.closest('.modal-backdrop');
                 if (modal) {
                     modal.classList.remove('active');
+                    // Restore body scroll
+                    document.body.style.overflow = 'auto';
                 }
             }
 
             // Handle modal backdrop clicks (close modal when clicking outside)
             if (e.target.classList.contains('modal-backdrop')) {
                 e.target.classList.remove('active');
+                // Restore body scroll
+                document.body.style.overflow = 'auto';
             }
 
             // Handle share project buttons
@@ -163,6 +169,8 @@ class ProjectsManager {
                 const openModal = document.querySelector('.modal-backdrop.active');
                 if (openModal) {
                     openModal.classList.remove('active');
+                    // Restore body scroll
+                    document.body.style.overflow = 'auto';
                 }
             }
         });
@@ -231,49 +239,51 @@ class ProjectsManager {
 
     async loadProjects() {
         try {
-            const response = await fetch('/api/projects');
+            const response = await fetch('/api/v1/projects');
             if (response.ok) {
                 this.projects = await response.json();
             } else {
-                // Use mock data if API not available
-                this.projects = window.projectsMockData ? window.projectsMockData.getSampleProjects() : [];
+                console.error('Failed to load projects:', response.status);
+                this.projects = [];
             }
             this.renderProjects();
         } catch (error) {
             console.error('Error loading projects:', error);
-            this.projects = window.projectsMockData ? window.projectsMockData.getSampleProjects() : [];
+            this.projects = [];
             this.renderProjects();
         }
     }
 
     async loadHackathons() {
         try {
-            const response = await fetch('/api/projects/hackathons');
+            const response = await fetch('/api/v1/projects/hackathons');
             if (response.ok) {
                 this.hackathons = await response.json();
             } else {
-                this.hackathons = window.projectsMockData ? window.projectsMockData.getSampleHackathons() : [];
+                console.error('Failed to load hackathons:', response.status);
+                this.hackathons = [];
             }
             this.renderHackathons();
         } catch (error) {
             console.error('Error loading hackathons:', error);
-            this.hackathons = window.projectsMockData ? window.projectsMockData.getSampleHackathons() : [];
+            this.hackathons = [];
             this.renderHackathons();
         }
     }
 
     async loadIncubationProjects() {
         try {
-            const response = await fetch('/api/projects/incubation');
+            const response = await fetch('/api/v1/projects/incubation');
             if (response.ok) {
                 this.incubationProjects = await response.json();
             } else {
-                this.incubationProjects = window.projectsMockData ? window.projectsMockData.getSampleIncubationProjects() : [];
+                console.error('Failed to load incubation projects:', response.status);
+                this.incubationProjects = [];
             }
             this.renderIncubationProjects();
         } catch (error) {
             console.error('Error loading incubation projects:', error);
-            this.incubationProjects = window.projectsMockData ? window.projectsMockData.getSampleIncubationProjects() : [];
+            this.incubationProjects = [];
             this.renderIncubationProjects();
         }
     }
@@ -324,12 +334,19 @@ class ProjectsManager {
     }
 
     createProjectCard(project) {
+        // Determine project type badge
+        const isClubProject = project.project_type === 'club';
+        const projectTypeBadge = isClubProject 
+            ? '<span class="project-type-badge club-project"><i class="fas fa-building"></i> Club Project</span>'
+            : '<span class="project-type-badge personal-project"><i class="fas fa-user"></i> Personal Project</span>';
+        
         return `
             <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
                 <div class="project-header">
                     <div class="project-lead-wrapper">
                         <h3 class="project-title">${this.escapeHtml(project.title)}</h3>
                         <div class="project-meta-row">
+                            ${projectTypeBadge}
                             <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
                             <span class="category-badge-static">${this.escapeHtml(project.category)}</span>
                         </div>
@@ -549,7 +566,7 @@ class ProjectsManager {
         };
 
         try {
-            const response = await fetch('/api/projects/submit', {
+            const response = await fetch('/api/v1/projects/submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -633,7 +650,7 @@ class ProjectsManager {
         };
 
         try {
-            const response = await fetch(`/api/projects/${projectId}/collaborate`, {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -696,9 +713,9 @@ class ProjectsManager {
     }
 
     updateStats() {
-        // Update stats in hero section
-        const activeCount = this.projects.filter(p => p.status === 'Active').length;
-        const completedCount = this.projects.filter(p => p.status === 'Completed').length;
+        // Update stats in hero section (case-insensitive status matching)
+        const activeCount = this.projects.filter(p => p.status?.toLowerCase() === 'active').length;
+        const completedCount = this.projects.filter(p => p.status?.toLowerCase() === 'completed').length;
         const incubationCount = this.incubationProjects.length;
         const hackathonCount = this.hackathons.length;
 
@@ -715,13 +732,23 @@ class ProjectsManager {
 
     // Action methods
     async viewProject(projectId) {
+        console.log('viewProject called with ID:', projectId);
+        console.log('Available projects:', this.projects.length);
         const project = this.projects.find(p => p.id === projectId);
         if (!project) {
-            this.showError('Project not found');
+            console.error('Project not found:', projectId);
+            alert('Project not found');
             return;
         }
 
-        this.showProjectModal(project);
+        console.log('Found project:', project.title);
+        try {
+            this.showProjectModal(project);
+            console.log('showProjectModal completed');
+        } catch (error) {
+            console.error('Error in showProjectModal:', error);
+            alert('Error showing modal: ' + error.message);
+        }
     }
 
     async joinProject(projectId) {
@@ -809,93 +836,161 @@ class ProjectsManager {
     }
     // Modal methods
     showProjectModal(project) {
-        const modalHtml = `
-            <div class="project-detail-header">
-                <div class="project-detail-meta">
-                    <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
-                    <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
-                    <span class="project-date">${this.escapeHtml(project.priority || 'Medium')} Priority</span>
-                </div>
+        console.log('showProjectModal called for:', project.title);
+        
+        // Get or create modal
+        let modal = document.getElementById('projectModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'projectModal';
+            document.body.appendChild(modal);
+        }
+        
+        // Move modal to body if not already there
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+        
+        // Set modal styles (matching event modal exactly)
+        modal.style.cssText = `
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            overflow-y: auto;
+            padding: 2rem;
+        `;
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+        
+        // Build modal content HTML (matching event modal structure)
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 900px; margin: 0 auto; background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95)); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); position: relative;">
                 
-                <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
+                <!-- Close Button -->
+                <button class="modal-close-btn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 1.25rem; transition: all 0.3s ease; z-index: 10;">
+                    <i class="fas fa-times"></i>
+                </button>
                 
-                <div class="project-detail-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>${this.escapeHtml(project.progress_percentage || 0)}% Complete</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-tag"></i>
-                        <span>${this.escapeHtml(project.category)}</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-clock"></i>
-                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="project-detail-content">
-                <section class="detail-section">
-                    <h3>Description</h3>
-                    <p>${this.escapeHtml(project.description)}</p>
-                </section>
-                
-                ${project.technologies && project.technologies.length > 0 ? `
-                    <section class="detail-section">
-                        <h3>Technologies</h3>
-                        <div class="tech-stack">
-                            ${project.technologies.map(tech => `<span class="tech-tag">${this.escapeHtml(tech)}</span>`).join('')}
+                <!-- Modal Header -->
+                <div class="modal-header" style="padding: 2rem 2rem 1rem 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #10b981); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-project-diagram" style="color: white; font-size: 1.25rem;"></i>
                         </div>
-                    </section>
-                ` : ''}
-                
-                <div class="detail-grid">
-                    <section class="detail-section">
-                        <h3>Status</h3>
-                        <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
-                    </section>
+                        <div>
+                            <h3 style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem; margin: 0; font-weight: 500;">JKUAT Innovation Club</h3>
+                            <h2 style="color: white; font-size: 1.75rem; margin: 0.25rem 0 0 0; font-weight: 700; line-height: 1.3;">${this.escapeHtml(project.title)}</h2>
+                        </div>
+                    </div>
                     
-                    <section class="detail-section">
-                        <h3>Priority</h3>
-                        <span class="project-status planning">${this.escapeHtml(project.priority || 'Medium')}</span>
-                    </section>
-                    
-                    <section class="detail-section">
-                        <h3>Progress</h3>
-                        <p>${this.escapeHtml(project.progress_percentage || 0)}% Complete</p>
-                    </section>
-                    
-                    <section class="detail-section">
-                        <h3>Team Lead</h3>
-                        <p>${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</p>
-                    </section>
+                    <!-- Project Meta Info -->
+                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-tag" style="color: #3b82f6;"></i>
+                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.category)}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-chart-line" style="color: #10b981;"></i>
+                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.progress_percentage || 0)}% Complete</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-user" style="color: #f59e0b;"></i>
+                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
+                        </div>
+                        ${project.project_type ? `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-${project.project_type === 'club' ? 'building' : 'user'}" style="color: #8b5cf6;"></i>
+                            <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem;">${project.project_type === 'club' ? 'Club Project' : 'Personal Project'}</span>
+                        </div>
+                        ` : ''}
+                    </div>
                 </div>
                 
-                <div class="project-detail-actions">
-                    <button class="btn btn-primary" data-action="join-project" data-project-id="${this.escapeHtml(project.id)}">
-                        <i class="fas fa-handshake"></i>
-                        Request to Join
+                <!-- Modal Body -->
+                <div class="modal-body" style="padding: 2rem; max-height: 60vh; overflow-y: auto;">
+                    
+                    <!-- Description -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Description</h3>
+                        <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8; font-size: 0.95rem;">${this.escapeHtml(project.description)}</p>
+                    </div>
+                    
+                    ${project.technologies && project.technologies.length > 0 ? `
+                    <!-- Technologies -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Technologies</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${project.technologies.map(tech => `
+                                <span style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; color: #60a5fa; font-size: 0.875rem; font-weight: 500;">
+                                    ${this.escapeHtml(tech)}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Project Details Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Status</div>
+                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(project.status || 'Active')}</div>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Progress</div>
+                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(project.progress_percentage || 0)}%</div>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Created</div>
+                            <div style="color: white; font-weight: 600; font-size: 1rem;">${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="modal-close-btn-footer" style="padding: 0.875rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Close
                     </button>
-                    <button class="btn btn-outline" data-action="share-project" data-project-id="${this.escapeHtml(project.id)}">
-                        <i class="fas fa-share"></i>
-                        Share Project
+                    <button class="modal-join-btn" data-project-id="${this.escapeHtml(project.id)}" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                        <i class="fas fa-handshake"></i> Request to Join
                     </button>
                 </div>
             </div>
         `;
-
-        // Update modal content
-        const modalContent = document.getElementById('projectModalContent');
-        if (modalContent) {
-            modalContent.innerHTML = modalHtml;
-        }
-
-        // Show modal
-        const modal = document.getElementById('projectModal');
-        if (modal) {
-            modal.classList.add('active');
-        }
+        
+        // Setup close handlers
+        const closeModal = () => {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        };
+        
+        modal.querySelector('.modal-close-btn').onclick = closeModal;
+        modal.querySelector('.modal-close-btn-footer').onclick = closeModal;
+        modal.querySelector('.modal-join-btn').onclick = () => {
+            closeModal();
+            this.joinProject(project.id);
+        };
+        
+        // Close on background click
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+        
+        // Close on Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
     }
 
     showHackathonModal(hackathon) {
@@ -1063,7 +1158,38 @@ class ProjectsManager {
         // Show modal
         const modal = document.getElementById('collaborationModal');
         if (modal) {
+            // Move modal to body if not already there to ensure position:fixed works
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
+            
             modal.classList.add('active');
+            // Force visibility with inline styles using setProperty with important
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('position', 'fixed', 'important');
+            modal.style.setProperty('top', '0', 'important');
+            modal.style.setProperty('left', '0', 'important');
+            modal.style.setProperty('right', '0', 'important');
+            modal.style.setProperty('bottom', '0', 'important');
+            modal.style.setProperty('width', '100vw', 'important');
+            modal.style.setProperty('height', '100vh', 'important');
+            modal.style.setProperty('z-index', '999999', 'important');
+            modal.style.setProperty('align-items', 'center', 'important');
+            modal.style.setProperty('justify-content', 'center', 'important');
+            modal.style.setProperty('background-color', 'rgba(0, 0, 0, 0.85)', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('pointer-events', 'auto', 'important');
+            
+            // Also make the modal content visible
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.setProperty('opacity', '1', 'important');
+                modalContent.style.setProperty('visibility', 'visible', 'important');
+            }
         }
     }
 
@@ -1461,11 +1587,6 @@ window.closeCollaborationRequestsModal = function () {
 
 // Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Ensure mock data is available
-    if (!window.projectsMockData) {
-        window.projectsMockData = new ProjectsMockData();
-    }
-    
     // Navigation is handled by global-navbar.js
     // No need to initialize it here
 
