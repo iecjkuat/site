@@ -1,6 +1,6 @@
 ﻿/* ===== DASHBOARD PAGE SCOPED STYLES ===== */
 .dashboard-page {
-    padding-top: 140px !important;
+  padding-top: 140px !important;
 }
 
 /* CSP Utility Classes */
@@ -365,7 +365,8 @@ body {
   border-radius: 1rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
-  padding: 1.5rem;
+  padding: 1.25rem;
+  /* Reduced from 1.5rem */
 }
 
 .glass-card:hover {
@@ -471,6 +472,10 @@ body {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .stat-card:hover {
@@ -533,26 +538,26 @@ h1,
 h2,
 h3,
 h4 {
-  line-height: 1.2;
+  line-height: 1.1;
   font-weight: 700;
 }
 
 h1 {
   font-size: 2.25rem;
   font-weight: 800;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 h2 {
   font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 h4 {
@@ -641,13 +646,13 @@ small {
    Layout & Spacing
    ========================= */
 .dashboard-section {
-  padding-top: 8rem;
-  /* Account for fixed nav */
+  padding-top: 2rem;
   padding-bottom: 2rem;
 }
 
 .welcome-card {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
+  /* Reduced for compactness */
 }
 
 .stats-grid {
@@ -655,6 +660,7 @@ small {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2.5rem;
+  grid-auto-rows: 1fr;
 }
 
 .main-grid {
@@ -670,15 +676,51 @@ small {
 }
 
 .content-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  /* Increased gap for better breathing room */
+  grid-auto-rows: auto;
+  /* Removed fixed min-height to allow content to dictate size */
 }
 
 .sidebar-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  grid-auto-rows: auto;
+}
+
+/* Make all glass cards fill their grid cell */
+.glass-card {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+}
+
+/* Card header stays at top */
+.glass-card>h2,
+.glass-card>h3,
+.glass-card>.flex {
+  flex-shrink: 0;
+}
+
+/* Make card content scrollable if it overflows */
+.glass-card>div[id$="Grid"],
+.glass-card>div[id$="List"],
+.glass-card>div[id$="History"],
+.glass-card>div[id$="Activity"],
+.glass-card>div[id$="Calendar"],
+.glass-card>.space-y-3,
+.glass-card>.space-y-2 {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Ensure consistent spacing in card content */
+.glass-card>*:not(:last-child) {
+  margin-bottom: 0.75rem;
 }
 
 /* Card grids */

@@ -1106,43 +1106,31 @@ export class CMSData {
     static async getMembers(filters = {}) {
         const cacheKey = this.getCacheKey('members', filters);
         const cached = this.getFromCache(cacheKey);
-        if (cached) return cached;
+        if (cached) {
+            console.log('📦 Using cached members:', cached.length);
+            return cached;
+        }
 
         try {
             if (this.useSupabase) {
+                console.log('🔄 Calling CMSAPI.getMembers...');
                 const data = await CMSAPI.getMembers(filters);
+                console.log('✅ CMSAPI returned:', data.length, 'members');
+                
+                if (data && data.length > 0) {
+                    console.log('📝 Sample member from API:', data[0]);
+                }
+                
                 this.setCache(cacheKey, data);
                 return data;
             }
         } catch (error) {
-            console.warn('API getMembers failed, using fallback:', error);
+            console.error('❌ API getMembers failed:', error);
+            throw error; // Don't fall back to mock data - throw the error
         }
 
-        this.seedIfEmpty();
-        let items = [...this.storage.members];
-
-        if (filters.role) items = items.filter(m => m.role === filters.role);
-        if (filters.college) items = items.filter(m => m.college === filters.college);
-        if (filters.status) items = items.filter(m => m.status === filters.status);
-
-        if (filters.search) {
-            const search = String(filters.search).toLowerCase();
-            items = items.filter(m =>
-                String(m.name || '').toLowerCase().includes(search) ||
-                String(m.email || '').toLowerCase().includes(search) ||
-                String(m.student_id || '').toLowerCase().includes(search)
-            );
-        }
-
-        if (filters.active) {
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-            items = items.filter(m => String(m.last_active || '') >= thirtyDaysAgo);
-        }
-
-        if (filters.limit) items = items.slice(0, filters.limit);
-
-        this.setCache(cacheKey, items);
-        return items;
+        // This should never be reached if useSupabase is true
+        throw new Error('Supabase is disabled or API call failed');
     }
 
     static async updateMember(id, data) {

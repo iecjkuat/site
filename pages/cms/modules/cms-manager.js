@@ -1462,28 +1462,71 @@ export class SecureCMSManager {
     }
 
     async loadMembers() {
-        const container = document.getElementById('members-content');
-        if (!container) return;
+            const container = document.getElementById('members-content');
+            if (!container) {
+                console.error('❌ Members container #members-content not found!');
+                return;
+            }
 
-        container.replaceChildren();
-        container.appendChild(CMSUI.createLoadingElement());
+            console.log('🔄 Loading members...');
+            container.replaceChildren();
+            container.appendChild(CMSUI.createLoadingElement());
 
-        try {
-            // Load member data
-            const realMembers = await CMSData.getMembers();
-            const members = CMSMockData.mergeWithRealData(realMembers, 'members');
-            
-            // Update stats
-            this.updateMemberStats(members);
-            
-            this.renderMembers(members);
-        } catch (error) {
-            console.error('Error loading members:', error);
-            const mockMembers = CMSMockData.get('members');
-            this.updateMemberStats(mockMembers);
-            this.renderMembers(mockMembers);
+            try {
+                // Clear cache to ensure fresh data
+                CMSData.clearCache('members');
+                console.log('✅ Cache cleared');
+                
+                // Load ONLY real member data from database
+                console.log('📡 Fetching members from API...');
+                const members = await CMSData.getMembers();
+
+                console.log(`📊 Loaded ${members.length} real members from database`);
+                
+                if (members.length > 0) {
+                    console.log('👤 Sample member:', members[0]);
+                }
+
+                // Update stats
+                this.updateMemberStats(members);
+
+                // Render members
+                this.renderMembers(members);
+
+                // Show message if no members found
+                if (members.length === 0) {
+                    console.log('⚠️ No members in database - showing empty state');
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 3rem; color: #666;">
+                            <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No members found in database</p>
+                            <p style="font-size: 0.9rem; opacity: 0.7;">Members will appear here once users register</p>
+                        </div>
+                    `;
+                } else {
+                    console.log('✅ Members rendered successfully');
+                }
+            } catch (error) {
+                console.error('❌ Error loading members:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #e74c3c;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Failed to load members</p>
+                        <p style="font-size: 0.9rem; opacity: 0.7;">${error.message}</p>
+                        <button onclick="window.cmsManager.loadMembers()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
         }
-    }
+
 
     renderMembers(members) {
         const container = document.getElementById('members-content');
@@ -1494,17 +1537,205 @@ export class SecureCMSManager {
             return;
         }
 
-        container.className = 'ig-content-grid';
-        container.setAttribute('data-content-type', 'members');
+        // Create table wrapper
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'members-table-wrapper';
+        tableWrapper.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        `;
 
-        members.forEach(member => {
-            const item = CMSUI.createMemberItem(member, {
-                onView: (data) => this.viewMember(data),
-                onMessage: (id) => this.messageMember(id),
-                onEdit: (id) => this.editMember(id)
-            });
-            container.appendChild(item);
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'members-table';
+        table.style.cssText = `
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        `;
+
+        // Create table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Name</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Email</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Student ID</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">College</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Role</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Status</th>
+                <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #495057; white-space: nowrap;">Joined</th>
+                <th style="padding: 12px 16px; text-align: center; font-weight: 600; color: #495057; white-space: nowrap;">Actions</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        // Create table body
+        const tbody = document.createElement('tbody');
+        
+        members.forEach((member, index) => {
+            const row = document.createElement('tr');
+            row.style.cssText = `
+                border-bottom: 1px solid #e9ecef;
+                transition: background-color 0.2s;
+            `;
+            row.onmouseenter = () => row.style.backgroundColor = '#f8f9fa';
+            row.onmouseleave = () => row.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafbfc';
+            row.style.backgroundColor = index % 2 === 0 ? 'white' : '#fafbfc';
+
+            // Format date
+            const joinDate = member.created_at ? new Date(member.created_at).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            }) : 'N/A';
+
+            // Status badge
+            const statusColors = {
+                'active': '#28a745',
+                'pending': '#ffc107',
+                'inactive': '#6c757d',
+                'suspended': '#dc3545'
+            };
+            const statusColor = statusColors[member.membership_status] || '#6c757d';
+
+            // Role badge
+            const roleColors = {
+                'admin': '#007bff',
+                'executive': '#6f42c1',
+                'member': '#17a2b8',
+                'guest': '#6c757d'
+            };
+            const roleColor = roleColors[member.role] || '#17a2b8';
+
+            row.innerHTML = `
+                <td style="padding: 12px 16px; color: #212529; font-weight: 500;">
+                    ${this.sanitizeInput(member.name || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057;">
+                    ${this.sanitizeInput(member.email || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057; font-family: monospace;">
+                    ${this.sanitizeInput(member.registration_number || member.student_id || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px; color: #495057;">
+                    ${this.sanitizeInput(member.college || 'N/A')}
+                </td>
+                <td style="padding: 12px 16px;">
+                    <span style="
+                        display: inline-block;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        background: ${roleColor}15;
+                        color: ${roleColor};
+                    ">${this.sanitizeInput(member.role || 'member')}</span>
+                </td>
+                <td style="padding: 12px 16px;">
+                    <span style="
+                        display: inline-block;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        text-transform: capitalize;
+                        background: ${statusColor}15;
+                        color: ${statusColor};
+                    ">${this.sanitizeInput(member.membership_status || 'pending')}</span>
+                </td>
+                <td style="padding: 12px 16px; color: #6c757d; font-size: 0.85rem;">
+                    ${joinDate}
+                </td>
+                <td style="padding: 12px 16px; text-align: center;">
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button 
+                            onclick="window.cmsManager.viewMember(${JSON.stringify(member).replace(/"/g, '&quot;')})"
+                            style="
+                                padding: 6px 12px;
+                                background: #007bff;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 0.8rem;
+                                transition: background 0.2s;
+                            "
+                            onmouseover="this.style.background='#0056b3'"
+                            onmouseout="this.style.background='#007bff'"
+                            title="View Details"
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button 
+                            onclick="window.cmsManager.messageMember('${member.id}')"
+                            style="
+                                padding: 6px 12px;
+                                background: #28a745;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 0.8rem;
+                                transition: background 0.2s;
+                            "
+                            onmouseover="this.style.background='#218838'"
+                            onmouseout="this.style.background='#28a745'"
+                            title="Send Message"
+                        >
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button 
+                            onclick="window.cmsManager.editMember('${member.id}')"
+                            style="
+                                padding: 6px 12px;
+                                background: #ffc107;
+                                color: #212529;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 0.8rem;
+                                transition: background 0.2s;
+                            "
+                            onmouseover="this.style.background='#e0a800'"
+                            onmouseout="this.style.background='#ffc107'"
+                            title="Edit Member"
+                        >
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(row);
         });
+
+        table.appendChild(tbody);
+        tableWrapper.appendChild(table);
+        
+        // Add summary footer
+        const footer = document.createElement('div');
+        footer.style.cssText = `
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        `;
+        footer.innerHTML = `
+            <span>Showing ${members.length} member${members.length !== 1 ? 's' : ''}</span>
+            <span>Total Members: ${members.length}</span>
+        `;
+        tableWrapper.appendChild(footer);
+
+        container.replaceChildren(tableWrapper);
+        container.style.padding = '0';
     }
 
     updateMemberStats(members) {
@@ -1525,10 +1756,18 @@ export class SecureCMSManager {
         // Calculate engagement rate (mock calculation)
         const engagementRate = totalMembers > 0 ? Math.round((activeThisMonth / totalMembers) * 100) : 0;
 
-        CMSUI.animateCounter('total-members-count', totalMembers);
-        CMSUI.animateCounter('active-members-stat', activeThisMonth);
-        CMSUI.animateCounter('new-members-count', newThisMonth);
-        document.getElementById('engagement-rate').textContent = `${engagementRate}%`;
+        // Update stats only if elements exist
+        const totalMembersEl = document.getElementById('total-members-count');
+        const activeMembersEl = document.getElementById('active-members-stat');
+        const newMembersEl = document.getElementById('new-members-count');
+        const engagementRateEl = document.getElementById('engagement-rate');
+        
+        if (totalMembersEl) CMSUI.animateCounter('total-members-count', totalMembers);
+        if (activeMembersEl) CMSUI.animateCounter('active-members-stat', activeThisMonth);
+        if (newMembersEl) CMSUI.animateCounter('new-members-count', newThisMonth);
+        if (engagementRateEl) engagementRateEl.textContent = `${engagementRate}%`;
+        
+        console.log('📊 Member stats:', { totalMembers, activeThisMonth, newThisMonth, engagementRate });
     }
 
     // Event handlers

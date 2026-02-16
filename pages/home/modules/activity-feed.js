@@ -96,8 +96,111 @@ class ActivityFeed {
         feedContainer.innerHTML = itemsToShow.map(item => this.renderFeedItem(item)).join('');
         this.loadedItems = itemsToShow.length;
         
-        // Update load more button
-        this.updateLoadMoreButton(filteredItems.length);
+        // Store items for carousel
+        this.feedItems = itemsToShow;
+        this.currentSlide = 0;
+        
+        // Initialize carousel controls
+        this.initFeedCarousel();
+    }
+    
+    initFeedCarousel() {
+        const prevBtn = document.getElementById('feedPrevBtn');
+        const nextBtn = document.getElementById('feedNextBtn');
+        const indicatorsContainer = document.getElementById('feedIndicators');
+        const track = document.getElementById('feedContainer');
+        
+        if (!prevBtn || !nextBtn || !indicatorsContainer || !track) return;
+        
+        const getSlidesPerView = () => {
+            if (window.innerWidth <= 768) return 1;
+            if (window.innerWidth <= 1024) return 2;
+            return 3;
+        };
+        
+        const totalSlides = this.feedItems.length;
+        const slidesPerView = getSlidesPerView();
+        const maxSlide = Math.max(0, totalSlides - slidesPerView);
+        
+        // Create indicators
+        indicatorsContainer.innerHTML = '';
+        for (let i = 0; i <= maxSlide; i++) {
+            const indicator = document.createElement('button');
+            indicator.className = `carousel-indicator ${i === 0 ? 'active' : ''}`;
+            indicator.addEventListener('click', () => this.goToFeedSlide(i));
+            indicatorsContainer.appendChild(indicator);
+        }
+        
+        prevBtn.onclick = () => this.previousFeedSlide();
+        nextBtn.onclick = () => this.nextFeedSlide();
+        
+        this.updateFeedCarousel();
+    }
+    
+    goToFeedSlide(index) {
+        const getSlidesPerView = () => {
+            if (window.innerWidth <= 768) return 1;
+            if (window.innerWidth <= 1024) return 2;
+            return 3;
+        };
+        
+        const slidesPerView = getSlidesPerView();
+        const maxSlide = Math.max(0, this.feedItems.length - slidesPerView);
+        this.currentSlide = Math.max(0, Math.min(index, maxSlide));
+        this.updateFeedCarousel();
+    }
+    
+    nextFeedSlide() {
+        const getSlidesPerView = () => {
+            if (window.innerWidth <= 768) return 1;
+            if (window.innerWidth <= 1024) return 2;
+            return 3;
+        };
+        
+        const slidesPerView = getSlidesPerView();
+        const maxSlide = Math.max(0, this.feedItems.length - slidesPerView);
+        
+        if (this.currentSlide < maxSlide) {
+            this.currentSlide++;
+            this.updateFeedCarousel();
+        }
+    }
+    
+    previousFeedSlide() {
+        if (this.currentSlide > 0) {
+            this.currentSlide--;
+            this.updateFeedCarousel();
+        }
+    }
+    
+    updateFeedCarousel() {
+        const track = document.getElementById('feedContainer');
+        const prevBtn = document.getElementById('feedPrevBtn');
+        const nextBtn = document.getElementById('feedNextBtn');
+        const indicators = document.querySelectorAll('#feedIndicators .carousel-indicator');
+        
+        if (!track) return;
+        
+        const getSlidesPerView = () => {
+            if (window.innerWidth <= 768) return 1;
+            if (window.innerWidth <= 1024) return 2;
+            return 3;
+        };
+        
+        const slidesPerView = getSlidesPerView();
+        const slideWidth = 100 / slidesPerView;
+        const maxSlide = Math.max(0, this.feedItems.length - slidesPerView);
+        
+        this.currentSlide = Math.max(0, Math.min(this.currentSlide, maxSlide));
+        
+        track.style.transform = `translateX(-${this.currentSlide * slideWidth}%)`;
+        
+        if (prevBtn) prevBtn.disabled = this.currentSlide === 0;
+        if (nextBtn) nextBtn.disabled = this.currentSlide >= maxSlide;
+        
+        indicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === this.currentSlide);
+        });
     }
 
     getFilteredItems() {
@@ -109,7 +212,6 @@ class ActivityFeed {
 
     renderFeedItem(item) {
         const timeAgo = this.getTimeAgo(item.timestamp);
-        const hasMedia = item.media && item.media.url;
         
         return `
             <article class="feed-item" data-item-id="${item.id}" data-type="${item.type}">
@@ -119,35 +221,18 @@ class ActivityFeed {
                     </div>
                     <div class="feed-info">
                         <h4>${this.escapeHtml(item.author.name)}</h4>
-                        <div class="feed-meta">
-                            <span class="feed-type">${this.getTypeLabel(item.type)}</span>
-                            <span class="feed-time">${timeAgo}</span>
-                        </div>
-                    </div>
-                    <div class="feed-menu">
-                        <button class="feed-menu-btn" data-action="menu" data-item-id="${item.id}">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
+                        <span class="feed-time">${timeAgo}</span>
                     </div>
                 </div>
 
                 <div class="feed-content">
-                    ${hasMedia ? `
-                        <div class="feed-media-container">
-                            ${item.media.type === 'video' ? `
-                                <video class="feed-media" poster="${this.validateMediaUrl(item.media.thumbnail) ? this.escapeHtml(item.media.thumbnail) : '/assets/placeholder.jpg'}" controls>
-                                    <source src="${this.validateMediaUrl(item.media.url) ? this.escapeHtml(item.media.url) : ''}" type="video/mp4">
-                                </video>
-                            ` : `
-                                <img class="feed-media" src="${this.validateMediaUrl(item.media.url) ? this.escapeHtml(item.media.url) : '/assets/placeholder.jpg'}" 
-                                     alt="${this.escapeHtml(item.media.alt || item.title)}" loading="lazy">
-                            `}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="feed-text">
-                        <h3 class="feed-title">${this.escapeHtml(item.title)}</h3>
-                        <p class="feed-description">${this.escapeHtml(item.description)}</p>
+                    <div class="feed-type-badge ${item.type}">
+                        <i class="${this.getTypeIcon(item.type)}"></i>
+                        ${this.getTypeLabel(item.type)}
+                    </div>
+                    <h3 class="feed-title">${this.escapeHtml(item.title)}</h3>
+                    <p class="feed-description">${this.escapeHtml(item.description.substring(0, 100))}...</p>
+                </div>
                         
                         ${item.tags && item.tags.length > 0 ? `
                             <div class="feed-tags">
@@ -160,32 +245,20 @@ class ActivityFeed {
                 <div class="feed-actions">
                     <div class="action-buttons">
                         <button class="feed-action-btn like-btn ${item.isLiked ? 'liked' : ''}" 
-                                data-action="like" data-item-id="${item.id}">
-                            <i class="fas fa-heart"></i>
-                            <span>${item.likes || 0}</span>
-                        </button>
-                        <button class="feed-action-btn comment-btn" 
-                                data-action="comment" data-item-id="${item.id}">
-                            <i class="fas fa-comment"></i>
-                            <span>${item.comments || 0}</span>
-                        </button>
-                        <button class="feed-action-btn share-btn" 
-                                data-action="share" data-item-id="${item.id}">
-                            <i class="fas fa-share"></i>
-                        </button>
-                    </div>
-                    
-                    ${item.cta ? `
-                        <div class="feed-cta">
-                            <button class="feed-cta-btn" data-action="cta" data-item-id="${item.id}">
-                                <i class="fas fa-${item.cta.icon}"></i>
-                                ${item.cta.text}
-                            </button>
-                        </div>
-                    ` : ''}
                 </div>
             </article>
         `;
+    }
+    
+    getTypeIcon(type) {
+        const icons = {
+            event: 'fas fa-calendar',
+            project: 'fas fa-code',
+            achievement: 'fas fa-trophy',
+            news: 'fas fa-newspaper',
+            announcement: 'fas fa-bullhorn'
+        };
+        return icons[type] || 'fas fa-info-circle';
     }
 
     renderEmptyState() {

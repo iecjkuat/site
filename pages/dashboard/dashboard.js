@@ -2,6 +2,7 @@
 
 class DashboardPage {
     constructor() {
+        console.log('🏗️ DashboardPage constructor started');
         this.isInitialized = false;
         this.currentUser = null;
         this.calendarState = null;
@@ -11,8 +12,15 @@ class DashboardPage {
         this.cacheDOMElements();
 
         // Initialize modules
-        this.notificationManager = new NotificationManager(this);
-        this.projectManager = new ProjectManager(this);
+        try {
+            console.log('📦 Initializing NotificationManager...');
+            this.notificationManager = new NotificationManager(this);
+            console.log('📦 Initializing ProjectManager...');
+            this.projectManager = new ProjectManager(this);
+            console.log('✅ Managers created');
+        } catch (e) {
+            console.error('❌ Error during manager initialization:', e);
+        }
 
         this.init();
     }
@@ -31,15 +39,15 @@ class DashboardPage {
     cacheDOMElements() {
         const ids = [
             'userName', 'userName2', 'userEmail', 'userRole', 'memberSince',
-            'studentId', 'course', 'yearOfStudy', 'college', 'myProjects', 'upcomingEventsGrid',
-            'paymentHistory', 'recentActivity', 'miniCalendar', 'payMembershipBtn', 'generateCardBtn'
+            'myProjectsGrid', 'myIdeasGrid', 'paymentHistory', 'currentTime',
+            'userInitials', 'userInitials2', 'ideasCount', 'projectsCount',
+            'notificationsList', 'notifBadge', 'markAllReadBtn'
         ];
 
         ids.forEach(id => {
             this.dom[id] = document.getElementById(id);
         });
 
-        this.dom.membershipStatus = document.querySelector('.membership-status');
         this.dom.profilePics = document.querySelectorAll('.user-avatar, .profile-picture, .user-profile-pic');
     }
 
@@ -51,6 +59,7 @@ class DashboardPage {
         this.bindEvents();
         this.loadMockData();
         this.initializeNotificationSystem();
+        this.startClock();
 
         this.isInitialized = true;
         console.log('✅ Dashboard initialized');
@@ -58,47 +67,137 @@ class DashboardPage {
 
     async loadUserData() {
         console.log('🔍 Loading user data...');
+        console.log('📍 Current URL:', window.location.href);
 
-        // Wait for auth to be ready
-        await this.waitForAuth();
+        try {
+            // Check if user is logged in via JWT token (backend auth)
+            const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const storedUser = localStorage.getItem('user');
 
-        // Check what's in localStorage
-        const storageUser = this.getUserFromStorage();
-        console.log('📦 User from localStorage:', storageUser);
+            console.log('🔑 Auth token exists:', !!authToken);
+            console.log('👤 Stored user exists:', !!storedUser);
 
-        // Check dashboardAuth
-        const authUser = window.dashboardAuth?.getUser();
-        console.log('🔐 User from dashboardAuth:', authUser);
+            if (authToken) {
+                console.log('🔑 Auth token (first 20 chars):', authToken.substring(0, 20) + '...');
+            }
 
-        this.currentUser = authUser || storageUser;
-        console.log('👤 Final currentUser:', this.currentUser);
+            if (storedUser) {
+                console.log('📦 Raw stored user data:', storedUser);
+            }
 
-        if (!this.currentUser) {
-            console.warn('⚠️ No user data found, using mock for development');
-            this.currentUser = {
-                name: 'John Doe',
-                firstName: 'John',
-                lastName: 'Doe',
-                email: 'john.doe@student.jkuat.ac.ke',
-                role: 'Member',
-                membershipStatus: 'active',
-                isMember: true,
-                created_at: new Date().toISOString(),
-                studentId: 'SCT211-0001/2023',
-                course: 'Computer Science',
-                yearOfStudy: 2
-            };
-            console.log('🎭 Using mock user:', this.currentUser);
+            // If we have user data, use it (even without token for now)
+            if (storedUser) {
+                console.log('✅ Found stored user data');
+
+                try {
+                    const userData = JSON.parse(storedUser);
+                    console.log('📋 Parsed user data:', userData);
+
+                    // Extract first name from multiple possible fields (robust approach)
+                    const fullName =
+                        userData.name ||
+                        userData.full_name ||
+                        userData.fullName ||
+                        userData.username ||
+                        userData.user_metadata?.full_name ||
+                        userData.user_metadata?.name ||
+                        [userData.user_metadata?.first_name, userData.user_metadata?.last_name].filter(Boolean).join(' ') ||
+                        '';
+
+                    console.log('� Full name from data:', fullName);
+                    console.log('🔍 Checked fields:', {
+                        'userData.name': userData.name,
+                        'userData.full_name': userData.full_name,
+                        'userData.fullName': userData.fullName,
+                        'userData.username': userData.username,
+                        'userData.email': userData.email
+                    });
+
+                    if (!fullName) {
+                        console.error('❌ NO NAME FOUND in stored user data!');
+                        console.error('📦 Full userData object:', JSON.stringify(userData, null, 2));
+                    }
+
+                    const nameParts = fullName.trim().split(' ');
+                    const firstName = nameParts[0] || userData.user_metadata?.first_name || userData.email?.split('@')[0] || 'Member';
+                    const lastName = nameParts.slice(1).join(' ') || userData.user_metadata?.last_name || '';
+
+                    console.log('✂️ Name parts:', nameParts);
+                    console.log('👤 Extracted firstName:', firstName);
+                    console.log('👤 Extracted lastName:', lastName);
+
+                    this.currentUser = {
+                        id: userData.id,
+                        email: userData.email,
+                        name: fullName || userData.email?.split('@')[0] || 'Member',
+                        firstName: firstName,
+                        lastName: lastName,
+                        role: userData.role || 'member',
+                        membershipStatus: userData.membershipStatus || userData.membership_status || 'active',
+                        created_at: userData.created_at,
+                        studentId: userData.student_id || userData.registration_number,
+                        registrationNumber: userData.registration_number,
+                        course: userData.course,
+                        yearOfStudy: userData.year_of_study || userData.yearOfStudy,
+                        college: userData.college,
+                        phone: userData.phone,
+                        profilePicture: userData.profile_picture
+                    };
+
+                    console.log('✅ User data loaded from localStorage:', this.currentUser);
+                    console.log('👤 First name extracted:', this.currentUser.firstName);
+
+                    if (!authToken) {
+                        console.warn('⚠️ Note: User data exists but authToken is missing. User may need to re-login for API calls.');
+                    }
+
+                } catch (parseError) {
+                    console.error('❌ Error parsing stored user:', parseError);
+                    console.error('❌ Parse error details:', parseError.message);
+                    this.useMockUser();
+                }
+            } else {
+                // No user data - user not logged in
+                console.warn('⚠️ No user data found');
+                console.log('🔍 Checking what we have:');
+                console.log('   - authToken:', authToken ? 'exists' : 'missing');
+                console.log('   - storedUser:', storedUser ? 'exists' : 'missing');
+                console.log('⚠️ Redirecting to signin...');
+                window.location.href = '/signin?redirect=/dashboard';
+                return;
+            }
+
+        } catch (error) {
+            console.error('❌ Error loading user data:', error);
+            console.error('❌ Error stack:', error.stack);
+            this.useMockUser();
         }
 
         this.renderUserProfile();
     }
 
+    useMockUser() {
+        console.warn('⚠️ Using mock user for development');
+        this.currentUser = {
+            name: 'John Doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@student.jkuat.ac.ke',
+            role: 'Member',
+            membershipStatus: 'active',
+            isMember: true,
+            created_at: new Date().toISOString(),
+            studentId: 'SCT211-0001/2023',
+            course: 'Computer Science',
+            yearOfStudy: 2
+        };
+    }
+
     waitForAuth() {
         return new Promise(resolve => {
-            if (window.dashboardAuth) resolve();
+            if (window.supabase) resolve();
             else {
-                const check = () => window.dashboardAuth ? resolve() : setTimeout(check, 100);
+                const check = () => window.supabase ? resolve() : setTimeout(check, 100);
                 check();
             }
         });
@@ -110,62 +209,103 @@ class DashboardPage {
     }
 
     renderUserProfile() {
+        console.log('🎨 ========== RENDERING USER PROFILE ==========');
         const user = this.currentUser;
-        const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
-        
+
+        console.log('📋 Current user object:', JSON.stringify(user, null, 2));
+
+        // Build display name from available data
+        const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email?.split('@')[0] || 'Member';
+
         // Extract first name for welcome message
-        const firstName = user.firstName || user.name?.split(' ')[0] || displayName.split(' ')[0] || 'User';
+        const firstName = user.firstName || user.name?.split(' ')[0] || displayName.split(' ')[0] || user.email?.split('@')[0] || 'Member';
 
-        // Text fields
-        this.dom.userName && (this.dom.userName.textContent = firstName); // Show first name only in welcome
-        this.dom.userName2 && (this.dom.userName2.textContent = displayName); // Show full name in profile card
-        this.dom.userEmail && (this.dom.userEmail.textContent = user.email || '');
-        this.dom.userRole && (this.dom.userRole.textContent = user.role || 'Member');
-        this.dom.memberSince && (this.dom.memberSince.textContent = new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
-        this.dom.studentId && (this.dom.studentId.textContent = user.studentId || 'N/A');
-        this.dom.course && (this.dom.course.textContent = user.course || 'N/A');
-        this.dom.yearOfStudy && (this.dom.yearOfStudy.textContent = user.yearOfStudy ? `Year ${user.yearOfStudy}` : 'N/A');
-        this.dom.college && (this.dom.college.textContent = user.college || 'N/A');
+        // Get initials
+        const initials = this.getInitials(displayName);
 
-        // Membership status
-        const isActive = user.membershipStatus === 'active' || user.isMember;
-        if (this.dom.membershipStatus) {
-            this.dom.membershipStatus.textContent = isActive ? 'Active' : 'Inactive';
-            this.dom.membershipStatus.className = `stat-number ${isActive ? 'text-green-500' : 'text-red-500'}`;
-            this.dom.payMembershipBtn?.classList.toggle('hidden', isActive);
-            this.dom.generateCardBtn?.classList.toggle('hidden', !isActive);
+        console.log('👤 Display values calculated:');
+        console.log('   - displayName:', displayName);
+        console.log('   - firstName:', firstName);
+        console.log('   - initials:', initials);
+        console.log('🔍 DOM element userName:', this.dom.userName);
+        console.log('🔍 DOM element exists:', !!this.dom.userName);
+
+        // Update welcome message with actual first name
+        if (this.dom.userName) {
+            console.log('✏️ BEFORE - userName.textContent:', this.dom.userName.textContent);
+            this.dom.userName.textContent = firstName;
+            console.log('✏️ AFTER - userName.textContent:', this.dom.userName.textContent);
+            console.log('✅ Updated userName element to:', firstName);
+
+            // Force update with setAttribute as well
+            this.dom.userName.setAttribute('data-name', firstName);
+
+            // Double-check after a delay to see if something overwrites it
+            setTimeout(() => {
+                console.log('🔍 VERIFICATION (after 1 second) - userName.textContent:', this.dom.userName.textContent);
+                if (this.dom.userName.textContent !== firstName) {
+                    console.error('❌ WARNING: userName was changed from', firstName, 'to', this.dom.userName.textContent);
+                    console.log('🔧 Forcing it back to:', firstName);
+                    this.dom.userName.textContent = firstName;
+                } else {
+                    console.log('✅ VERIFIED: userName is still correct:', firstName);
+                }
+            }, 1000);
+
+            // Also check after 2 seconds
+            setTimeout(() => {
+                console.log('🔍 FINAL CHECK (after 2 seconds) - userName.textContent:', this.dom.userName.textContent);
+                if (this.dom.userName.textContent !== firstName) {
+                    console.error('❌ STILL WRONG! Forcing again...');
+                    this.dom.userName.textContent = firstName;
+                }
+            }, 2000);
+        } else {
+            console.error('❌ userName element not found in this.dom!');
+            console.log('🔍 All cached DOM elements:', Object.keys(this.dom));
+            console.log('🔍 Trying manual getElementById...');
+            const manualFind = document.getElementById('userName');
+            console.log('🔍 Manual find result:', manualFind);
+            if (manualFind) {
+                console.log('✏️ Found manually! Setting textContent...');
+                manualFind.textContent = firstName;
+                console.log('✅ Set via manual find to:', firstName);
+                // Update the cache
+                this.dom.userName = manualFind;
+            }
         }
 
-        // Profile pictures / initials
-        this.dom.profilePics.forEach(el => {
-            if (user.profilePicture) {
-                if (el.tagName === 'IMG') {
-                    el.src = user.profilePicture;
-                    el.alt = displayName;
-                    el.classList.remove('hidden');
-                } else {
-                    el.classList.add('user-avatar-image');
-                    el.style.backgroundImage = `url(${user.profilePicture})`; // background-image is generally allowed in many CSPs, but let's be safe if needed
-                    el.innerHTML = '';
-                }
-            } else {
-                const initials = this.getInitials(displayName);
-                if (el.tagName === 'IMG') {
-                    el.classList.add('hidden');
-                    let initialsEl = el.nextElementSibling;
-                    if (!initialsEl || !initialsEl.classList.contains('initials-avatar')) {
-                        initialsEl = document.createElement('div');
-                        initialsEl.className = 'initials-avatar';
-                        el.parentNode.insertBefore(initialsEl, el.nextSibling);
-                    }
-                    initialsEl.textContent = initials;
-                } else {
-                    el.textContent = initials;
-                    el.classList.add('avatar-bg-green');
-                }
-            }
-        });
+        // Update profile card with full name
+        if (this.dom.userName2) {
+            this.dom.userName2.textContent = displayName;
+        }
 
+        // Update other profile fields
+        if (this.dom.userEmail) {
+            this.dom.userEmail.textContent = user.email || '';
+        }
+
+        if (this.dom.userRole) {
+            this.dom.userRole.textContent = user.role || 'Member';
+        }
+
+        if (this.dom.memberSince && user.created_at) {
+            const joinDate = new Date(user.created_at);
+            this.dom.memberSince.textContent = joinDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short'
+            });
+        }
+
+        // Set initials in avatar circles
+        if (this.dom.userInitials) {
+            this.dom.userInitials.textContent = initials;
+        }
+        if (this.dom.userInitials2) {
+            this.dom.userInitials2.textContent = initials;
+        }
+
+        // Update stats
         this.updateStats();
     }
 
@@ -177,8 +317,7 @@ class DashboardPage {
     bindEvents() {
         const bindClick = (selector, fn) => document.getElementById(selector)?.addEventListener('click', fn);
 
-        bindClick('createProjectBtnWelcome', () => this.showProjectModal());
-        bindClick('createProjectBtnProjects', () => this.showProjectModal());
+        bindClick('createProjectBtn', () => this.showProjectModal());
         bindClick('joinEventBtn', () => window.location.href = '/events');
         bindClick('viewProfileBtn', () => window.location.href = '/settings');
         bindClick('payMembershipBtn', () => window.location.href = '/payment');
@@ -199,9 +338,7 @@ class DashboardPage {
     // ======= Stats =======
     updateStats() {
         const stats = {
-            eventsAttended: Math.floor(Math.random() * 15) + 1,
-            myProjects: this.projectManager.projects.length,
-            accountBalance: Math.floor(Math.random() * 5000)
+            myProjects: this.projectManager.projects.length
         };
 
         Object.entries(stats).forEach(([id, value]) => {
@@ -364,13 +501,268 @@ class DashboardPage {
 
     // ======= Load mock/demo data =======
     loadMockData() {
-        this.notificationManager.loadNotifications();
-        this.projectManager.loadProjects();
-        // Note: The following methods are not implemented yet
-        // this.loadUpcomingEvents?.();
-        // this.loadPaymentHistory?.();
-        // this.loadRecentActivity?.();
-        // this.loadMiniCalendar?.();
+        this.loadMyProjects();
+        this.loadMyIdeas();
+        this.loadPaymentHistory();
+        this.loadNotificationsList();
+    }
+
+    loadMyProjects() {
+        const container = this.dom.myProjectsGrid;
+        if (!container) return;
+
+        const projects = DashboardMockData.getActiveProjects();
+        container.innerHTML = '';
+
+        if (projects.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
+                    <p>No projects yet</p>
+                    <a href="/projects/create" class="btn btn-primary btn-sm mt-3">
+                        <i class="fas fa-plus"></i> Create Your First Project
+                    </a>
+                </div>
+            `;
+            if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
+            return;
+        }
+
+        if (this.dom.projectsCount) this.dom.projectsCount.textContent = projects.length;
+
+        projects.forEach(project => {
+            const deadline = new Date(project.deadline);
+            const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
+
+            const projectCard = document.createElement('div');
+            projectCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
+            projectCard.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-white font-semibold flex-1">${this.escapeHtml(project.title)}</h4>
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400 ml-2">
+                        ${this.escapeHtml(project.status)}
+                    </span>
+                </div>
+                <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(project.description)}</p>
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>Progress</span>
+                        <span>${project.progress}%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: ${project.progress}%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-xs text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-users"></i> ${project.team_size} members
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-clock"></i> ${daysLeft} days left
+                    </span>
+                </div>
+            `;
+            container.appendChild(projectCard);
+        });
+    }
+
+    loadMyIdeas() {
+        const container = this.dom.myIdeasGrid;
+        if (!container) return;
+
+        // Mock ideas data
+        const ideas = [
+            {
+                id: 1,
+                title: 'Smart Campus Parking System',
+                description: 'IoT-based solution to help students find available parking spots',
+                status: 'Under Review',
+                votes: 24,
+                date: '2025-01-05T10:00:00Z'
+            },
+            {
+                id: 2,
+                title: 'Student Mentorship Platform',
+                description: 'Connect senior students with freshmen for academic guidance',
+                status: 'Approved',
+                votes: 45,
+                date: '2024-12-20T14:30:00Z'
+            }
+        ];
+
+        container.innerHTML = '';
+
+        if (ideas.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
+                    <p>No ideas submitted yet</p>
+                    <a href="/ideas/submit" class="btn btn-primary btn-sm mt-3">
+                        <i class="fas fa-plus"></i> Submit Your First Idea
+                    </a>
+                </div>
+            `;
+            if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
+            return;
+        }
+
+        if (this.dom.ideasCount) this.dom.ideasCount.textContent = ideas.length;
+
+        ideas.forEach(idea => {
+            const ideaDate = new Date(idea.date);
+            const timeAgo = this.getTimeAgo(ideaDate);
+
+            const ideaCard = document.createElement('div');
+            ideaCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
+            ideaCard.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="text-white font-semibold flex-1">${this.escapeHtml(idea.title)}</h4>
+                    <span class="px-2 py-1 text-xs rounded-full ${idea.status === 'Approved' ? 'bg-green-500/20 text-green-400' :
+                    idea.status === 'Under Review' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                } ml-2">
+                        ${this.escapeHtml(idea.status)}
+                    </span>
+                </div>
+                <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(idea.description)}</p>
+                <div class="flex justify-between items-center text-xs text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-thumbs-up"></i> ${idea.votes} votes
+                    </span>
+                    <span>${timeAgo}</span>
+                </div>
+            `;
+            container.appendChild(ideaCard);
+        });
+    }
+
+    loadPaymentHistory() {
+        const container = document.getElementById('paymentHistory');
+        if (!container) return;
+
+        const payments = DashboardMockData.getPaymentHistory().slice(0, 3);
+        container.innerHTML = '';
+
+        if (payments.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
+                    <p>No payment history</p>
+                </div>
+            `;
+            return;
+        }
+
+        payments.forEach(payment => {
+            const paymentDate = new Date(payment.date);
+            const paymentItem = document.createElement('div');
+            paymentItem.className = 'p-3 bg-white/5 rounded-lg border border-white/10';
+            paymentItem.innerHTML = `
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-white text-sm font-medium">${this.escapeHtml(payment.description)}</span>
+                    <span class="text-green-400 font-semibold">KSh ${payment.amount.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-gray-400">
+                    <span>${paymentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-check-circle text-green-500"></i>
+                        ${this.escapeHtml(payment.method)}
+                    </span>
+                </div>
+            `;
+            container.appendChild(paymentItem);
+        });
+    }
+
+    loadNotificationsList() {
+        const container = document.getElementById('notificationsList');
+        if (!container) return;
+
+        const notifications = DashboardMockData.getNotifications().slice(0, 5);
+        container.innerHTML = '';
+
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-4 text-gray-400 text-sm">
+                    <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                    <p>No new notifications</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Update badge count
+        const unreadCount = notifications.filter(n => !n.read).length;
+        if (this.dom.notifBadge) {
+            if (unreadCount > 0) {
+                this.dom.notifBadge.textContent = unreadCount;
+                this.dom.notifBadge.classList.remove('hidden');
+            } else {
+                this.dom.notifBadge.classList.add('hidden');
+            }
+        }
+
+        notifications.forEach(notif => {
+            const notifDate = new Date(notif.date);
+            const timeAgo = this.getTimeAgo(notifDate);
+
+            const notifItem = document.createElement('div');
+            notifItem.className = `p-3 rounded-lg border transition-all cursor-pointer ${notif.read
+                ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
+                }`;
+            notifItem.innerHTML = `
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-${notif.color}-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="${notif.icon} text-${notif.color}-400 text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-white font-medium text-sm">${this.escapeHtml(notif.title)}</h4>
+                        <p class="text-gray-400 text-xs mt-1">${this.escapeHtml(notif.message)}</p>
+                        <span class="text-xs text-gray-500 mt-1 inline-block">${timeAgo}</span>
+                    </div>
+                    ${!notif.read ? '<div class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>' : ''}
+                </div>
+            `;
+            container.appendChild(notifItem);
+        });
+
+        // Add mark all read functionality
+        if (this.dom.markAllReadBtn) {
+            this.dom.markAllReadBtn.onclick = () => {
+                // Mark all as read (in real app, this would call API)
+                container.querySelectorAll('.bg-blue-500\\/10').forEach(el => {
+                    el.className = 'p-3 rounded-lg border transition-all cursor-pointer bg-white/5 border-white/10 hover:bg-white/10';
+                    const dot = el.querySelector('.bg-blue-500');
+                    if (dot) dot.remove();
+                });
+                if (this.dom.notifBadge) {
+                    this.dom.notifBadge.classList.add('hidden');
+                }
+            };
+        }
+    }
+
+    getTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        const intervals = {
+            year: 31536000,
+            month: 2592000,
+            week: 604800,
+            day: 86400,
+            hour: 3600,
+            minute: 60
+        };
+
+        for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+            const interval = Math.floor(seconds / secondsInUnit);
+            if (interval >= 1) {
+                return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+            }
+        }
+
+        return 'Just now';
     }
 
     initializeNotificationSystem() {
@@ -389,11 +781,44 @@ class DashboardPage {
         btn.addEventListener('click', () => this.notificationManager.simulateNotification());
         document.body.appendChild(btn);
     }
+
+    // Update clock in real-time
+    startClock() {
+        const updateTime = () => {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            const timeString = now.toLocaleDateString('en-US', options);
+            if (this.dom.currentTime) {
+                this.dom.currentTime.textContent = timeString;
+            }
+        };
+        updateTime();
+        setInterval(updateTime, 60000); // Update every minute
+    }
+
 }
 
 window.DashboardPage = DashboardPage;
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📊 Dashboard DOM loaded');
-    setTimeout(() => { window.dashboardPage = new DashboardPage(); }, 300);
-});
+window.DashboardPage = DashboardPage;
+
+// Better initialization that handles case where DOM is already loaded
+const bootDashboard = () => {
+    console.log('🚀 Booting Dashboard Controller...');
+    if (!window.dashboardPage) {
+        window.dashboardPage = new DashboardPage();
+    }
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootDashboard);
+} else {
+    bootDashboard();
+}

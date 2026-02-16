@@ -14,27 +14,15 @@ class LeadershipPage {
     }
 
     init() {
-        console.log('LeadershipPage init() called');
-        console.log('Available globals:', {
-            jkuatApp: !!window.jkuatApp,
-            mockData: !!window.MOCK_LEADERSHIP_DATA
-        });
+        console.log('✅ LeadershipPage initialized');
         
-        // If jkuatApp is not available, use mock data immediately
-        if (!window.jkuatApp && window.MOCK_LEADERSHIP_DATA) {
-            console.log('jkuatApp not available, using mock data immediately');
-            this.useMockData();
-        } else {
-            this.loadLeadershipStats();
-            this.loadExecutiveCommittee();
-            this.loadClubPatrons();
-        }
-        
+        // Always use mock data for now (can be enhanced later to fetch from API)
+        this.useMockData();
         this.bindEvents();
     }
 
     useMockData() {
-        console.log('Using mock data for all leadership content');
+        console.log('📋 Loading mock leadership data');
         if (window.MOCK_LEADERSHIP_DATA) {
             this.stats = window.MOCK_LEADERSHIP_DATA.stats;
             this.executives = window.MOCK_LEADERSHIP_DATA.executives;
@@ -43,6 +31,9 @@ class LeadershipPage {
             this.updateStatsDisplay();
             this.renderExecutiveCommittee();
             this.renderClubPatrons();
+            console.log('✅ Mock data loaded successfully');
+        } else {
+            console.error('❌ Mock data not available');
         }
     }
 

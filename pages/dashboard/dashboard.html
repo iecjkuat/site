@@ -15,24 +15,21 @@
     content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
 
   <!-- Global Systems -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"
+    crossorigin="anonymous"></script>
   <script src="/shared/auth.js"></script>
   <script src="/shared/global-navbar.js"></script>
 
   <!-- Stylesheets -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-        crossorigin="anonymous" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+    crossorigin="anonymous" rel="stylesheet">
   <link href="/shared/global-navbar.css" rel="stylesheet">
   <link href="/home/home.css" rel="stylesheet">
   <link href="/dashboard/dashboard.css?v=2026010201" rel="stylesheet">
-  
-  <!-- Override conflicting navbar styles -->
-  <style>
-    body { padding-top: 140px !important; }
-  </style>
+
+
 
   <!-- SEO Meta Tags -->
   <meta name="description"
@@ -48,87 +45,23 @@
   <!-- Dashboard Content -->
   <section class="dashboard-section container mx-auto px-4">
 
-    <!-- Welcome Card -->
-    <div class="glass-card welcome-card">
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div class="flex-1">
-          <h1 class="text-white mb-2">
-            Welcome back, <span id="userName" class="text-gradient">Member</span>!
-          </h1>
-          <p class="text-gray-200 text-lg mb-4">Ready to continue your innovation journey?</p>
-
-          <!-- Member Status -->
-          <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-            <span class="text-gray-300 text-sm">Active Member</span>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-wrap gap-3">
-          <button id="joinEventBtn" class="btn btn-primary">
-            <i class="fas fa-calendar-plus"></i> Join Event
-          </button>
-          <button id="createProjectBtnWelcome" class="btn btn-outline">
-            <i class="fas fa-plus"></i> New Project
-          </button>
-          <button id="viewProfileBtn" class="btn btn-outline">
-            <i class="fas fa-user"></i> Profile
-          </button>
-          <!-- User switching removed - users have fixed roles -->
-          <button id="debugUserBtn" class="btn btn-outline">
-            <i class="fas fa-bug"></i> Debug User
-          </button>
-        </div>
+    <!-- Welcome Header - Fitness App Style -->
+    <div class="flex justify-between items-start mb-8">
+      <div>
+        <h1 class="text-white text-4xl font-bold mb-2">
+          Hi, <span id="userName">Member</span>!
+        </h1>
+        <p class="text-gray-300 text-lg">Let's take a look at your activity today</p>
       </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <!-- Events Attended -->
-      <div class="glass-card stat-card">
-        <div
-          class="w-12 h-12 bg-blue-200/30 backdrop-blur-sm border border-blue-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
-          <i class="fas fa-calendar-check text-blue-500 text-xl"></i>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <input type="text" placeholder="Search for activities..." 
+                 class="bg-white/10 border border-white/20 rounded-full px-6 py-3 text-white placeholder-gray-400 w-80 focus:outline-none focus:border-white/40">
+          <i class="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
         </div>
-        <div id="eventsAttended" class="stat-number text-blue-500">0</div>
-        <div class="stat-label">Events Attended</div>
-      </div>
-
-      <!-- Projects -->
-      <div class="glass-card stat-card">
-        <div
-          class="w-12 h-12 bg-green-200/30 backdrop-blur-sm border border-green-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
-          <i class="fas fa-project-diagram text-green-500 text-xl"></i>
-        </div>
-        <div id="myProjects" class="stat-number text-green-500">0</div>
-        <div class="stat-label">My Projects</div>
-      </div>
-
-      <!-- Membership -->
-      <div class="glass-card stat-card">
-        <div
-          class="w-12 h-12 bg-yellow-200/30 backdrop-blur-sm border border-yellow-300 rounded-full flex items-center justify-center mb-3 shadow-lg">
-          <i class="fas fa-user-check text-yellow-500 text-xl"></i>
-        </div>
-        <div class="membership-status stat-number text-yellow-500">Loading...</div>
-        <div class="stat-label">Membership</div>
-        <button id="payMembershipBtn" class="btn btn-primary btn-sm mt-2 hidden">
-          <i class="fas fa-credit-card"></i> Pay Fee
-        </button>
-        <button id="generateCardBtn" class="btn btn-outline btn-sm mt-2 hidden">
-          <i class="fas fa-id-card"></i> Get Card
-        </button>
-      </div>
-
-      <!-- Account Balance -->
-      <div class="glass-card stat-card">
-        <div
-          class="w-12 h-12 bg-green-300/30 backdrop-blur-sm border border-green-400 rounded-full flex items-center justify-center mb-3 shadow-lg">
-          <i class="fas fa-wallet text-green-600 text-xl"></i>
-        </div>
-        <div id="accountBalance" class="stat-number text-green-600">KSh 0</div>
-        <div class="stat-label">Balance</div>
+        <a href="/settings" class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all">
+          Settings
+        </a>
       </div>
     </div>
 
@@ -138,55 +71,87 @@
       <!-- Left Column -->
       <div class="content-grid">
 
-        <!-- Upcoming Events -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white">Upcoming Events</h2>
-            <a href="/events" class="btn btn-outline btn-sm">
-              <i class="fas fa-calendar"></i> View All
-            </a>
-          </div>
-          <div id="upcomingEventsGrid" class="card-grid">
-            <!-- JS Loaded -->
-          </div>
-        </div>
-
         <!-- My Projects -->
         <div class="glass-card">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white">My Projects</h2>
+            <h2 class="text-white flex items-center gap-2">
+              <i class="fas fa-folder-open text-purple-400"></i>
+              My Projects
+              <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full"
+                id="projectsCount">0</span>
+            </h2>
             <div class="flex gap-2">
-              <button id="viewAllProjectsBtn" class="btn btn-outline btn-sm">
+              <a href="/projects" class="btn btn-outline btn-sm">
                 <i class="fas fa-list"></i> View All
-              </button>
-              <button id="createProjectBtnProjects" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> New Project
+              </a>
+              <button id="createProjectBtn" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> New
               </button>
             </div>
           </div>
-          <div id="myProjectsGrid" class="card-grid">
+          <div id="myProjectsGrid" class="space-y-3">
             <!-- JS Loaded -->
+            <div class="text-center py-8 text-gray-400">
+              <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
+              <p>No projects yet</p>
+              <button class="btn btn-primary btn-sm mt-3">
+                <i class="fas fa-plus"></i> Create Your First Project
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Notifications & Announcements -->
+        <!-- My Ideas -->
         <div class="glass-card">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white">Notifications</h2>
-            <button id="markAllReadBtn" class="btn btn-outline btn-sm">
-              <i class="fas fa-check-double"></i> Mark All Read
-            </button>
+            <h2 class="text-white flex items-center gap-2">
+              <i class="fas fa-lightbulb text-yellow-400"></i>
+              My Ideas
+              <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 text-xs rounded-full" id="ideasCount">0</span>
+            </h2>
+            <div class="flex gap-2">
+              <a href="/ideas" class="btn btn-outline btn-sm">
+                <i class="fas fa-list"></i> View All
+              </a>
+              <a href="/ideas/submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus"></i> Submit
+              </a>
+            </div>
           </div>
-          <div id="notificationsList" class="space-y-3">
+          <div id="myIdeasGrid" class="space-y-3">
             <!-- JS Loaded -->
+            <div class="text-center py-8 text-gray-400">
+              <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
+              <p>No ideas submitted yet</p>
+              <a href="/ideas/submit" class="btn btn-primary btn-sm mt-3">
+                <i class="fas fa-plus"></i> Submit Your First Idea
+              </a>
+            </div>
           </div>
         </div>
 
-        <!-- Recent Activity -->
+        <!-- Payment History -->
         <div class="glass-card">
-          <h2 class="text-white mb-4">Recent Activity</h2>
-          <div id="recentActivity" class="space-y-3">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-white flex items-center gap-2">
+              <i class="fas fa-receipt text-green-400"></i>
+              Payment History
+            </h2>
+            <div class="flex gap-2">
+              <a href="/payment" class="btn btn-outline btn-sm">
+                <i class="fas fa-history"></i> View All
+              </a>
+              <a href="/payment" class="btn btn-primary btn-sm">
+                <i class="fas fa-credit-card"></i> Pay Now
+              </a>
+            </div>
+          </div>
+          <div id="paymentHistory" class="space-y-2">
             <!-- JS Loaded -->
+            <div class="text-center py-8 text-gray-400">
+              <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
+              <p>No payment history</p>
+            </div>
           </div>
         </div>
 
@@ -195,75 +160,85 @@
       <!-- Right Column -->
       <div class="sidebar-grid">
 
-        <!-- Quick Actions -->
-        <div class="glass-card">
-          <h3 class="text-white mb-4">Quick Actions</h3>
-          <div class="flex flex-col gap-3">
-            <a href="/events" class="btn btn-primary btn-full">
-              <i class="fas fa-calendar-plus"></i> Join Event
-            </a>
-            <a href="/opportunities" class="btn btn-outline btn-full">
-              <i class="fas fa-briefcase"></i> Opportunities
-            </a>
-            <button id="requestMentorBtn" class="btn btn-outline btn-full">
-              <i class="fas fa-user-graduate"></i> Request Mentor
-            </button>
-            <a href="/payment" class="btn btn-outline btn-full">
-              <i class="fas fa-credit-card"></i> Pay Dues
-            </a>
-            <a href="/support" class="btn btn-outline btn-full">
-              <i class="fas fa-life-ring"></i> Get Support
-            </a>
-          </div>
-        </div>
-
-        <!-- Mini Calendar -->
-        <div class="glass-card">
-          <h3 class="text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-calendar-alt text-green-500"></i> Calendar
-          </h3>
-          <div id="miniCalendar" class="text-center mb-4">
-            <!-- JS Calendar -->
-          </div>
-          <a href="/events" class="btn btn-outline btn-sm btn-full">
-            <i class="fas fa-calendar-plus"></i> View Events
-          </a>
-        </div>
-
-        <!-- Payment History -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-white">Payment History</h3>
-            <a href="/payment" class="btn btn-outline btn-sm">
-              <i class="fas fa-receipt"></i> View All
-            </a>
-          </div>
-          <div id="paymentHistory" class="space-y-2">
-            <!-- JS Loaded -->
-          </div>
-        </div>
-
         <!-- Profile Summary -->
         <div class="glass-card text-center">
-          <div
-            class="avatar-circle avatar-large bg-green-200/30 backdrop-blur-sm border border-green-300 mx-auto mb-4 shadow-lg">
-            <i class="fas fa-user text-green-500 text-2xl"></i>
-          </div>
-          <h4 id="userName2" class="text-white mb-1">Loading...</h4>
-          <p id="userRole" class="text-green-500 text-sm mb-4">Member</p>
-          <div class="space-y-2 mb-4 text-sm">
-            <div class="flex justify-between text-gray-300">
-              <span>Email:</span>
-              <span id="userEmail" class="text-white">-</span>
+          <div class="relative inline-block mb-4">
+            <div
+              class="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg mx-auto">
+              <span id="userInitials2">JD</span>
             </div>
-            <div class="flex justify-between text-gray-300">
-              <span>Member Since:</span>
-              <span id="memberSince" class="text-white">-</span>
+            <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-900"></div>
+          </div>
+          <h4 id="userName2" class="text-white text-lg font-semibold mb-1">Loading...</h4>
+          <p id="userRole" class="text-green-400 text-sm mb-4">Member</p>
+          <div class="space-y-2 mb-4 text-sm text-left">
+            <div class="flex items-center gap-2 text-gray-300">
+              <i class="fas fa-envelope w-4"></i>
+              <span id="userEmail" class="text-white truncate text-xs">-</span>
+            </div>
+            <div class="flex items-center gap-2 text-gray-300">
+              <i class="fas fa-calendar-alt w-4"></i>
+              <span class="text-xs">Joined <span id="memberSince" class="text-white">-</span></span>
+            </div>
+            <div class="flex items-center gap-2 text-gray-300">
+              <i class="fas fa-id-card w-4"></i>
+              <span class="text-xs">Status: <span
+                  class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">Active</span></span>
             </div>
           </div>
           <a href="/settings" class="btn btn-outline btn-full">
-            <i class="fas fa-edit"></i> Edit Profile
+            <i class="fas fa-cog"></i> Settings
           </a>
+        </div>
+
+        <!-- Membership Status -->
+        <div class="glass-card">
+          <h3 class="text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-id-badge text-blue-400"></i>
+            Membership
+          </h3>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-300 text-sm">Status</span>
+              <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-semibold">
+                <i class="fas fa-check-circle mr-1"></i> Active
+              </span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-300 text-sm">Type</span>
+              <span class="text-white text-sm font-semibold">Regular Member</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-300 text-sm">Valid Until</span>
+              <span class="text-white text-sm font-semibold">Dec 2025</span>
+            </div>
+            <div class="pt-3 border-t border-white/10">
+              <a href="/payment" class="btn btn-primary btn-full btn-sm">
+                <i class="fas fa-credit-card"></i> Renew Membership
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="glass-card">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-white flex items-center gap-2">
+              <i class="fas fa-bell text-blue-400"></i>
+              Notifications
+              <span id="notifBadge" class="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full hidden">0</span>
+            </h3>
+            <button id="markAllReadBtn" class="text-xs text-blue-400 hover:text-blue-300">
+              Mark all read
+            </button>
+          </div>
+          <div id="notificationsList" class="space-y-2 max-h-64 overflow-y-auto">
+            <!-- JS Loaded -->
+            <div class="text-center py-4 text-gray-400 text-sm">
+              <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
+              <p>No new notifications</p>
+            </div>
+          </div>
         </div>
 
       </div>

@@ -482,10 +482,20 @@ export class CMSAPI {
      */
     static async getMembers(filters = {}) {
         try {
+            console.log('🌐 Fetching from /admin/users with filters:', filters);
             const data = await this.get('/admin/users', filters);
-            return data.users || data.data || [];
+            console.log('📦 Raw API response:', data);
+            
+            const members = data.users || data.data || [];
+            console.log('👥 Extracted members array:', members.length, 'items');
+            
+            if (members.length > 0) {
+                console.log('👤 First member:', members[0]);
+            }
+            
+            return members;
         } catch (error) {
-            console.error('Failed to fetch members:', error);
+            console.error('❌ Failed to fetch members from API:', error);
             throw error;
         }
     }

@@ -149,24 +149,31 @@
                 </button>
             </div>
 
-            <!-- Activity Feed Grid -->
-            <div class="activity-feed-grid" id="feedContainer">
-                <!-- Feed items will be loaded here by JavaScript -->
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-            </div>
-
-            <!-- Load More -->
-            <div class="feed-load-more">
-                <button class="btn-outline-modern" id="loadMoreBtn">
-                    <i class="fas fa-plus"></i>
-                    <span>Load More Updates</span>
+            <!-- Activity Feed Carousel -->
+            <div class="activity-feed-carousel">
+                <button class="carousel-btn carousel-btn-prev" id="feedPrevBtn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <div class="carousel-track-container">
+                    <div class="activity-feed-track" id="feedContainer">
+                        <!-- Feed items will be loaded here by JavaScript -->
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                
+                <button class="carousel-btn carousel-btn-next" id="feedNextBtn">
+                    <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
+            
+            <!-- Carousel Indicators -->
+            <div class="carousel-indicators" id="feedIndicators"></div>
         </div>
     </section>
 
@@ -293,13 +300,29 @@
                 </p>
             </div>
 
-            <div class="success-stories-grid" id="storiesContainer">
-                <!-- Success stories will be loaded here by JavaScript -->
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
+            <!-- Carousel Container -->
+            <div class="success-stories-carousel">
+                <button class="carousel-btn carousel-btn-prev" id="storiesPrevBtn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <div class="carousel-track-container">
+                    <div class="success-stories-track" id="storiesContainer">
+                        <!-- Success stories will be loaded here by JavaScript -->
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </div>
+                
+                <button class="carousel-btn carousel-btn-next" id="storiesNextBtn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
+            
+            <!-- Carousel Indicators -->
+            <div class="carousel-indicators" id="storiesIndicators"></div>
         </div>
     </section>
 
