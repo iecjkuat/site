@@ -28,7 +28,7 @@ class ProjectsManager {
     }
 
     // Security helper to prevent XSS attacks
-    escapeHtml(text) {
+    escapeHTML(text) {
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
@@ -341,24 +341,24 @@ class ProjectsManager {
             : '<span class="project-type-badge personal-project"><i class="fas fa-user"></i> Personal Project</span>';
 
         return `
-            <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
+            <div class="project-card" data-project-id="${this.escapeHTML(project.id)}">
                 <div class="project-header">
                     <div class="project-lead-wrapper">
-                        <h3 class="project-title">${this.escapeHtml(project.title)}</h3>
+                        <h3 class="project-title">${this.escapeHTML(project.title)}</h3>
                         <div class="project-meta-row">
                             ${projectTypeBadge}
-                            <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
-                            <span class="category-badge-static">${this.escapeHtml(project.category)}</span>
+                            <span class="project-status ${this.escapeHTML(project.status?.toLowerCase() || 'active')}">${this.escapeHTML(project.status || 'Active')}</span>
+                            <span class="category-badge-static">${this.escapeHTML(project.category)}</span>
                         </div>
                     </div>
                 </div>
                 
-                <p class="project-description">${this.escapeHtml(project.description)}</p>
+                <p class="project-description">${this.escapeHTML(project.description)}</p>
                 
                 ${project.technologies && project.technologies.length > 0 ? `
                     <div class="project-tech">
                         ${project.technologies.slice(0, 3).map(tech => `
-                            <span class="tech-tag">${this.escapeHtml(tech)}</span>
+                            <span class="tech-tag">${this.escapeHTML(tech)}</span>
                         `).join('')}
                         ${project.technologies.length > 3 ? `<span class="tech-tag-more">+${project.technologies.length - 3} more</span>` : ''}
                     </div>
@@ -367,19 +367,19 @@ class ProjectsManager {
                 <div class="project-stats">
                     <div class="project-stat team">
                         <i class="fas fa-user"></i>
-                        <span>${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</span>
+                        <span>${this.escapeHTML(project.project_lead?.name || 'Team Lead')}</span>
                     </div>
                     <div class="project-stat timeline">
                         <i class="fas fa-clock"></i>
-                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
+                        <span>${this.escapeHTML(this.getTimeAgo(new Date(project.created_at)))}</span>
                     </div>
                 </div>
                 
                 <div class="project-actions">
-                    <button class="btn btn-outline btn-sm" data-action="view-project" data-project-id="${this.escapeHtml(project.id)}">
+                    <button class="btn btn-outline btn-sm" data-action="view-project" data-project-id="${this.escapeHTML(project.id)}">
                         <i class="fas fa-eye"></i>View
                     </button>
-                    <button class="btn btn-primary btn-sm" data-action="join-project" data-project-id="${this.escapeHtml(project.id)}">
+                    <button class="btn btn-primary btn-sm" data-action="join-project" data-project-id="${this.escapeHTML(project.id)}">
                         <i class="fas fa-plus"></i>Join
                     </button>
                 </div>
@@ -665,15 +665,11 @@ class ProjectsManager {
                 // Close modal and reset form
                 const modal = document.getElementById('collaborationModal');
                 if (modal) {
-                    modal.classList.remove('active');
+                    modal.remove(); // Changed from classList.remove to remove() for dynamic modals
                 }
                 form.reset();
 
-                // Also close project modal if it's open
-                const projectModal = document.getElementById('projectModal');
-                if (projectModal && projectModal.classList.contains('active')) {
-                    projectModal.classList.remove('active');
-                }
+                document.body.style.overflow = 'auto'; // Restore scroll
             } else {
                 const error = await response.json();
                 this.showError(error.message || 'Failed to send collaboration request');
@@ -686,9 +682,10 @@ class ProjectsManager {
             // Close modal and reset form
             const modal = document.getElementById('collaborationModal');
             if (modal) {
-                modal.classList.remove('active');
+                modal.remove(); // Changed from classList.remove to remove() for dynamic modals
             }
             form.reset();
+            document.body.style.overflow = 'auto'; // Restore scroll
         } finally {
             // Reset button state
             submitBtn.innerHTML = originalText;
@@ -834,398 +831,476 @@ class ProjectsManager {
         // TODO: Implement actual contact/messaging system
         console.log('Contacting founder for project:', projectId);
     }
-    // Modal methods
+    // Modal methods - Rewritten to match events page exactly
     showProjectModal(project) {
         console.log('showProjectModal called for:', project.title);
 
-        let modal = document.getElementById('projectModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'projectModal';
-            modal.className = 'modal-backdrop';
-            document.body.appendChild(modal);
+        // Remove any existing modal
+        const existingModal = document.getElementById('projectDetailsModal');
+        if (existingModal) {
+            existingModal.remove();
         }
 
-        if (modal.parentElement !== document.body) {
-            document.body.appendChild(modal);
-        }
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'projectDetailsModal';
+        modal.className = 'modal-backdrop';
 
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content-premium';
 
-        const modalTitle = document.getElementById('projectModalTitle');
-        const modalContent = document.getElementById('projectModalContent');
+        const isClubProject = project.project_type === 'club';
+        const projectTypeBadge = isClubProject
+            ? '<div class="modal-stat-pill"><i class="fas fa-building"></i> Club Project</div>'
+            : '<div class="modal-stat-pill"><i class="fas fa-user"></i> Personal Project</div>';
 
-        if (modalTitle) modalTitle.textContent = project.title;
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" class="modal-close-btn">×</button>
 
-        const contentHtml = `
-            <div class="modal-body">
-                <div class="project-detail-header" style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #10b981); display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-project-diagram" style="color: white; font-size: 1.25rem;"></i>
+            <div class="modal-inner-padding">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div class="incubation-icon-container" style="background: rgba(245, 158, 11, 0.2);">
+                        <i class="fas fa-project-diagram" style="font-size: 1.5rem; color: #f59e0b;"></i>
+                    </div>
+                    <h2 class="modal-title-vibrant">${this.escapeHTML(project.title)}</h2>
+                    <p class="modal-subtitle">JKUAT Innovation Club</p>
+                </div>
+
+                <div class="modal-badge-row">
+                    ${projectTypeBadge}
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-tag"></i>
+                        <span>${this.escapeHTML(project.category)}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-signal"></i>
+                        <span>${this.escapeHTML(project.status || 'Active')}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-user"></i>
+                        <span>${this.escapeHTML(project.project_lead?.name || 'Team Lead')}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-clock"></i>
+                        <span>${this.getTimeAgo(new Date(project.created_at))}</span>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <h3 class="modal-section-title"><i class="fas fa-info-circle"></i> Description</h3>
+                    <div class="modal-text-content">
+                        ${this.escapeHTML(project.description)}
+                    </div>
+                </div>
+
+                ${project.technologies && project.technologies.length > 0 ? `
+                    <div class="modal-section">
+                        <h3 class="modal-section-title"><i class="fas fa-code"></i> Technologies</h3>
+                        <div class="modal-tech-list">
+                            ${project.technologies.map(tech => `
+                                <span class="modal-tech-tag">${this.escapeHTML(tech)}</span>
+                            `).join('')}
                         </div>
-                        <div>
-                            <h3 style="color: rgba(255, 255, 255, 0.6); font-size: 0.875rem; margin: 0; font-weight: 500;">JKUAT Innovation Club</h3>
-                            <h2 style="color: white; font-size: 1.75rem; margin: 0.25rem 0 0 0; font-weight: 700; line-height: 1.3;">${this.escapeHtml(project.title)}</h2>
-                        </div>
                     </div>
-                </div>
+                ` : ''}
 
-                <div style="margin-bottom: 2rem;">
-                    <h3 style="color: white; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem;">Description</h3>
-                    <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8; font-size: 0.95rem;">${this.escapeHtml(project.description)}</p>
-                </div>
-            </div>
-            <div class="modal-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 1rem; justify-content: flex-end;">
-                <button class="modal-close-btn-footer" style="padding: 0.875rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Close</button>
-                <button class="modal-join-btn" data-project-id="${this.escapeHtml(project.id)}" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Join Project</button>
-            </div>
-        `;
-
-        if (modalContent) {
-            modalContent.innerHTML = contentHtml;
-        } else {
-            modal.innerHTML = `<div class="modal-content">${contentHtml}</div>`;
-        }
-
-        modal.classList.add('active');
-
-        const closeModal = () => {
-            modal.classList.remove('active');
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        };
-
-        const closeBtn = modal.querySelector('.modal-close') || modal.querySelector('.modal-close-btn');
-        if (closeBtn) closeBtn.onclick = closeModal;
-        const footerBtn = modal.querySelector('.modal-close-btn-footer');
-        if (footerBtn) footerBtn.onclick = closeModal;
-
-        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-        const escapeHandler = (e) => { if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', escapeHandler); } };
-        document.addEventListener('keydown', escapeHandler);
-    }
-
-    showHackathonModal(hackathon) {
-        const startDate = new Date(hackathon.start_date);
-        const endDate = new Date(hackathon.end_date);
-        const registrationDeadline = new Date(hackathon.registration_deadline);
-        const now = new Date();
-        const isRegistrationOpen = now < registrationDeadline;
-
-        const modalHtml = `
-            < div class="project-detail-header" >
-                <div class="project-detail-meta">
-                    <span class="project-status ${isRegistrationOpen ? 'active' : 'completed'}">${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}</span>
-                    ${hackathon.theme ? `<span class="project-owner">Theme: ${this.escapeHtml(hackathon.theme)}</span>` : ''}
-                </div>
-                
-                <h1 class="project-detail-title">${this.escapeHtml(hackathon.title)}</h1>
-                
-                <div class="project-detail-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-users"></i>
-                        <span>${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)} Participants</span>
+                ${project.objectives && project.objectives.length > 0 ? `
+                    <div class="modal-section">
+                        <h3 class="modal-section-title"><i class="fas fa-bullseye"></i> Objectives</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                            ${project.objectives.map(obj => `
+                                <li style="display: flex; align-items: start; gap: 0.75rem; color: rgba(255, 255, 255, 0.7); line-height: 1.6;">
+                                    <i class="fas fa-check-circle" style="color: #10b981; margin-top: 0.25rem; flex-shrink: 0;"></i>
+                                    <span>${this.escapeHTML(obj)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
                     </div>
-                    <div class="stat-item">
-                        <i class="fas fa-money-bill"></i>
-                        <span>KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</span>
-                    </div>
-                </div>
-            </div >
+                ` : ''}
 
-            <div class="project-detail-content">
-                <section class="detail-section">
-                    <h3>Description</h3>
-                    <p>${this.escapeHtml(hackathon.description)}</p>
-                </section>
-
-                <div class="detail-grid">
-                    <section class="detail-section">
-                        <h3>Start Date</h3>
-                        <p>${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}</p>
-                    </section>
-                    <section class="detail-section">
-                        <h3>End Date</h3>
-                        <p>${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}</p>
-                    </section>
-                    <section class="detail-section">
-                        <h3>Registration Deadline</h3>
-                        <p>${registrationDeadline.toLocaleDateString()} at ${registrationDeadline.toLocaleTimeString()}</p>
-                    </section>
-                    <section class="detail-section">
-                        <h3>Venue</h3>
-                        <p>${this.escapeHtml(hackathon.venue || 'TBA')}</p>
-                    </section>
-                </div>
-
-                <div class="project-detail-actions">
-                    ${isRegistrationOpen ? `
-                        <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
-                            <i class="fas fa-user-plus"></i>
-                            Register Now
-                        </button>
-                    ` : `
-                        <button class="btn btn-secondary opacity-50" disabled>
-                            <i class="fas fa-lock"></i>
-                            Registration Closed
-                        </button>
-                    `}
-                    <button class="btn btn-outline" data-action="share-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
-                        <i class="fas fa-share"></i>
-                        Share Event
+                <div class="modal-actions-bar">
+                    <button id="modalCloseBtn" class="modal-action-btn modal-btn-secondary">Close</button>
+                    <button id="modalJoinBtn" class="modal-action-btn modal-btn-primary">
+                        <i class="fas fa-plus"></i> Join Project
                     </button>
                 </div>
             </div>
         `;
 
-        // Update modal content and title
-        const modalContent = document.getElementById('projectModalContent');
-        const modalTitle = document.getElementById('projectModalTitle');
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add active class to show modal (CSS has display: none by default)
+        modal.classList.add('active');
 
-        if (modalContent) {
-            modalContent.innerHTML = modalHtml;
-        }
-        if (modalTitle) {
-            modalTitle.textContent = 'Hackathon Details';
-        }
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+        modal.querySelector('#modalJoinBtn').onclick = () => {
+            closeModal();
+            this.joinProject(project.id);
+        };
+
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
 
         // Show modal
-        const modal = document.getElementById('projectModal');
-        if (modal) {
-            modal.classList.add('active');
-        }
+        document.body.style.overflow = 'hidden';
     }
+
     showHackathonModal(hackathon) {
+        console.log('showHackathonModal called for:', hackathon.title);
+
         const startDate = new Date(hackathon.start_date);
         const endDate = new Date(hackathon.end_date);
         const registrationDeadline = new Date(hackathon.registration_deadline);
-        const now = new Date();
-        const isRegistrationOpen = now < registrationDeadline;
+        const today = new Date();
+        const isRegistrationOpen = today <= registrationDeadline;
 
-        const modalHtml = `
-            <div class="modal-body">
-                <div class="project-detail-header">
-                    <div class="project-detail-meta">
-                        <span class="project-status ${isRegistrationOpen ? 'active' : 'completed'}">${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}</span>
-                        ${hackathon.theme ? `<span class="project-owner">Theme: ${this.escapeHtml(hackathon.theme)}</span>` : ''}
+        // Remove any existing modal
+        const existingModal = document.getElementById('hackathonDetailsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'hackathonDetailsModal';
+        modal.className = 'modal-backdrop';
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content-premium';
+
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" class="modal-close-btn">×</button>
+
+            <div class="modal-inner-padding">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div class="incubation-icon-container" style="background: rgba(245, 158, 11, 0.2);">
+                        <i class="fas fa-trophy" style="font-size: 1.5rem; color: #f59e0b;"></i>
                     </div>
-                    
-                    <h1 class="project-detail-title">${this.escapeHtml(hackathon.title)}</h1>
-                    
-                    <div class="project-detail-stats">
-                        <div class="stat-item">
-                            <i class="fas fa-users"></i>
-                            <span>${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)} Participants</span>
+                    <h2 class="modal-title-vibrant">${this.escapeHTML(hackathon.title)}</h2>
+                    <p class="modal-subtitle">JKUAT Hackathon</p>
+                </div>
+
+                <div class="modal-badge-row">
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-calendar"></i>
+                        <span>${startDate.toLocaleDateString()}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-users"></i>
+                        <span>${this.escapeHTML(hackathon.current_participants)}/${this.escapeHTML(hackathon.max_participants)} Participants</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-money-bill"></i>
+                        <span>KSh ${this.escapeHTML(hackathon.registration_fee || 0)}</span>
+                    </div>
+                    ${hackathon.venue ? `
+                        <div class="modal-stat-pill">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${this.escapeHTML(hackathon.venue)}</span>
                         </div>
-                        <div class="stat-item">
-                            <i class="fas fa-money-bill"></i>
-                            <span>KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</span>
+                    ` : ''}
+                </div>
+
+                <div class="modal-section">
+                    <h3 class="modal-section-title"><i class="fas fa-info-circle"></i> Description</h3>
+                    <div class="modal-text-content">
+                        ${this.escapeHTML(hackathon.description)}
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <h3 class="modal-section-title"><i class="fas fa-clock"></i> Schedule</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="modal-stat-pill" style="border-radius: 12px; padding: 1rem; flex-direction: column; align-items: start; height: auto;">
+                            <span style="color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-bottom: 0.25rem;">Start Date</span>
+                            <span style="color: white; font-weight: 600;">${startDate.toLocaleDateString()}</span>
+                        </div>
+                        <div class="modal-stat-pill" style="border-radius: 12px; padding: 1rem; flex-direction: column; align-items: start; height: auto;">
+                            <span style="color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-bottom: 0.25rem;">End Date</span>
+                            <span style="color: white; font-weight: 600;">${endDate.toLocaleDateString()}</span>
+                        </div>
+                        <div class="modal-stat-pill" style="border-radius: 12px; padding: 1rem; flex-direction: column; align-items: start; height: auto;">
+                            <span style="color: rgba(255,255,255,0.4); font-size: 0.75rem; margin-bottom: 0.25rem;">Reg. Deadline</span>
+                            <span style="color: white; font-weight: 600;">${registrationDeadline.toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="project-detail-content">
-                    <section class="detail-section">
-                        <h3>Description</h3>
-                        <p>${this.escapeHtml(hackathon.description)}</p>
-                    </section>
-                    
-                    <div class="detail-grid">
-                        <section class="detail-section">
-                            <h3>Start Date</h3>
-                            <p>${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}</p>
-                        </section>
-                        <section class="detail-section">
-                            <h3>End Date</h3>
-                            <p>${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}</p>
-                        </section>
-                        <section class="detail-section">
-                            <h3>Registration Deadline</h3>
-                            <p>${registrationDeadline.toLocaleDateString()} at ${registrationDeadline.toLocaleTimeString()}</p>
-                        </section>
-                        <section class="detail-section">
-                            <h3>Venue</h3>
-                            <p>${this.escapeHtml(hackathon.venue || 'TBA')}</p>
-                        </section>
-                    </div>
-                    
-                    <div class="project-detail-actions">
-                        ${isRegistrationOpen ? `
-                            <button class="btn btn-primary" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
-                                <i class="fas fa-user-plus"></i>
-                                Register Now
-                            </button>
-                        ` : `
-                            <button class="btn btn-secondary opacity-50" disabled>
-                                <i class="fas fa-lock"></i>
-                                Registration Closed
-                            </button>
-                        `}
-                        <button class="btn btn-outline" data-action="share-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
-                            <i class="fas fa-share"></i>
-                            Share Event
+
+                <div class="modal-actions-bar">
+                    <button id="modalCloseBtn" class="modal-action-btn modal-btn-secondary">Close</button>
+                    ${isRegistrationOpen ? `
+                        <button id="modalRegisterBtn" class="modal-action-btn modal-btn-primary">
+                            <i class="fas fa-user-plus"></i> Register Now
                         </button>
-                    </div>
+                    ` : `
+                        <button style="cursor: not-allowed; opacity: 0.6;" class="modal-action-btn modal-btn-secondary">
+                            <i class="fas fa-lock"></i> Registration Closed
+                        </button>
+                    `}
                 </div>
             </div>
         `;
 
-        // Update modal content and title
-        const modalContent = document.getElementById('projectModalContent');
-        const modalTitle = document.getElementById('projectModalTitle');
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add active class to show modal (CSS has display: none by default)
+        modal.classList.add('active');
 
-        if (modalContent) modalContent.innerHTML = modalHtml;
-        if (modalTitle) modalTitle.textContent = 'Hackathon Details';
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+
+        if (isRegistrationOpen) {
+            modal.querySelector('#modalRegisterBtn').onclick = () => {
+                closeModal();
+                this.registerForHackathon(hackathon.id);
+            };
+        }
+
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
 
         // Show modal
-        const modal = document.getElementById('projectModal');
-        if (modal) {
-            modal.classList.add('active');
-            modal.style.display = 'flex';
-        }
+        document.body.style.overflow = 'hidden';
     }
 
     showCollaborationModal(project) {
-        // Update modal content
-        const modalContent = document.getElementById('collaborationModalContent');
+        console.log('showCollaborationModal called for:', project.title);
 
-        if (modalContent) {
-            modalContent.innerHTML = `
-                <div class="mb-6">
-                    <p class="collaboration-intro">
-                        Tell the project lead why you want to collaborate and what you can contribute to "${this.escapeHtml(project.title)}".
-                    </p>
-                    <div class="lead-highlight-box">
-                        <div class="lead-highlight-header">
-                            <i class="fas fa-user lead-highlight-label"></i>
-                            <strong class="lead-highlight-label">Project Lead:</strong>
-                        </div>
-                        <p class="lead-highlight-name">${this.escapeHtml(project.project_lead?.name || 'Team Lead')}</p>
+        // Remove any existing modal
+        const existingModal = document.getElementById('collaborationModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'collaborationModal';
+        modal.className = 'modal-backdrop';
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content-premium';
+        modalContent.style.maxWidth = '600px';
+
+        modalContent.innerHTML = `
+            <button id="closeCollabModalBtn" class="modal-close-btn">×</button>
+
+            <div class="modal-inner-padding">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div class="incubation-icon-container" style="background: rgba(16, 185, 129, 0.2);">
+                        <i class="fas fa-handshake" style="font-size: 1.5rem; color: #10b981;"></i>
                     </div>
-                </div >
-
-                    <form id="collaborationForm" data-project-id="${this.escapeHtml(project.id)}">
-                        <div class="form-group">
-                            <label class="form-label">Your Role in the Project *</label>
-                            <select name="role" class="glass-input" required>
-                                <option value="">Select your role</option>
-                                <option value="developer">Developer</option>
-                                <option value="designer">UI/UX Designer</option>
-                                <option value="researcher">Researcher</option>
-                                <option value="marketing">Marketing Specialist</option>
-                                <option value="business">Business Analyst</option>
-                                <option value="mentor">Mentor/Advisor</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Skills You Bring *</label>
-                            <input type="text" name="skills" class="glass-input" placeholder="e.g., React, Python, Machine Learning, Project Management" required>
-                            <small class="empty-state-text">Separate multiple skills with commas</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Why do you want to collaborate? *</label>
-                            <textarea name="message" class="glass-input" rows="4" placeholder="Tell the project lead why you're interested and how you can contribute..." required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Time Commitment *</label>
-                            <select name="timeCommitment" class="glass-input" required>
-                                <option value="">Select time commitment</option>
-                                <option value="part-time">Part-time (5-10 hours/week)</option>
-                                <option value="significant">Significant (10-20 hours/week)</option>
-                                <option value="full-time">Full-time (20+ hours/week)</option>
-                                <option value="flexible">Flexible schedule</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Contact Email *</label>
-                            <input type="email" name="email" class="glass-input" placeholder="your.email@example.com" required>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-outline" data-action="close-modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-handshake"></i>Send Collaboration Request
-                            </button>
-                        </div>
-                    </form>
+                    <h2 class="modal-title-vibrant" style="font-size: 1.75rem;">Collaborate</h2>
+                    <p class="modal-subtitle">Send joining request for "${this.escapeHTML(project.title)}"</p>
                 </div>
-            `;
-        }
 
-        const modal = document.getElementById('collaborationModal');
-        if (modal) {
-            document.body.style.overflow = 'hidden';
-            modal.classList.add('active');
-            modal.style.display = 'flex';
-        }
+                <form id="collaborationForm" class="modal-form-glass" data-project-id="${this.escapeHTML(project.id)}">
+                    <div class="modal-field-group">
+                        <label class="modal-field-label">Your Role in the Project *</label>
+                        <select name="role" class="modal-input-glass" required>
+                            <option value="">Select your role</option>
+                            <option value="developer">Developer</option>
+                            <option value="designer">UI/UX Designer</option>
+                            <option value="researcher">Researcher</option>
+                            <option value="marketing">Marketing Specialist</option>
+                            <option value="business">Business Analyst</option>
+                            <option value="mentor">Mentor/Advisor</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="modal-field-group">
+                        <label class="modal-field-label">Skills You Bring *</label>
+                        <input type="text" name="skills" class="modal-input-glass" placeholder="e.g., React, Python, Machine Learning" required>
+                    </div>
+                    
+                    <div class="modal-field-group">
+                        <label class="modal-field-label">Why do you want to collaborate? *</label>
+                        <textarea name="message" class="modal-input-glass" style="resize: vertical; min-height: 100px;" rows="3" placeholder="Tell the project lead how you can contribute..." required></textarea>
+                    </div>
+                    
+                    <div class="modal-field-group">
+                        <label class="modal-field-label">Time Commitment *</label>
+                        <select name="timeCommitment" class="modal-input-glass" required>
+                            <option value="">Select time commitment</option>
+                            <option value="part-time">Part-time (5-10 hours/week)</option>
+                            <option value="significant">Significant (10-20 hours/week)</option>
+                            <option value="full-time">Full-time (20+ hours/week)</option>
+                            <option value="flexible">Flexible schedule</option>
+                        </select>
+                    </div>
+                    
+                    <div class="modal-field-group" style="margin-bottom: 1rem;">
+                        <label class="modal-field-label">Contact Email *</label>
+                        <input type="email" name="email" class="modal-input-glass" placeholder="your.email@example.com" required>
+                    </div>
+                    
+                    <div class="modal-actions-bar">
+                        <button type="button" id="cancelCollabBtn" class="modal-action-btn modal-btn-secondary">Cancel</button>
+                        <button type="submit" class="modal-action-btn modal-btn-primary">
+                            <i class="fas fa-handshake"></i> Send Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add active class to show modal (CSS has display: none by default)
+        modal.classList.add('active');
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeCollabModalBtn').onclick = closeModal;
+        modal.querySelector('#cancelCollabBtn').onclick = closeModal;
+
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Show modal
+        document.body.style.overflow = 'hidden';
     }
 
     showIncubationModal(project) {
-        const modalHtml = `
-            <div class="modal-body">
-                <div class="project-detail-header">
-                    <div class="project-detail-meta">
-                        <span class="project-status planning">Incubation Program</span>
-                        <span class="project-owner">by ${this.escapeHtml(project.project_lead?.name || project.founder || 'Founder')}</span>
+        console.log('showIncubationModal called for:', project.title);
+
+        // Remove any existing modal
+        const existingModal = document.getElementById('incubationDetailsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'incubationDetailsModal';
+        modal.className = 'modal-backdrop';
+
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content-premium';
+
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" class="modal-close-btn">×</button>
+
+            <div class="modal-inner-padding">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div class="incubation-icon-container" style="background: rgba(139, 92, 246, 0.2);">
+                        <i class="fas fa-seedling" style="font-size: 1.5rem; color: #8b5cf6;"></i>
                     </div>
-                    
-                    <h1 class="project-detail-title">${this.escapeHtml(project.title)}</h1>
-                    
-                    <div class="project-detail-stats">
-                        <div class="stat-item">
-                            <i class="fas fa-chart-line"></i>
-                            <span>${this.escapeHtml(project.stage || 'Validation')}</span>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-money-bill"></i>
-                            <span>KSh ${this.escapeHtml(project.funding || '0')} Funding</span>
-                        </div>
+                    <h2 class="modal-title-vibrant">${this.escapeHTML(project.title)}</h2>
+                    <p class="modal-subtitle">Incubation Program</p>
+                </div>
+
+                <div class="modal-badge-row">
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-chart-line" style="color: #8b5cf6;"></i>
+                        <span>${this.escapeHTML(project.stage || 'Validation')}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-money-bill" style="color: #8b5cf6;"></i>
+                        <span>KSh ${this.escapeHTML(project.funding || '0')}</span>
+                    </div>
+                    <div class="modal-stat-pill">
+                        <i class="fas fa-user-circle" style="color: #8b5cf6;"></i>
+                        <span>${this.escapeHTML(project.founder || project.project_lead?.name || 'Founder')}</span>
                     </div>
                 </div>
-                
-                <div class="project-detail-content">
-                    <section class="detail-section">
-                        <h3>Description</h3>
-                        <p>${this.escapeHtml(project.description)}</p>
-                    </section>
-                    
-                    <section class="detail-section">
-                        <h3>Current Stage</h3>
-                        <p>${this.escapeHtml(project.stage || 'Validation')}</p>
-                    </section>
-                    
-                    <div class="project-detail-actions">
-                        <button class="btn btn-primary" data-action="contact-founder" data-project-id="${this.escapeHtml(project.id)}">
-                            <i class="fas fa-envelope"></i>
-                            Contact Founder
-                        </button>
-                        <button class="btn btn-outline" data-action="share-incubation" data-project-id="${this.escapeHtml(project.id)}">
-                            <i class="fas fa-share"></i>
-                            Share Project
-                        </button>
+
+                <div class="modal-section">
+                    <h3 class="modal-section-title"><i class="fas fa-info-circle"></i> Program Description</h3>
+                    <div class="modal-text-content">
+                        ${this.escapeHTML(project.description)}
                     </div>
+                </div>
+
+                <div class="modal-actions-bar">
+                    <button id="modalCloseBtn" class="modal-action-btn modal-btn-secondary">Close</button>
+                    <button id="modalContactBtn" class="modal-action-btn modal-btn-primary">
+                        <i class="fas fa-envelope"></i> Contact Founder
+                    </button>
                 </div>
             </div>
         `;
 
-        const modalContent = document.getElementById('projectModalContent');
-        const modalTitle = document.getElementById('projectModalTitle');
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add active class to show modal (CSS has display: none by default)
+        modal.classList.add('active');
 
-        if (modalContent) modalContent.innerHTML = modalHtml;
-        if (modalTitle) modalTitle.textContent = 'Incubation Project';
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
 
-        const modal = document.getElementById('projectModal');
-        if (modal) {
-            modal.classList.add('active');
-            modal.style.display = 'flex';
-        }
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+        modal.querySelector('#modalContactBtn').onclick = () => {
+            closeModal();
+            this.contactFounder(project.id);
+        };
+
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Show modal
+        document.body.style.overflow = 'hidden';
     }
 
     // Additional action methods

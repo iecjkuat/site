@@ -8,6 +8,7 @@ const multer = require('multer');
 const path = require('path');
 const { body, validationResult, param } = require('express-validator');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -43,9 +44,17 @@ const upload = multer({
 
 // Get all ideas with filtering and pagination
 router.get('/', async (req, res) => {
+    const startTime = Date.now();
+    console.log('📥 GET /ideas request received:', {
+        query: req.query,
+        timestamp: new Date().toISOString()
+    });
+
     try {
         const { status, category, userId, page = 1, limit = 10, search, sort = 'newest' } = req.query;
         const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        console.log('🔍 Query params:', { status, category, userId, page, limit, search, sort, offset });
 
         let query = supabase
             .from('ideas')
@@ -55,6 +64,8 @@ router.get('/', async (req, res) => {
                 idea_categories:category_id(name, icon, color)
             `)
             .eq('status', 'approved'); // Only show approved ideas
+
+        console.log('⏳ Executing Supabase query...');
 
         // Apply filters
         if (status) {
@@ -90,7 +101,13 @@ router.get('/', async (req, res) => {
 
         const { data: ideas, error } = await query;
 
-        if (error) throw error;
+        const queryTime = Date.now() - startTime;
+        console.log(`✅ Supabase query completed in ${queryTime}ms, returned ${ideas?.length || 0} ideas`);
+
+        if (error) {
+            console.error('❌ Supabase query error:', error);
+            throw error;
+        }
 
         // Get total count for pagination
         let countQuery = supabase
@@ -126,75 +143,89 @@ router.get('/', async (req, res) => {
 // Get idea categories
 router.get('/categories', async (req, res) => {
     try {
-        // Try to get from idea_categories table first
         const { data: categories, error } = await supabase
             .from('idea_categories')
             .select('*')
-            .eq('is_active', true)
-            .order('sort_order');
+            .order('name');
 
-        if (!error && categories && categories.length > 0) {
-            return res.json(categories);
-        }
+        if (error) throw error;
 
-        // Fallback: Get unique categories from existing ideas
-        const { data: ideas, error: ideasError } = await supabase
-            .from('ideas')
-            .select('category')
-            .not('category', 'is', null);
-
-        if (ideasError) throw ideasError;
-
-        // Create mock categories from existing data
-        const uniqueCategories = [...new Set(ideas.map(idea => idea.category))];
-        const mockCategories = uniqueCategories.map((cat, index) => ({
-            id: cat,
-            name: cat,
-            icon: getCategoryIcon(cat),
-            color: getCategoryColor(cat),
-            is_active: true,
-            sort_order: index + 1
-        }));
-
-        res.json(mockCategories);
+        res.json({ categories: categories || [] });
     } catch (error) {
         console.error('Error fetching categories:', error);
-        res.status(500).json({ message: 'Failed to fetch categories' });
+        res.status(500).json({ message: 'Failed to fetch categories', categories: [] });
     }
 });
 
-// Helper functions for mock categories
-function getCategoryIcon(category) {
-    const iconMap = {
-        'Technology': 'fas fa-laptop-code',
-        'Agriculture': 'fas fa-seedling',
-        'Business': 'fas fa-briefcase',
-        'Healthcare': 'fas fa-heartbeat',
-        'Education': 'fas fa-graduation-cap',
-        'Environment': 'fas fa-leaf',
-        'Social Impact': 'fas fa-hands-helping',
-        'Finance': 'fas fa-coins',
-        'Transportation': 'fas fa-car',
-        'Entertainment': 'fas fa-gamepad'
-    };
-    return iconMap[category] || 'fas fa-lightbulb';
-}
+// Get idea statistics
+router.get('/stats', async (req, res) => {
+    try {
+        // Get total ideas count
+        const { count: totalIdeas, error: ideasError } = await supabase
+            .from('ideas')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'approved');
 
-function getCategoryColor(category) {
-    const colorMap = {
-        'Technology': '#3b82f6',
-        'Agriculture': '#10b981',
-        'Business': '#f59e0b',
-        'Healthcare': '#ef4444',
-        'Education': '#8b5cf6',
-        'Environment': '#059669',
-        'Social Impact': '#ec4899',
-        'Finance': '#f97316',
-        'Transportation': '#6b7280',
-        'Entertainment': '#f97316'
-    };
-    return colorMap[category] || '#6b7280';
-}
+        if (ideasError) {
+            console.error('Error counting ideas:', ideasError);
+            throw ideasError;
+        }
+
+        // Get total votes
+        const { data: votesData, error: votesError } = await supabase
+            .from('ideas')
+            .select('votes_count')
+            .eq('status', 'approved');
+
+        if (votesError) {
+            console.error('Error fetching votes:', votesError);
+        }
+
+        const totalVotes = votesData?.reduce((sum, idea) => sum + (idea.votes_count || 0), 0) || 0;
+
+        // Get total comments
+        const { data: commentsData, error: commentsError } = await supabase
+            .from('ideas')
+            .select('comments_count')
+            .eq('status', 'approved');
+
+        if (commentsError) {
+            console.error('Error fetching comments:', commentsError);
+        }
+
+        const totalComments = commentsData?.reduce((sum, idea) => sum + (idea.comments_count || 0), 0) || 0;
+
+        // Get active collaborators (users looking for team)
+        const { count: activeCollaborators, error: collabError } = await supabase
+            .from('ideas')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'approved')
+            .eq('looking_for_team', true);
+
+        if (collabError) {
+            console.error('Error counting collaborators:', collabError);
+        }
+
+        console.log('Stats:', { totalIdeas, totalVotes, totalComments, activeCollaborators });
+
+        res.json({
+            totalIdeas: totalIdeas || 0,
+            totalVotes: totalVotes,
+            totalComments: totalComments,
+            activeCollaborators: activeCollaborators || 0
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch stats',
+            error: error.message,
+            totalIdeas: 0,
+            totalVotes: 0,
+            totalComments: 0,
+            activeCollaborators: 0
+        });
+    }
+});
 
 // Get single idea by ID
 router.get('/:id', [
@@ -432,9 +463,96 @@ router.get('/categories/list', async (req, res) => {
     }
 });
 
-module.exports = router;
+// Get comments for an idea
+router.get('/:id/comments', [
+    param('id').isUUID().withMessage('Valid idea ID required')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-// Vote on an idea
+        const { id } = req.params;
+
+        const { data: comments, error } = await supabase
+            .from('idea_comments')
+            .select(`
+                *,
+                user:user_id(id, name, profile_picture)
+            `)
+            .eq('idea_id', id)
+            .is('parent_comment_id', null)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ comments: comments || [] });
+
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        res.status(500).json({ message: 'Failed to fetch comments', comments: [] });
+    }
+});
+
+// Post a comment on an idea
+router.post('/:id/comments', [
+    param('id').isUUID().withMessage('Valid idea ID required'),
+    body('content').notEmpty().withMessage('Comment content is required')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { id } = req.params;
+        const { content } = req.body;
+        
+        // Use a default user ID for anonymous comments
+        // In a real app, you'd get this from authentication middleware
+        const anonymousUserId = (await supabase.from('users').select('id').limit(1).single()).data?.id;
+
+        if (!anonymousUserId) {
+            return res.status(500).json({ message: 'No users found in database' });
+        }
+
+        // Create comment
+        const { data: comment, error } = await supabase
+            .from('idea_comments')
+            .insert({
+                idea_id: id,
+                user_id: anonymousUserId,
+                content
+            })
+            .select(`
+                *,
+                user:user_id(id, name, profile_picture)
+            `)
+            .single();
+
+        if (error) throw error;
+
+        // Update comment count on idea
+        const { data: commentCount } = await supabase
+            .from('idea_comments')
+            .select('id', { count: 'exact', head: true })
+            .eq('idea_id', id);
+
+        await supabase
+            .from('ideas')
+            .update({ comments_count: commentCount || 0 })
+            .eq('id', id);
+
+        res.status(201).json({ comment, message: 'Comment posted successfully' });
+
+    } catch (error) {
+        console.error('Error posting comment:', error);
+        res.status(500).json({ message: 'Failed to post comment' });
+    }
+});
+
+// Vote on an idea (supports both custom JWT and Supabase auth)
 router.post('/:id/vote', [
     param('id').isUUID().withMessage('Valid idea ID required'),
     body('voteType').isIn(['like', 'dislike']).withMessage('Valid vote type required')
@@ -447,11 +565,43 @@ router.post('/:id/vote', [
 
         const { id } = req.params;
         const { voteType } = req.body;
-        const userId = req.user?.id;
-
+        
+        let userId = null;
+        
+        // Try to get user from authorization header
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            
+            // Try custom JWT first
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+                    algorithms: ['HS256'],
+                    issuer: 'jkuat-innovation-club',
+                    audience: 'jkuat-platform'
+                });
+                userId = decoded.userId;
+                console.log('✅ Authenticated with custom JWT:', userId);
+            } catch (jwtError) {
+                // If custom JWT fails, try Supabase auth
+                try {
+                    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+                    if (user && !authError) {
+                        userId = user.id;
+                        console.log('✅ Authenticated with Supabase auth:', userId);
+                    }
+                } catch (supabaseError) {
+                    console.error('Both auth methods failed:', { jwtError, supabaseError });
+                }
+            }
+        }
+        
         if (!userId) {
             return res.status(401).json({ message: 'Authentication required' });
         }
+
+        console.log('✅ Vote request authenticated:', { ideaId: id, userId, voteType });
 
         // Check if user already voted
         const { data: existingVote, error: voteError } = await supabase
@@ -482,30 +632,29 @@ router.post('/:id/vote', [
             if (insertError) throw insertError;
         }
 
-        // Update idea vote counts (this will be handled by triggers if they exist)
+        // Update idea vote counts
         const { data: voteCounts, error: countError } = await supabase
             .from('idea_votes')
             .select('vote_type')
             .eq('idea_id', id);
 
-        if (!countError) {
+        if (!countError && voteCounts) {
             const likes = voteCounts.filter(v => v.vote_type === 'like').length;
-            const dislikes = voteCounts.filter(v => v.vote_type === 'dislike').length;
-
+            
             await supabase
                 .from('ideas')
                 .update({ 
-                    upvotes: likes,
-                    downvotes: dislikes 
+                    votes_count: likes
                 })
                 .eq('id', id);
         }
 
+        console.log('✅ Vote recorded successfully');
         res.json({ message: 'Vote recorded successfully' });
 
     } catch (error) {
-        console.error('Error voting on idea:', error);
-        res.status(500).json({ message: 'Failed to record vote' });
+        console.error('❌ Error voting on idea:', error);
+        res.status(500).json({ message: 'Failed to record vote', error: error.message });
     }
 });
 

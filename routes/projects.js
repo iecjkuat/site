@@ -212,6 +212,299 @@ router.get('/submissions', async (req, res) => {
 });
 
 /**
+ * POST /api/projects/:id/collaborate
+ * Submit a collaboration request for a project
+ * NOTE: This route MUST come before the generic GET /:id route
+ */
+router.post('/:id/collaborate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      role,
+      message,
+      skills,
+      timeCommitment,
+      email
+    } = req.body;
+
+    // Validate required fields
+    if (!role || !message || !email) {
+      return res.status(400).json({ 
+        message: 'Role, message, and email are required' 
+      });
+    }
+
+    // Use a default user ID for anonymous submissions
+    // In a real app, you'd get this from authentication middleware
+    const anonymousUserId = 'cb8ec53d-7117-4957-9b40-148edf811452';
+
+    // Check if project exists and get project lead info
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select(`
+        id, 
+        title, 
+        project_lead_id,
+        project_lead:users!projects_project_lead_id_fkey(id, name, email, phone)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Get requester info (in real app, this would come from auth)
+    const { data: requester, error: requesterError } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', anonymousUserId)
+      .single();
+
+    if (requesterError || !requester) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if user already has a collaboration request for this project
+    const { data: existingRequest } = await supabase
+      .from('project_collaborations')
+      .select('id, status')
+      .eq('project_id', id)
+      .eq('user_id', anonymousUserId)
+      .single();
+
+    if (existingRequest) {
+      if (existingRequest.status === 'pending') {
+        return res.status(400).json({ 
+          message: 'You already have a pending collaboration request for this project' 
+        });
+      } else if (existingRequest.status === 'accepted') {
+        return res.status(400).json({ 
+          message: 'You are already a collaborator on this project' 
+        });
+      }
+    }
+
+    // Process skills array
+    const skillsArray = typeof skills === 'string' 
+      ? skills.split(',').map(s => s.trim()).filter(s => s)
+      : (Array.isArray(skills) ? skills : []);
+
+    const collaborationData = {
+      project_id: id,
+      user_id: anonymousUserId,
+      role,
+      message,
+      skills_offered: skillsArray,
+      time_commitment: timeCommitment,
+      contact_email: email,
+      status: 'pending'
+    };
+
+    const { data: collaboration, error } = await supabase
+      .from('project_collaborations')
+      .insert([collaborationData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating collaboration request:', error);
+      return res.status(500).json({ 
+        message: 'Failed to submit collaboration request',
+        error: error.message 
+      });
+    }
+
+    // Send email notification to project lead
+    try {
+      const collaborationEmailService = require('../utils/collaboration-email-service');
+      await collaborationEmailService.sendRequestReceivedEmail({
+        projectTitle: project.title,
+        projectLead: {
+          name: project.project_lead.name,
+          email: project.project_lead.email,
+          phone: project.project_lead.phone
+        },
+        requester: {
+          name: requester.name,
+          email: requester.email
+        },
+        role,
+        skills: skillsArray.join(', '),
+        message,
+        timeCommitment
+      });
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError);
+      // Don't fail the request if email fails
+    }
+
+    res.status(201).json({
+      message: 'Collaboration request submitted successfully! The project lead will be notified.',
+      collaboration: {
+        id: collaboration.id,
+        project_title: project.title,
+        role: collaboration.role,
+        status: collaboration.status,
+        created_at: collaboration.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Error in POST /projects/:id/collaborate:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/projects/:id/collaborations
+ * Get all collaboration requests for a project (for project leads)
+ * NOTE: This route MUST come before the generic GET /:id route
+ */
+router.get('/:id/collaborations', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.query;
+
+    let query = supabase
+      .from('project_collaborations')
+      .select(`
+        *,
+        user:users!project_collaborations_user_id_fkey(id, name, email, profile_picture),
+        project:projects!project_collaborations_project_id_fkey(id, title, project_lead_id)
+      `)
+      .eq('project_id', id)
+      .order('created_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data: collaborations, error } = await query;
+
+    if (error) {
+      console.error('Error fetching collaborations:', error);
+      return res.status(500).json({ 
+        message: 'Failed to fetch collaboration requests',
+        error: error.message 
+      });
+    }
+
+    res.json({
+      collaborations: collaborations || [],
+      count: collaborations ? collaborations.length : 0
+    });
+  } catch (error) {
+    console.error('Error in GET /projects/:id/collaborations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/projects/:projectId/collaborations/:collaborationId
+ * Update collaboration request status (accept/decline)
+ * NOTE: This route MUST come before the generic GET /:id route
+ */
+router.put('/:projectId/collaborations/:collaborationId', async (req, res) => {
+  try {
+    const { projectId, collaborationId } = req.params;
+    const { status, responseMessage } = req.body;
+
+    if (!['accepted', 'declined'].includes(status)) {
+      return res.status(400).json({ 
+        message: 'Status must be either "accepted" or "declined"' 
+      });
+    }
+
+    // Use default user ID for project lead
+    const projectLeadId = 'cb8ec53d-7117-4957-9b40-148edf811452';
+
+    // Get collaboration details with project and user info for email
+    const { data: existingCollaboration, error: fetchError } = await supabase
+      .from('project_collaborations')
+      .select(`
+        *,
+        project:projects!project_collaborations_project_id_fkey(
+          id, 
+          title,
+          project_lead:users!projects_project_lead_id_fkey(id, name, email, phone)
+        ),
+        requester:users!project_collaborations_user_id_fkey(id, name, email)
+      `)
+      .eq('id', collaborationId)
+      .eq('project_id', projectId)
+      .single();
+
+    if (fetchError || !existingCollaboration) {
+      return res.status(404).json({ message: 'Collaboration request not found' });
+    }
+
+    const updateData = {
+      status,
+      response_message: responseMessage,
+      responded_by: projectLeadId,
+      responded_at: new Date().toISOString()
+    };
+
+    const { data: collaboration, error } = await supabase
+      .from('project_collaborations')
+      .update(updateData)
+      .eq('id', collaborationId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating collaboration:', error);
+      return res.status(500).json({ 
+        message: 'Failed to update collaboration request',
+        error: error.message 
+      });
+    }
+
+    if (!collaboration) {
+      return res.status(404).json({ message: 'Collaboration request not found' });
+    }
+
+    // Send email notification to requester
+    try {
+      const collaborationEmailService = require('../utils/collaboration-email-service');
+      
+      const emailData = {
+        projectTitle: existingCollaboration.project.title,
+        projectLead: {
+          name: existingCollaboration.project.project_lead.name,
+          email: existingCollaboration.project.project_lead.email,
+          phone: existingCollaboration.project.project_lead.phone
+        },
+        requester: {
+          name: existingCollaboration.requester.name,
+          email: existingCollaboration.requester.email
+        },
+        role: existingCollaboration.role,
+        responseMessage: responseMessage || null
+      };
+
+      if (status === 'accepted') {
+        await collaborationEmailService.sendRequestAcceptedEmail(emailData);
+      } else if (status === 'declined') {
+        await collaborationEmailService.sendRequestDeclinedEmail(emailData);
+      }
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError);
+      // Don't fail the request if email fails
+    }
+
+    res.json({
+      message: `Collaboration request ${status} successfully`,
+      collaboration
+    });
+  } catch (error) {
+    console.error('Error in PUT /projects/:projectId/collaborations/:collaborationId:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/projects/:id
  * Get a specific project by ID
  */
@@ -304,217 +597,6 @@ router.post('/submit', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in POST /projects/submit:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-/**
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-/**
- * POST /api/projects/:id/collaborate
- * Submit a collaboration request for a project
- */
-router.post('/:id/collaborate', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      role,
-      message,
-      skills,
-      timeCommitment,
-      email
-    } = req.body;
-
-    // Validate required fields
-    if (!role || !message || !email) {
-      return res.status(400).json({ 
-        message: 'Role, message, and email are required' 
-      });
-    }
-
-    // Use a default user ID for anonymous submissions
-    // In a real app, you'd get this from authentication middleware
-    const anonymousUserId = 'cb8ec53d-7117-4957-9b40-148edf811452';
-
-    // Check if project exists
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('id, title, project_lead_id')
-      .eq('id', id)
-      .single();
-
-    if (projectError || !project) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-
-    // Check if user already has a collaboration request for this project
-    const { data: existingRequest } = await supabase
-      .from('project_collaborations')
-      .select('id, status')
-      .eq('project_id', id)
-      .eq('user_id', anonymousUserId)
-      .single();
-
-    if (existingRequest) {
-      if (existingRequest.status === 'pending') {
-        return res.status(400).json({ 
-          message: 'You already have a pending collaboration request for this project' 
-        });
-      } else if (existingRequest.status === 'accepted') {
-        return res.status(400).json({ 
-          message: 'You are already a collaborator on this project' 
-        });
-      }
-    }
-
-    // Process skills array
-    const skillsArray = typeof skills === 'string' 
-      ? skills.split(',').map(s => s.trim()).filter(s => s)
-      : (Array.isArray(skills) ? skills : []);
-
-    const collaborationData = {
-      project_id: id,
-      user_id: anonymousUserId,
-      role,
-      message,
-      skills_offered: skillsArray,
-      time_commitment: timeCommitment,
-      contact_email: email,
-      status: 'pending'
-    };
-
-    const { data: collaboration, error } = await supabase
-      .from('project_collaborations')
-      .insert([collaborationData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating collaboration request:', error);
-      return res.status(500).json({ 
-        message: 'Failed to submit collaboration request',
-        error: error.message 
-      });
-    }
-
-    // TODO: Send notification to project lead
-    // This would typically send an email or in-app notification
-
-    res.status(201).json({
-      message: 'Collaboration request submitted successfully! The project lead will be notified.',
-      collaboration: {
-        id: collaboration.id,
-        project_title: project.title,
-        role: collaboration.role,
-        status: collaboration.status,
-        created_at: collaboration.created_at
-      }
-    });
-  } catch (error) {
-    console.error('Error in POST /projects/:id/collaborate:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-/**
- * GET /api/projects/:id/collaborations
- * Get all collaboration requests for a project (for project leads)
- */
-router.get('/:id/collaborations', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.query;
-
-    let query = supabase
-      .from('project_collaborations')
-      .select(`
-        *,
-        user:users!project_collaborations_user_id_fkey(id, name, email, profile_picture),
-        project:projects!project_collaborations_project_id_fkey(id, title, project_lead_id)
-      `)
-      .eq('project_id', id)
-      .order('created_at', { ascending: false });
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const { data: collaborations, error } = await query;
-
-    if (error) {
-      console.error('Error fetching collaborations:', error);
-      return res.status(500).json({ 
-        message: 'Failed to fetch collaboration requests',
-        error: error.message 
-      });
-    }
-
-    res.json({
-      collaborations: collaborations || [],
-      count: collaborations ? collaborations.length : 0
-    });
-  } catch (error) {
-    console.error('Error in GET /projects/:id/collaborations:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-/**
- * PUT /api/projects/:projectId/collaborations/:collaborationId
- * Update collaboration request status (accept/decline)
- */
-router.put('/:projectId/collaborations/:collaborationId', async (req, res) => {
-  try {
-    const { projectId, collaborationId } = req.params;
-    const { status, responseMessage } = req.body;
-
-    if (!['accepted', 'declined'].includes(status)) {
-      return res.status(400).json({ 
-        message: 'Status must be either "accepted" or "declined"' 
-      });
-    }
-
-    // Use default user ID for project lead
-    const projectLeadId = 'cb8ec53d-7117-4957-9b40-148edf811452';
-
-    const updateData = {
-      status,
-      response_message: responseMessage,
-      responded_by: projectLeadId,
-      responded_at: new Date().toISOString()
-    };
-
-    const { data: collaboration, error } = await supabase
-      .from('project_collaborations')
-      .update(updateData)
-      .eq('id', collaborationId)
-      .eq('project_id', projectId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating collaboration:', error);
-      return res.status(500).json({ 
-        message: 'Failed to update collaboration request',
-        error: error.message 
-      });
-    }
-
-    if (!collaboration) {
-      return res.status(404).json({ message: 'Collaboration request not found' });
-    }
-
-    // TODO: Send notification to requester about the decision
-
-    res.json({
-      message: `Collaboration request ${status} successfully`,
-      collaboration
-    });
-  } catch (error) {
-    console.error('Error in PUT /projects/:projectId/collaborations/:collaborationId:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
