@@ -44,9 +44,16 @@ class ResourcesPage {
             throw new Error('Resource ID is required');
         }
         
+        // Handle both UUID and integer IDs
+        if (typeof id === 'string' && id.includes('-')) {
+            // UUID format
+            return id;
+        }
+        
         const num = parseInt(id);
         if (isNaN(num) || num <= 0) {
-            throw new Error('Invalid resource ID');
+            // If not a valid number, return as string (might be UUID)
+            return id;
         }
         
         return num;
@@ -304,12 +311,12 @@ class ResourcesPage {
             switch (action) {
                 case 'download':
                     if (resourceId) {
-                        this.downloadResource(parseInt(resourceId));
+                        this.downloadResource(resourceId); // Don't parse, let validateResourceId handle it
                     }
                     break;
                 case 'preview':
                     if (resourceId) {
-                        this.previewResource(parseInt(resourceId));
+                        this.previewResource(resourceId); // Don't parse, let validateResourceId handle it
                     }
                     break;
                 case 'reset-filters':
@@ -469,17 +476,24 @@ class ResourcesPage {
             // Validate resource ID
             const validId = this.validateResourceId(resourceId);
             
-            const resource = this.resources.find(r => r.id === validId);
+            const resource = this.resources.find(r => r.id == validId); // Use == for loose comparison
             if (!resource) {
+                console.error('Resource not found. Looking for ID:', validId, 'in resources:', this.resources.map(r => ({ id: r.id, title: r.title })));
                 this.showMessage('Resource not found', 'error');
                 return;
             }
+
+            console.log('📥 Downloading resource:', resource.title);
+            console.log('   - ID:', resource.id);
+            console.log('   - File URL:', resource.fileUrl);
+            console.log('   - Storage Path:', resource.storagePath);
 
             // Show download starting message
             this.showMessage('Starting download...', 'info');
 
             try {
                 // Use consistent API endpoint
+                console.log('Calling API:', `${this.API.BASE}${this.API.DOWNLOAD(validId)}`);
                 const response = await fetch(`${this.API.BASE}${this.API.DOWNLOAD(validId)}`, {
                     method: 'POST',
                     headers: {
@@ -488,8 +502,11 @@ class ResourcesPage {
                     }
                 });
 
+                console.log('API Response status:', response.status);
+
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('API Response data:', data);
 
                     // Update download count in UI
                     resource.downloadCount = (resource.downloadCount || 0) + 1;
@@ -497,22 +514,43 @@ class ResourcesPage {
 
                     // If API provides download URL, use it
                     if (data.downloadUrl) {
+                        console.log('Using download URL from API:', data.downloadUrl);
+                        
+                        // Try direct download first
                         this.initiateDownload(data.downloadUrl, data.fileName || resource.title);
+                        
+                        // If direct download might not work (opens in browser), offer proxy option
+                        setTimeout(() => {
+                            console.log('If download didn\'t start, you can use proxy endpoint');
+                        }, 2000);
+                        
+                        this.showMessage(`Downloaded: ${resource.title}`, 'success');
                     } else {
-                        // Fallback to simulated download
-                        this.simulateDownload(resource);
+                        console.warn('No download URL in response, trying proxy endpoint');
+                        // Try proxy endpoint as fallback
+                        const proxyUrl = `${this.API.BASE}/resources/${validId}/download-proxy`;
+                        window.location.href = proxyUrl;
+                        this.showMessage(`Downloading: ${resource.title}`, 'success');
                     }
 
-                    this.showMessage(`Downloaded: ${resource.title}`, 'success');
-
                 } else {
-                    throw new Error('API download failed');
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Download API error:', response.status, errorData);
+                    
+                    // Try proxy endpoint as fallback
+                    console.log('Trying proxy endpoint as fallback');
+                    const proxyUrl = `${this.API.BASE}/resources/${validId}/download-proxy`;
+                    window.location.href = proxyUrl;
+                    this.showMessage(`Downloading: ${resource.title}`, 'info');
                 }
             } catch (apiError) {
-                console.warn('API download failed, using fallback:', apiError);
-                // Fallback to simulated download
-                this.simulateDownload(resource);
-                this.showMessage(`Downloaded: ${resource.title} (Demo Mode)`, 'success');
+                console.error('API download failed:', apiError);
+                
+                // Try proxy endpoint as last resort
+                console.log('Trying proxy endpoint as last resort');
+                const proxyUrl = `${this.API.BASE}/resources/${validId}/download-proxy`;
+                window.location.href = proxyUrl;
+                this.showMessage(`Downloading: ${resource.title}`, 'info');
             }
         } catch (error) {
             console.error('Download error:', error);
@@ -521,14 +559,38 @@ class ResourcesPage {
     }
 
     initiateDownload(url, filename) {
-        // Create a temporary link element and trigger download
+        console.log('Initiating download:', { url, filename });
+        
+        // For Supabase Storage URLs, use direct link with download attribute
+        // This works better than fetch for large files and avoids CORS issues
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
+        link.target = '_blank'; // Fallback if download attribute doesn't work
+        link.rel = 'noopener noreferrer';
         link.style.display = 'none';
+        
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 100);
+        
+        console.log('Download link clicked');
+    }
+
+    async fetchAndDownload(url, filename) {
+        // This method is no longer used - keeping for backwards compatibility
+        console.warn('fetchAndDownload is deprecated, using direct download');
+        this.initiateDownload(url, filename);
+    }
+
+    downloadViaIframe(url, filename) {
+        // This method is no longer used - keeping for backwards compatibility
+        console.warn('downloadViaIframe is deprecated, using direct download');
+        this.initiateDownload(url, filename);
     }
 
     simulateDownload(resource) {

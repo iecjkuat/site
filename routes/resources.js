@@ -39,6 +39,7 @@ const formatResource = (res) => ({
   fileType: res.file_type,
   accessLevel: res.access_level,
   downloadCount: res.download_count,
+  storagePath: res.storage_path, // Add this mapping
   createdAt: res.created_at,
   uploader: Array.isArray(res.uploader) ? res.uploader[0] : res.uploader,
   club: Array.isArray(res.club) ? res.club[0] : res.club
@@ -372,7 +373,7 @@ router.post('/:id/download', async (req, res) => {
 
     const { data: resource, error } = await supabase
       .from('resources')
-      .select('file_url, file_name, file_type, file_size')
+      .select('file_url, file_name, file_type, file_size, storage_path')
       .eq('id', id)
       .single();
 
@@ -380,21 +381,125 @@ router.post('/:id/download', async (req, res) => {
       return res.status(404).json({ message: 'Resource not found' });
     }
 
-    if (!resource.file_url) {
+    // Generate download URL from storage_path if available
+    let downloadUrl = resource.file_url;
+    
+    if (resource.storage_path) {
+      // Generate a signed URL from Supabase Storage (valid for 1 hour)
+      const { data: signedUrlData, error: urlError } = await supabase
+        .storage
+        .from('resources')
+        .createSignedUrl(resource.storage_path, 3600, {
+          download: true // Force download with Content-Disposition header
+        });
+      
+      if (!urlError && signedUrlData?.signedUrl) {
+        downloadUrl = signedUrlData.signedUrl;
+      } else {
+        console.warn('Failed to generate signed URL:', urlError);
+        // Fallback to public URL if signed URL fails
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('resources')
+          .getPublicUrl(resource.storage_path, {
+            download: true
+          });
+        
+        if (publicUrlData?.publicUrl) {
+          downloadUrl = publicUrlData.publicUrl;
+        }
+      }
+    }
+
+    if (!downloadUrl) {
       return res.status(400).json({ message: 'No file URL available' });
     }
 
-    // Increment download count (RPC calls are better for atomic increments, but we'll fetch-update for now)
-    // Or call a stored procedure if available. We'll stick to simple update.
-    // Ideally: .rpc('increment_download_count', { row_id: id })
-
-    // For now, we won't strictly lock, just update
+    // Increment download count
     const { data: current } = await supabase.from('resources').select('download_count').eq('id', id).single();
     await supabase.from('resources').update({ download_count: (current?.download_count || 0) + 1 }).eq('id', id);
 
     res.json({
       message: 'Download initiated',
-      downloadUrl: resource.file_url,
+      downloadUrl: downloadUrl,
+      fileName: resource.file_name,
+      fileType: resource.file_type,
+      fileSize: resource.file_size
+    });
+  } catch (error) {
+    console.error('Error processing download:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Proxy download endpoint - streams file through server to force download
+router.get('/:id/download-proxy', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: resource, error } = await supabase
+      .from('resources')
+      .select('file_url, file_name, file_type, file_size, storage_path')
+      .eq('id', id)
+      .single();
+
+    if (error || !resource) {
+      return res.status(404).json({ message: 'Resource not found' });
+    }
+
+    let fileUrl = resource.file_url;
+    
+    // Get signed URL if storage_path exists
+    if (resource.storage_path) {
+      const { data: signedUrlData } = await supabase
+        .storage
+        .from('resources')
+        .createSignedUrl(resource.storage_path, 60); // 1 minute for streaming
+      
+      if (signedUrlData?.signedUrl) {
+        fileUrl = signedUrlData.signedUrl;
+      }
+    }
+
+    if (!fileUrl) {
+      return res.status(400).json({ message: 'No file URL available' });
+    }
+
+    // Fetch file from Supabase Storage
+    const fetch = require('node-fetch');
+    const fileResponse = await fetch(fileUrl);
+    
+    if (!fileResponse.ok) {
+      throw new Error('Failed to fetch file from storage');
+    }
+
+    // Set headers to force download
+    res.setHeader('Content-Type', resource.file_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${resource.file_name}"`);
+    if (resource.file_size) {
+      res.setHeader('Content-Length', resource.file_size);
+    }
+
+    // Stream file to client
+    fileResponse.body.pipe(res);
+
+    // Increment download count (don't wait for it)
+    supabase.from('resources')
+      .select('download_count')
+      .eq('id', id)
+      .single()
+      .then(({ data: current }) => {
+        return supabase.from('resources')
+          .update({ download_count: (current?.download_count || 0) + 1 })
+          .eq('id', id);
+      })
+      .catch(err => console.error('Failed to update download count:', err));
+
+  } catch (error) {
+    console.error('Error proxying download:', error);
+    res.status(500).json({ message: 'Download failed' });
+  }
+});
       fileName: resource.file_name,
       fileType: resource.file_type,
       fileSize: resource.file_size
