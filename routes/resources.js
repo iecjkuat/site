@@ -112,6 +112,125 @@ router.get('/:id', async (req, res) => {
 });
 
 // Upload new resource
+// Upload resource with file
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    console.log('📤 Upload request received');
+    console.log('   - File:', req.file ? req.file.originalname : 'NO FILE');
+    console.log('   - Body:', req.body);
+    
+    if (!req.file) {
+      console.error('❌ No file in request');
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const { title, description, category, access_level = 'members' } = req.body;
+
+    if (!title || !category) {
+      console.error('❌ Missing required fields:', { title, category });
+      return res.status(400).json({ message: 'Title and category are required' });
+    }
+
+    // Get user from auth token
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      console.error('❌ No authorization header');
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const jwt = require('jsonwebtoken');
+    let userId;
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+      console.log('✅ User authenticated:', userId);
+    } catch (error) {
+      console.error('❌ Token verification failed:', error.message);
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Get user's club_id
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('club_id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !userData) {
+      console.error('❌ Failed to get user club:', userError);
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    const clubId = userData.club_id;
+    console.log('✅ User club:', clubId);
+
+    // Generate unique filename
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExt}`;
+    const filePath = `${category}/${fileName}`;
+
+    console.log('📁 Uploading to storage:', filePath);
+
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('resources')
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('❌ Storage upload error:', uploadError);
+      return res.status(500).json({ message: 'Failed to upload file: ' + uploadError.message });
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('resources')
+      .getPublicUrl(filePath);
+
+    // Insert resource record into database
+    const { data: resource, error: dbError } = await supabase
+      .from('resources')
+      .insert({
+        club_id: clubId,
+        uploaded_by: userId,
+        title,
+        description: description || null,
+        category,
+        access_level,
+        file_url: publicUrl,
+        file_name: req.file.originalname,
+        file_size: req.file.size,
+        file_type: req.file.mimetype,
+        storage_path: filePath
+      })
+      .select(`
+        *,
+        uploader:users!uploaded_by(name, email)
+      `)
+      .single();
+
+    if (dbError) {
+      // If database insert fails, try to delete the uploaded file
+      await supabase.storage.from('resources').remove([filePath]);
+      console.error('Database insert error:', dbError);
+      return res.status(500).json({ message: 'Failed to save resource: ' + dbError.message });
+    }
+
+    res.status(201).json({
+      message: 'Resource uploaded successfully',
+      resource: formatResource(resource)
+    });
+
+  } catch (error) {
+    console.error('Error uploading resource:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
+  }
+});
+
 // Note: 'file' field is handled by multer if multipart/form-data is used
 // But this endpoint logic looked mostly JSON based in previous code.
 // We'll keep the JSON body processing but acknowledge file might be uploaded separately.

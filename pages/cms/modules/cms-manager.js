@@ -121,6 +121,7 @@ export class SecureCMSManager {
             this.setupSearchAndFilters();
             this.setupBulkOperations();
             this.setupKeyboardShortcuts();
+            this.setupButtonListeners();
             
             // Wait for auth with timeout
             await this.waitForAuth(8000);
@@ -442,6 +443,56 @@ export class SecureCMSManager {
             e.preventDefault();
             const searchInput = document.getElementById('cms-search');
             if (searchInput) searchInput.focus();
+        }
+    }
+
+    setupButtonListeners() {
+        console.log('🔘 Setting up button listeners...');
+        
+        // Upload resource button
+        const uploadResourceBtn = document.getElementById('upload-resource-btn');
+        if (uploadResourceBtn) {
+            uploadResourceBtn.addEventListener('click', () => this.showUploadResourceModal());
+        }
+
+        // Resource category filter tabs
+        const categoryTabs = document.querySelectorAll('.cms-filter-tab[data-category]');
+        categoryTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // Update active state
+                categoryTabs.forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Filter resources
+                const category = e.currentTarget.dataset.category;
+                this.filterResourcesByCategory(category);
+            });
+        });
+    }
+
+    async filterResourcesByCategory(category) {
+        const container = document.getElementById('resources-list');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            const url = category === 'all' 
+                ? '/api/v1/resources'
+                : `/api/v1/resources?category=${category}`;
+                
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to load resources');
+            
+            const data = await response.json();
+            const resources = data.resources || [];
+            
+            this.renderResources(resources);
+        } catch (error) {
+            console.error('Error filtering resources:', error);
+            container.replaceChildren();
+            container.appendChild(CMSUI.createEmptyState('Failed to load resources. Please try again.'));
         }
     }
 
@@ -1006,6 +1057,9 @@ export class SecureCMSManager {
                 case 'innovation':
                     await this.loadInnovationHub();
                     break;
+                case 'resources':
+                    await this.loadResources();
+                    break;
                 case 'communications':
                     await this.loadCommunications();
                     break;
@@ -1512,6 +1566,539 @@ export class SecureCMSManager {
         CMSUI.animateCounter('recent-messages-count', thisMonth);
         document.getElementById('message-open-rate').textContent = `${openRate}%`;
         CMSUI.animateCounter('active-members-count', activeMembers);
+    }
+
+    async loadResources() {
+        const container = document.getElementById('resources-list');
+        if (!container) return;
+
+        container.replaceChildren();
+        container.appendChild(CMSUI.createLoadingElement());
+
+        try {
+            const response = await fetch('/api/v1/resources');
+            if (!response.ok) throw new Error('Failed to load resources');
+            
+            const data = await response.json();
+            const resources = data.resources || [];
+            
+            this.renderResources(resources);
+        } catch (error) {
+            console.error('Error loading resources:', error);
+            container.replaceChildren();
+            container.appendChild(CMSUI.createEmptyState('Failed to load resources. Please try again.'));
+        }
+    }
+
+    renderResources(resources) {
+        const container = document.getElementById('resources-list');
+        container.replaceChildren();
+
+        if (!resources.length) {
+            container.appendChild(CMSUI.createEmptyState('No resources uploaded yet. Upload your first document!'));
+            return;
+        }
+
+        container.className = 'ig-content-grid';
+        container.setAttribute('data-content-type', 'resources');
+        container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+
+        resources.forEach(resource => {
+            const card = this.createResourceCard(resource);
+            container.appendChild(card);
+        });
+    }
+
+    createResourceCard(resource) {
+        const card = document.createElement('div');
+        card.className = 'cms-content-card resource-card';
+        card.dataset.id = resource.id;
+        card.dataset.type = 'resource';
+
+        const uploadDate = new Date(resource.created_at || Date.now());
+        const fileSize = this.formatFileSize(resource.file_size || 0);
+        const fileIcon = this.getFileIcon(resource.file_type || resource.category);
+
+        card.innerHTML = `
+            <div class="resource-header" style="padding: 1.25rem; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-${fileIcon}" style="font-size: 1.25rem; color: #3b82f6;"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; color: rgba(255, 255, 255, 0.95); margin: 0 0 0.25rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${this.escapeHTML(resource.title || resource.file_name || 'Untitled')}
+                        </h3>
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: rgba(255, 255, 255, 0.6);">
+                            <span style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <i class="fas fa-folder" style="font-size: 0.75rem;"></i>
+                                ${this.escapeHTML(resource.category || 'other')}
+                            </span>
+                            <span>•</span>
+                            <span>${fileSize}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resource-content" style="padding: 1.25rem;">
+                ${resource.description ? `
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.9375rem; line-height: 1.6; margin: 0 0 1rem 0;">
+                        ${this.escapeHTML(resource.description)}
+                    </p>
+                ` : ''}
+
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8);">
+                        <i class="fas fa-calendar" style="color: #3b82f6; font-size: 0.75rem;"></i>
+                        ${uploadDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8);">
+                        <i class="fas fa-download" style="color: #3b82f6; font-size: 0.75rem;"></i>
+                        ${resource.download_count || 0} downloads
+                    </div>
+                    ${resource.access_level ? `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255, 255, 255, 0.8);">
+                            <i class="fas fa-${resource.access_level === 'public' ? 'globe' : 'lock'}" style="color: #3b82f6; font-size: 0.75rem;"></i>
+                            ${this.escapeHTML(resource.access_level)}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <div class="resource-actions" style="padding: 1rem 1.25rem; background: rgba(255, 255, 255, 0.02); border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button class="action-btn view-btn" onclick="window.open('${this.escapeHTML(resource.file_url)}', '_blank')" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); color: #3b82f6; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button class="action-btn edit-btn" data-action="edit" data-id="${resource.id}" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: #10b981; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="action-btn delete-btn" data-action="delete" data-id="${resource.id}" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); color: #ef4444; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+
+        // Add event listeners
+        card.querySelector('[data-action="edit"]')?.addEventListener('click', () => this.editResource(resource.id));
+        card.querySelector('[data-action="delete"]')?.addEventListener('click', () => this.deleteResource(resource.id));
+
+        return card;
+    }
+
+    getFileIcon(type) {
+        const icons = {
+            'constitution': 'gavel',
+            'policies': 'file-contract',
+            'minutes': 'clipboard',
+            'guides': 'book-open',
+            'reports': 'chart-line',
+            'pdf': 'file-pdf',
+            'doc': 'file-word',
+            'docx': 'file-word',
+            'txt': 'file-alt',
+            'zip': 'file-archive'
+        };
+        return icons[type] || 'file';
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    async editResource(id) {
+        try {
+            // Fetch resource details
+            const response = await fetch(`/api/v1/resources/${id}`);
+            if (!response.ok) throw new Error('Failed to load resource');
+            
+            const data = await response.json();
+            const resource = data.resource;
+            
+            this.showEditResourceModal(resource);
+        } catch (error) {
+            console.error('Error loading resource:', error);
+            this.notifications.show('Failed to load resource: ' + error.message, 'error');
+        }
+    }
+
+    showUploadResourceModal() {
+        const modal = document.createElement('div');
+        modal.id = 'uploadResourceModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(59, 130, 246, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-upload" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">Upload Document</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">Add a new resource or document</p>
+                </div>
+
+                <form id="uploadResourceForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-file" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                            File * (Max 10MB)
+                        </label>
+                        <input type="file" id="resourceFile" name="file" required accept=".pdf,.doc,.docx,.txt,.zip"
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;">
+                        <p style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.5); margin-top: 0.5rem;">Supported: PDF, DOC, DOCX, TXT, ZIP</p>
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-heading" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                            Title *
+                        </label>
+                        <input type="text" id="resourceTitle" name="title" required
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem;"
+                               placeholder="e.g., Club Constitution 2024">
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-align-left" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                            Description
+                        </label>
+                        <textarea id="resourceDescription" name="description" rows="3"
+                                  style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; resize: vertical;"
+                                  placeholder="Brief description of the document"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                                <i class="fas fa-folder" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                                Category *
+                            </label>
+                            <select id="resourceCategory" name="category" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;">
+                                <option value="constitution">Constitution</option>
+                                <option value="policies">Policies</option>
+                                <option value="minutes">Meeting Minutes</option>
+                                <option value="guides">Guides & Tutorials</option>
+                                <option value="reports">Reports</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                                <i class="fas fa-lock" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                                Access Level *
+                            </label>
+                            <select id="resourceAccess" name="access_level" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;">
+                                <option value="public">Public</option>
+                                <option value="members">Members Only</option>
+                                <option value="executive">Executive Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <button type="button" id="cancelBtn" style="padding: 0.875rem 2rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: rgba(255, 255, 255, 0.9); font-size: 1rem; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                            <i class="fas fa-upload" style="margin-right: 0.5rem;"></i>
+                            Upload Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Form submission
+        const form = modal.querySelector('#uploadResourceForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const submitBtn = form.querySelector('[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i>Uploading...';
+
+            try {
+                const response = await fetch('/api/v1/resources/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Upload failed');
+                }
+
+                this.notifications.show('Document uploaded successfully!', 'success');
+                this.loadResources();
+                closeModal();
+            } catch (error) {
+                console.error('Error uploading resource:', error);
+                this.notifications.show('Upload failed: ' + error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-upload" style="margin-right: 0.5rem;"></i>Upload Document';
+            }
+        };
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#cancelBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        });
+
+        document.body.style.overflow = 'hidden';
+    }
+
+    showEditResourceModal(resource) {
+        const modal = document.createElement('div');
+        modal.id = 'editResourceModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-edit" style="font-size: 1.5rem; color: #10b981;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">Edit Resource</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">Update resource details</p>
+                </div>
+
+                <form id="editResourceForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            <i class="fas fa-heading" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Title *
+                        </label>
+                        <input type="text" id="editResourceTitle" name="title" required
+                               value="${this.escapeHTML(resource.title || '')}"
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                            <i class="fas fa-align-left" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Description
+                        </label>
+                        <textarea id="editResourceDescription" name="description" rows="3"
+                                  style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; resize: vertical;">${this.escapeHTML(resource.description || '')}</textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                                <i class="fas fa-folder" style="color: #10b981; margin-right: 0.5rem;"></i>
+                                Category *
+                            </label>
+                            <select id="editResourceCategory" name="category" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;">
+                                <option value="constitution" ${resource.category === 'constitution' ? 'selected' : ''}>Constitution</option>
+                                <option value="policies" ${resource.category === 'policies' ? 'selected' : ''}>Policies</option>
+                                <option value="minutes" ${resource.category === 'minutes' ? 'selected' : ''}>Meeting Minutes</option>
+                                <option value="guides" ${resource.category === 'guides' ? 'selected' : ''}>Guides & Tutorials</option>
+                                <option value="reports" ${resource.category === 'reports' ? 'selected' : ''}>Reports</option>
+                                <option value="other" ${resource.category === 'other' ? 'selected' : ''}>Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem;">
+                                <i class="fas fa-lock" style="color: #10b981; margin-right: 0.5rem;"></i>
+                                Access Level *
+                            </label>
+                            <select id="editResourceAccess" name="access_level" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer;">
+                                <option value="public" ${resource.access_level === 'public' ? 'selected' : ''}>Public</option>
+                                <option value="members" ${resource.access_level === 'members' ? 'selected' : ''}>Members Only</option>
+                                <option value="executive" ${resource.access_level === 'executive' ? 'selected' : ''}>Executive Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <button type="button" id="cancelBtn" style="padding: 0.875rem 2rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: rgba(255, 255, 255, 0.9); font-size: 1rem; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-save" style="margin-right: 0.5rem;"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Form submission
+        const form = modal.querySelector('#editResourceForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const updateData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                access_level: formData.get('access_level')
+            };
+
+            try {
+                const response = await fetch(`/api/v1/resources/${resource.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!response.ok) throw new Error('Failed to update resource');
+
+                this.notifications.show('Resource updated successfully!', 'success');
+                this.loadResources();
+                closeModal();
+            } catch (error) {
+                console.error('Error updating resource:', error);
+                this.notifications.show('Update failed: ' + error.message, 'error');
+            }
+        };
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#cancelBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        });
+
+        document.body.style.overflow = 'hidden';
+    }
+
+    async deleteResource(id) {
+        if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/v1/resources/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete resource');
+
+            this.notifications.show('Resource deleted successfully!', 'success');
+            this.loadResources();
+        } catch (error) {
+            console.error('Error deleting resource:', error);
+            this.notifications.show('Failed to delete resource: ' + error.message, 'error');
+        }
     }
 
     async loadMembers() {

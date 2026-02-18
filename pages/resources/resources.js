@@ -51,7 +51,7 @@ class ResourcesPage {
             console.log('📊 Loading resources data...');
 
             // Build API URL
-            let apiUrl = `/api/resources?page=${page}&limit=12`;
+            let apiUrl = `/api/v1/resources?page=${page}&limit=12`;
             if (category !== 'all') {
                 apiUrl += `&category=${encodeURIComponent(category)}`;
             }
@@ -60,7 +60,7 @@ class ResourcesPage {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || ''}`
                 }
             });
 
@@ -73,19 +73,16 @@ class ResourcesPage {
 
                 console.log('✅ Resources loaded:', this.resources.length);
             } else {
-                // Use mock data if API fails
-                console.warn('⚠️ API failed, using mock data');
-                this.resources = this.getMockResources();
-                this.filteredResources = [...this.resources];
+                console.error('❌ API failed with status:', response.status);
+                throw new Error('API request failed');
             }
 
             this.renderResources();
 
         } catch (error) {
             console.error('❌ Error loading resources:', error);
-            // Use mock data as fallback
-            this.resources = this.getMockResources();
-            this.filteredResources = [...this.resources];
+            this.resources = [];
+            this.filteredResources = [];
             this.renderResources();
         } finally {
             this.isLoading = false;
@@ -93,88 +90,7 @@ class ResourcesPage {
         }
     }
 
-    getMockResources() {
-        return [
-            {
-                id: 1,
-                title: 'Club Constitution 2024',
-                description: 'Official constitution document outlining the club structure, governance, and operational guidelines.',
-                category: 'Constitution',
-                fileType: 'pdf',
-                downloadCount: 234,
-                fileSize: '2.5 MB',
-                createdAt: '2024-01-15',
-                uploader: { name: 'Admin Team' },
-                accessLevel: 'PUBLIC',
-                tags: ['governance', 'rules', 'structure']
-            },
-            {
-                id: 2,
-                title: 'Member Handbook',
-                description: 'Comprehensive guide for new members covering club activities, expectations, and opportunities.',
-                category: 'Handbook',
-                fileType: 'pdf',
-                downloadCount: 189,
-                fileSize: '4.2 MB',
-                createdAt: '2024-01-10',
-                uploader: { name: 'Leadership Team' },
-                accessLevel: 'MEMBERS',
-                tags: ['guide', 'members', 'activities']
-            },
-            {
-                id: 3,
-                title: 'Project Proposal Template',
-                description: 'Standard template for submitting innovation project proposals to the club for review and funding.',
-                category: 'Templates',
-                fileType: 'docx',
-                downloadCount: 156,
-                fileSize: '1.8 MB',
-                createdAt: '2024-01-08',
-                uploader: { name: 'Project Committee' },
-                accessLevel: 'MEMBERS',
-                tags: ['template', 'projects', 'proposals']
-            },
-            {
-                id: 4,
-                title: 'Innovation Toolkit',
-                description: 'Comprehensive guide to innovation methodologies, design thinking, and problem-solving frameworks.',
-                category: 'Innovation',
-                fileType: 'pdf',
-                downloadCount: 298,
-                fileSize: '6.1 MB',
-                createdAt: '2024-01-05',
-                uploader: { name: 'Innovation Team' },
-                accessLevel: 'PUBLIC',
-                tags: ['innovation', 'design-thinking', 'methodology']
-            },
-            {
-                id: 5,
-                title: 'Development Guidelines',
-                description: 'Best practices and coding standards for technical projects within the innovation club.',
-                category: 'Technical',
-                fileType: 'txt',
-                downloadCount: 127,
-                fileSize: '3.4 MB',
-                createdAt: '2024-01-03',
-                uploader: { name: 'Tech Team' },
-                accessLevel: 'MEMBERS',
-                tags: ['coding', 'standards', 'development']
-            },
-            {
-                id: 6,
-                title: 'Event Planning Guide',
-                description: 'Step-by-step guide for organizing successful innovation events, workshops, and hackathons.',
-                category: 'Guidelines',
-                fileType: 'docx',
-                downloadCount: 203,
-                fileSize: '2.9 MB',
-                createdAt: '2024-01-01',
-                uploader: { name: 'Events Team' },
-                accessLevel: 'MEMBERS',
-                tags: ['events', 'planning', 'workshops']
-            }
-        ];
-    }
+    // Removed getMockResources() - using only real data from database
 
     renderResources() {
         const resourcesGrid = document.getElementById('resourcesGrid');
