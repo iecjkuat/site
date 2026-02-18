@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Ideas Endpoints</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .result {
+            background: #1a1a1a;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        input {
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Ideas Endpoints Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>1. Check Authentication</h2>
+        <button onclick="checkAuth()">Check Token</button>
+        <button onclick="clearAuth()">Clear Token</button>
+        <div id="authResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Get Ideas</h2>
+        <button onclick="getIdeas()">Load Ideas</button>
+        <div id="ideasResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Vote</h2>
+        <input type="text" id="voteIdeaId" placeholder="Enter Idea ID">
+        <button onclick="testVote()">Vote (Like)</button>
+        <button onclick="testUnvote()">Unvote</button>
+        <div id="voteResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Comment</h2>
+        <input type="text" id="commentIdeaId" placeholder="Enter Idea ID">
+        <input type="text" id="commentText" placeholder="Enter Comment">
+        <button onclick="testComment()">Post Comment</button>
+        <div id="commentResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Get Comments</h2>
+        <input type="text" id="getCommentsIdeaId" placeholder="Enter Idea ID">
+        <button onclick="getComments()">Load Comments</button>
+        <div id="commentsResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        function getToken() {
+            return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        }
+
+        function log(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.className = `result ${isError ? 'error' : 'success'}`;
+            el.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+        }
+
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                log('authResult', 'No token found. Please log in first.', true);
+                return;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const expiresAt = new Date(payload.exp * 1000);
+                const isExpired = Date.now() > payload.exp * 1000;
+                
+                log('authResult', {
+                    hasToken: true,
+                    userId: payload.userId,
+                    role: payload.role,
+                    expiresAt: expiresAt.toLocaleString(),
+                    isExpired: isExpired,
+                    timeRemaining: isExpired ? 'EXPIRED' : Math.round((expiresAt - Date.now()) / 1000 / 60) + ' minutes'
+                });
+            } catch (e) {
+                log('authResult', 'Invalid token format: ' + e.message, true);
+            }
+        }
+
+        function clearAuth() {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('authResult', 'All tokens cleared. Please log in again.');
+        }
+
+        async function getIdeas() {
+            try {
+                const response = await fetch(`${API_BASE}/ideas?limit=5`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log('ideasResult', `Error ${response.status}: ${JSON.stringify(data)}`, true);
+                    return;
+                }
+
+                log('ideasResult', {
+                    status: response.status,
+                    count: data.ideas?.length || 0,
+                    ideas: data.ideas?.map(i => ({
+                        id: i.id,
+                        title: i.title,
+                        votes: i.votes_count || 0,
+                        comments: i.comments_count || 0
+                    }))
+                });
+            } catch (error) {
+                log('ideasResult', 'Network error: ' + error.message, true);
+            }
+        }
+
+        async function testVote() {
+            const ideaId = document.getElementById('voteIdeaId').value.trim();
+            if (!ideaId) {
+                log('voteResult', 'Please enter an Idea ID', true);
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                log('voteResult', 'No token found. Please log in first.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ voteType: 'like' })
+                });
+
+                const data = await response.json();
+                
+                log('voteResult', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    response: data
+                }, !response.ok);
+            } catch (error) {
+                log('voteResult', 'Network error: ' + error.message, true);
+            }
+        }
+
+        async function testUnvote() {
+            const ideaId = document.getElementById('voteIdeaId').value.trim();
+            if (!ideaId) {
+                log('voteResult', 'Please enter an Idea ID', true);
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                log('voteResult', 'No token found. Please log in first.', true);
+                return;
+            }
+
+            try {
+                // Vote twice with same type to toggle off
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ voteType: 'like' })
+                });
+
+                const data = await response.json();
+                
+                log('voteResult', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    response: data,
+                    note: 'Voting with same type again should toggle off'
+                }, !response.ok);
+            } catch (error) {
+                log('voteResult', 'Network error: ' + error.message, true);
+            }
+        }
+
+        async function testComment() {
+            const ideaId = document.getElementById('commentIdeaId').value.trim();
+            const content = document.getElementById('commentText').value.trim();
+            
+            if (!ideaId || !content) {
+                log('commentResult', 'Please enter both Idea ID and Comment', true);
+                return;
+            }
+
+            const token = getToken();
+            if (!token) {
+                log('commentResult', 'No token found. Please log in first.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const data = await response.json();
+                
+                log('commentResult', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    response: data
+                }, !response.ok);
+            } catch (error) {
+                log('commentResult', 'Network error: ' + error.message, true);
+            }
+        }
+
+        async function getComments() {
+            const ideaId = document.getElementById('getCommentsIdeaId').value.trim();
+            if (!ideaId) {
+                log('commentsResult', 'Please enter an Idea ID', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/comments`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log('commentsResult', `Error ${response.status}: ${JSON.stringify(data)}`, true);
+                    return;
+                }
+
+                log('commentsResult', {
+                    status: response.status,
+                    count: data.comments?.length || 0,
+                    comments: data.comments?.map(c => ({
+                        id: c.id,
+                        content: c.content,
+                        user: c.user?.name,
+                        created_at: c.created_at
+                    }))
+                });
+            } catch (error) {
+                log('commentsResult', 'Network error: ' + error.message, true);
+            }
+        }
+
+        // Auto-check auth on load
+        window.addEventListener('load', checkAuth);
+    </script>
+</body>
+</html>

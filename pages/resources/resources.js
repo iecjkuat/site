@@ -9,7 +9,74 @@ class ResourcesPage {
         this.totalPages = 1;
         this.isLoading = false;
         this.searchQuery = '';
+        
+        // Memory management & cleanup
+        this.searchTimeout = null;
+        this.loadController = null;
+        this.abortController = new AbortController();
+        this.eventHandlers = new Map();
+        
+        // API configuration
+        this.API = {
+            BASE: '/api/v1',
+            RESOURCES: '/resources',
+            DOWNLOAD: (id) => `/resources/${id}/download`
+        };
+        
         this.init();
+    }
+    
+    /**
+     * Get authentication token
+     * @returns {string} - Auth token or empty string
+     */
+    getAuthToken() {
+        return localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+    }
+    
+    /**
+     * Validate resource ID
+     * @param {string|number} id - The ID to validate
+     * @returns {number} - Validated ID as number
+     */
+    validateResourceId(id) {
+        if (!id) {
+            throw new Error('Resource ID is required');
+        }
+        
+        const num = parseInt(id);
+        if (isNaN(num) || num <= 0) {
+            throw new Error('Invalid resource ID');
+        }
+        
+        return num;
+    }
+    
+    /**
+     * Cleanup method - prevents memory leaks
+     */
+    destroy() {
+        console.log('🧹 Cleaning up Resources Page...');
+        
+        // Clear timeout
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
+        
+        // Abort in-flight requests
+        if (this.loadController) {
+            this.loadController.abort();
+        }
+        this.abortController.abort();
+        
+        // Remove event listeners
+        this.eventHandlers.forEach((handler, element) => {
+            const [eventType, fn] = handler;
+            element.removeEventListener(eventType, fn);
+        });
+        this.eventHandlers.clear();
+        
+        console.log('✅ Resources Page cleaned up');
     }
 
     escapeHtml(unsafe) {
@@ -43,15 +110,21 @@ class ResourcesPage {
         }
     }
 
-    async loadResources(category = 'all', page = 1) {
+    async loadResources(category = 'all', page = 1, append = false) {
         this.isLoading = true;
         this.showLoading();
 
         try {
             console.log('📊 Loading resources data...');
 
-            // Build API URL
-            let apiUrl = `/api/v1/resources?page=${page}&limit=12`;
+            // Cancel previous request
+            if (this.loadController) {
+                this.loadController.abort();
+            }
+            this.loadController = new AbortController();
+
+            // Build API URL using consistent endpoint
+            let apiUrl = `${this.API.BASE}${this.API.RESOURCES}?page=${page}&limit=12`;
             if (category !== 'all') {
                 apiUrl += `&category=${encodeURIComponent(category)}`;
             }
@@ -60,19 +133,34 @@ class ResourcesPage {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || ''}`
-                }
+                    'Authorization': `Bearer ${this.getAuthToken()}`
+                },
+                signal: this.loadController.signal
             });
 
             if (response.ok) {
                 const data = await response.json();
-                this.resources = data.resources || [];
-                this.filteredResources = [...this.resources];
+                const newResources = data.resources || [];
+                
+                // Append or replace resources
+                if (append) {
+                    this.resources = [...this.resources, ...newResources];
+                    this.filteredResources = [...this.filteredResources, ...newResources];
+                } else {
+                    this.resources = newResources;
+                    this.filteredResources = [...this.resources];
+                }
+                
                 this.currentPage = data.pagination?.current || 1;
                 this.totalPages = data.pagination?.total || 1;
 
-                console.log('✅ Resources loaded:', this.resources.length);
+                console.log('✅ Resources loaded:', newResources.length);
             } else {
+                if (response.status === 401) {
+                    throw new Error('Please log in to view resources');
+                } else if (response.status === 429) {
+                    throw new Error('Too many requests. Please try again later');
+                }
                 console.error('❌ API failed with status:', response.status);
                 throw new Error('API request failed');
             }
@@ -80,10 +168,32 @@ class ResourcesPage {
             this.renderResources();
 
         } catch (error) {
+            // Handle abort gracefully
+            if (error.name === 'AbortError') {
+                console.log('Request was cancelled');
+                return;
+            }
+            
             console.error('❌ Error loading resources:', error);
-            this.resources = [];
-            this.filteredResources = [];
-            this.renderResources();
+            
+            // More specific error messages
+            let message = 'Failed to load resources';
+            if (error.message.includes('log in')) {
+                message = error.message;
+                setTimeout(() => window.location.href = '/pages/auth/signin.html', 2000);
+            } else if (error.message.includes('Too many requests')) {
+                message = error.message;
+            } else if (error.message.includes('Failed to fetch')) {
+                message = 'Network error. Please check your internet connection';
+            }
+            
+            this.showMessage(message, 'error');
+            
+            if (!append) {
+                this.resources = [];
+                this.filteredResources = [];
+                this.renderResources();
+            }
         } finally {
             this.isLoading = false;
             this.hideLoading();
@@ -213,12 +323,14 @@ class ResourcesPage {
 
     setupDocumentListeners() {
         // Handle modal events globally, added once in init
-        document.addEventListener('click', (e) => {
+        // Use AbortController for cleanup
+        const clickHandler = (e) => {
             const button = e.target.closest('[data-action]');
             if (!button) {
                 // Close modal when clicking backdrop
                 if (e.target.classList.contains('modal-backdrop')) {
                     e.target.remove();
+                    document.body.style.overflow = 'auto';
                 }
                 return;
             }
@@ -230,18 +342,27 @@ class ResourcesPage {
                     const modal = button.closest('.modal-backdrop');
                     if (modal) {
                         modal.remove();
+                        document.body.style.overflow = 'auto';
                     }
                     break;
                 case 'download':
                     const resourceId = button.dataset.resourceId;
                     const closeModal = button.dataset.closeModal;
                     if (resourceId) {
-                        this.downloadResource(parseInt(resourceId));
-                        if (closeModal === 'true') {
-                            const modal = button.closest('.modal-backdrop');
-                            if (modal) {
-                                setTimeout(() => modal.remove(), 1000);
+                        try {
+                            const validId = this.validateResourceId(resourceId);
+                            this.downloadResource(validId);
+                            if (closeModal === 'true') {
+                                const modal = button.closest('.modal-backdrop');
+                                if (modal) {
+                                    setTimeout(() => {
+                                        modal.remove();
+                                        document.body.style.overflow = 'auto';
+                                    }, 1000);
+                                }
                             }
+                        } catch (error) {
+                            this.showMessage(error.message, 'error');
                         }
                     }
                     break;
@@ -249,6 +370,10 @@ class ResourcesPage {
                     this.submitUpload();
                     break;
             }
+        };
+        
+        document.addEventListener('click', clickHandler, { 
+            signal: this.abortController.signal 
         });
     }
 
@@ -270,29 +395,37 @@ class ResourcesPage {
         // Search functionality
         const searchInput = document.getElementById('resourceSearch');
         if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
+            const searchHandler = (e) => {
+                clearTimeout(this.searchTimeout);
+                
+                // Cancel previous request
+                if (this.loadController) {
+                    this.loadController.abort();
+                }
+                
+                this.searchTimeout = setTimeout(() => {
                     this.searchResources(e.target.value);
                 }, 300);
-            });
+            };
+            
+            searchInput.addEventListener('input', searchHandler);
+            this.eventHandlers.set(searchInput, ['input', searchHandler]);
         }
 
         // Load more button
         const loadMoreBtn = document.getElementById('loadMoreResourcesBtn');
         if (loadMoreBtn) {
-            loadMoreBtn.addEventListener('click', () => {
-                this.loadMoreResources();
-            });
+            const loadMoreHandler = () => this.loadMoreResources();
+            loadMoreBtn.addEventListener('click', loadMoreHandler);
+            this.eventHandlers.set(loadMoreBtn, ['click', loadMoreHandler]);
         }
 
         // Upload resource button
         const uploadBtn = document.getElementById('uploadResourceBtn');
         if (uploadBtn) {
-            uploadBtn.addEventListener('click', () => {
-                this.showUploadModal();
-            });
+            const uploadHandler = () => this.showUploadModal();
+            uploadBtn.addEventListener('click', uploadHandler);
+            this.eventHandlers.set(uploadBtn, ['click', uploadHandler]);
         }
     }
 
@@ -333,7 +466,10 @@ class ResourcesPage {
 
     async downloadResource(resourceId) {
         try {
-            const resource = this.resources.find(r => r.id === resourceId);
+            // Validate resource ID
+            const validId = this.validateResourceId(resourceId);
+            
+            const resource = this.resources.find(r => r.id === validId);
             if (!resource) {
                 this.showMessage('Resource not found', 'error');
                 return;
@@ -343,12 +479,12 @@ class ResourcesPage {
             this.showMessage('Starting download...', 'info');
 
             try {
-                // Try to call the API first
-                const response = await fetch(`/api/resources/${resourceId}/download`, {
+                // Use consistent API endpoint
+                const response = await fetch(`${this.API.BASE}${this.API.DOWNLOAD(validId)}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                        'Authorization': `Bearer ${this.getAuthToken()}`
                     }
                 });
 
@@ -380,7 +516,7 @@ class ResourcesPage {
             }
         } catch (error) {
             console.error('Download error:', error);
-            this.showMessage('Download failed', 'error');
+            this.showMessage(error.message || 'Download failed', 'error');
         }
     }
 
@@ -872,7 +1008,8 @@ Download the complete document to access all content.
 
     loadMoreResources() {
         if (this.currentPage < this.totalPages) {
-            this.loadResources(this.currentCategory, this.currentPage + 1);
+            // Pass true to append resources instead of replacing
+            this.loadResources(this.currentCategory, this.currentPage + 1, true);
         }
     }
 

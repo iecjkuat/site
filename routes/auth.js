@@ -466,11 +466,23 @@ router.get('/debug/:identifier', requireAdmin, async (req, res) => {
 });
 
 // Logout user
-router.post('/logout', async (req, res) => {
+router.post('/logout', authenticateToken, async (req, res) => {
   try {
-    // With JWT, logout is handled client-side by removing the token
-    // Optionally, you could maintain a blacklist of tokens
-    res.json({ message: 'Logout successful' });
+    const { blacklistToken, clearUserCache } = require('../middleware/auth');
+    
+    // Blacklist the current token
+    if (req.tokenData && req.tokenData.tokenId) {
+      blacklistToken(req.tokenData.tokenId);
+      console.log(`🚪 User logged out: ${req.user.id.substring(0, 8)}...`);
+    }
+    
+    // Clear user cache
+    clearUserCache(req.user.id);
+    
+    res.json({ 
+      message: 'Logout successful',
+      action: 'token_blacklisted'
+    });
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ message: 'Server error during logout' });

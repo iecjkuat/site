@@ -87,10 +87,10 @@ router.get('/', async (req, res) => {
         // Apply sorting
         switch (sort) {
             case 'popular':
-                query = query.order('upvotes', { ascending: false });
+                query = query.order('votes_count', { ascending: false });
                 break;
             case 'trending':
-                query = query.order('created_at', { ascending: false }).limit(50);
+                query = query.order('views_count', { ascending: false }).limit(50);
                 break;
             default: // newest
                 query = query.order('created_at', { ascending: false });
@@ -116,7 +116,7 @@ router.get('/', async (req, res) => {
             .eq('status', 'approved'); // Only count approved ideas
 
         if (status) countQuery = countQuery.eq('status', status);
-        if (category) countQuery = countQuery.eq('category', category);
+        if (category) countQuery = countQuery.eq('category_id', category);
         if (userId) countQuery = countQuery.eq('user_id', userId);
         if (search) countQuery = countQuery.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
 
@@ -200,7 +200,7 @@ router.get('/stats', async (req, res) => {
             .from('ideas')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'approved')
-            .eq('looking_for_team', true);
+            .eq('is_seeking_collaborators', true);
 
         if (collabError) {
             console.error('Error counting collaborators:', collabError);
@@ -271,7 +271,7 @@ router.get('/:id', [
 });
 
 // Create new idea
-router.post('/', upload.array('attachments', 5), [
+router.post('/', authenticateToken, upload.array('attachments', 5), [
     body('title').isLength({ min: 5, max: 200 }).withMessage('Title must be 5-200 characters'),
     body('description').isLength({ min: 20 }).withMessage('Description must be at least 20 characters'),
     body('categoryId').isUUID().withMessage('Valid category ID required'),
@@ -330,7 +330,7 @@ router.post('/', upload.array('attachments', 5), [
                 club_id: req.user?.club_id || null,
                 title,
                 description,
-                category_id: categoryId, // Use category_id instead of category
+                category_id: categoryId,
                 problem_statement: problemStatement,
                 solution_overview: solutionOverview,
                 target_audience: targetAudience,
@@ -340,10 +340,10 @@ router.post('/', upload.array('attachments', 5), [
                 required_skills: requiredSkills,
                 tags,
                 keywords,
-                visibility: 'public', // Default to public
+                visibility: 'public',
                 is_seeking_collaborators: isSeekingCollaborators,
                 attachments: attachments,
-                status: 'active' // Set as active instead of draft
+                status: 'approved' // Auto-approve for now, change to 'pending' if moderation needed
             })
             .select()
             .single();
@@ -361,8 +361,8 @@ router.post('/', upload.array('attachments', 5), [
     }
 });
 
-// Vote on an idea
-router.post('/:id/vote', [
+// Vote on an idea (single consolidated route)
+router.post('/:id/vote', authenticateToken, [
     param('id').isUUID().withMessage('Valid idea ID required'),
     body('voteType').isIn(['like', 'dislike']).withMessage('Vote type must be like or dislike')
 ], async (req, res) => {
@@ -380,86 +380,145 @@ router.post('/:id/vote', [
             return res.status(401).json({ message: 'Authentication required' });
         }
 
+        console.log('✅ Vote request authenticated:', { ideaId: id, userId, voteType });
+
         // Check if user already voted
-        const { data: existingVote } = await supabase
+        const { data: existingVote, error: fetchError } = await supabase
             .from('idea_votes')
             .select('*')
             .eq('idea_id', id)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
+
+        if (fetchError) {
+            console.error('Error checking existing vote:', fetchError);
+            throw fetchError;
+        }
+
+        let voteAction = 'created';
 
         if (existingVote) {
             if (existingVote.vote_type === voteType) {
-                // Remove vote if same type
-                await supabase
+                // Remove vote if same type (toggle off)
+                const { error: deleteError } = await supabase
                     .from('idea_votes')
                     .delete()
                     .eq('id', existingVote.id);
+
+                if (deleteError) {
+                    console.error('Error deleting vote:', deleteError);
+                    throw deleteError;
+                }
+                
+                voteAction = 'removed';
+                console.log('🗑️ Vote removed');
             } else {
                 // Update vote type
-                await supabase
+                const { error: updateError } = await supabase
                     .from('idea_votes')
                     .update({ vote_type: voteType })
                     .eq('id', existingVote.id);
+
+                if (updateError) {
+                    console.error('Error updating vote:', updateError);
+                    throw updateError;
+                }
+                
+                voteAction = 'updated';
+                console.log('✏️ Vote updated');
             }
         } else {
-            // Create new vote
-            await supabase
+            // Create new vote - use upsert to handle race conditions
+            const { error: insertError } = await supabase
                 .from('idea_votes')
-                .insert({
+                .upsert({
                     idea_id: id,
                     user_id: userId,
                     vote_type: voteType
+                }, {
+                    onConflict: 'idea_id,user_id',
+                    ignoreDuplicates: false
                 });
+
+            if (insertError) {
+                // If still getting duplicate error, it means vote was just created
+                // Try to update instead
+                if (insertError.code === '23505') {
+                    console.log('⚠️ Duplicate detected, updating instead...');
+                    const { error: updateError } = await supabase
+                        .from('idea_votes')
+                        .update({ vote_type: voteType })
+                        .eq('idea_id', id)
+                        .eq('user_id', userId);
+                    
+                    if (updateError) throw updateError;
+                    voteAction = 'updated';
+                } else {
+                    throw insertError;
+                }
+            } else {
+                voteAction = 'created';
+                console.log('➕ New vote created');
+            }
         }
 
-        // Update idea vote counts
-        const { data: voteCounts } = await supabase
+        // Get updated vote counts
+        const { data: voteCounts, error: countError } = await supabase
             .from('idea_votes')
             .select('vote_type')
             .eq('idea_id', id);
 
-        const likes = voteCounts?.filter(v => v.vote_type === 'like').length || 0;
-        const dislikes = voteCounts?.filter(v => v.vote_type === 'dislike').length || 0;
+        let likes = 0;
+        let dislikes = 0;
 
-        await supabase
-            .from('ideas')
-            .update({
-                likes_count: likes,
-                dislikes_count: dislikes
-            })
-            .eq('id', id);
+        if (countError) {
+            console.error('Error fetching vote counts:', countError);
+        } else {
+            likes = voteCounts?.filter(v => v.vote_type === 'like').length || 0;
+            dislikes = voteCounts?.filter(v => v.vote_type === 'dislike').length || 0;
+            
+            // Update idea with vote counts (only votes_count and likes_count exist)
+            const { error: updateIdeaError } = await supabase
+                .from('ideas')
+                .update({ 
+                    votes_count: likes,
+                    likes_count: likes
+                })
+                .eq('id', id);
 
-        res.json({
+            if (updateIdeaError) {
+                console.error('Error updating idea vote counts:', updateIdeaError);
+            } else {
+                console.log('✅ Vote counts updated:', { likes, dislikes });
+            }
+        }
+
+        res.json({ 
             message: 'Vote recorded successfully',
-            likes,
-            dislikes
+            action: voteAction,
+            voteType: voteAction === 'removed' ? null : voteType,
+            votes: {
+                likes: likes,
+                dislikes: dislikes,
+                total: likes
+            }
         });
 
     } catch (error) {
-        console.error('Error voting on idea:', error);
-        res.status(500).json({ message: 'Failed to record vote' });
-    }
-});
-
-// Get idea categories
-router.get('/categories/list', async (req, res) => {
-    try {
-        const { data: categories, error } = await supabase
-            .from('idea_categories')
-            .select('*')
-            .eq('is_active', true)
-            .order('sort_order');
-
-        if (error) throw error;
-
-        res.json({
-            categories: categories || []
+        console.error('❌ Error voting on idea:', error);
+        
+        // Handle specific error cases
+        if (error.code === '23505') {
+            return res.status(409).json({ 
+                message: 'Vote already exists. Please refresh and try again.',
+                error: 'duplicate_vote'
+            });
+        }
+        
+        res.status(500).json({ 
+            message: 'Failed to record vote', 
+            error: error.message 
         });
-
-    } catch (error) {
-        console.error('Error fetching categories:', error);
-        res.status(500).json({ message: 'Failed to fetch categories' });
     }
 });
 
@@ -482,7 +541,6 @@ router.get('/:id/comments', [
                 user:user_id(id, name, profile_picture)
             `)
             .eq('idea_id', id)
-            .is('parent_comment_id', null)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -496,7 +554,7 @@ router.get('/:id/comments', [
 });
 
 // Post a comment on an idea
-router.post('/:id/comments', [
+router.post('/:id/comments', authenticateToken, [
     param('id').isUUID().withMessage('Valid idea ID required'),
     body('content').notEmpty().withMessage('Comment content is required')
 ], async (req, res) => {
@@ -508,21 +566,20 @@ router.post('/:id/comments', [
 
         const { id } = req.params;
         const { content } = req.body;
-        
-        // Use a default user ID for anonymous comments
-        // In a real app, you'd get this from authentication middleware
-        const anonymousUserId = (await supabase.from('users').select('id').limit(1).single()).data?.id;
+        const userId = req.user?.id;
 
-        if (!anonymousUserId) {
-            return res.status(500).json({ message: 'No users found in database' });
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication required' });
         }
+
+        console.log('💬 Posting comment:', { ideaId: id, userId });
 
         // Create comment
         const { data: comment, error } = await supabase
             .from('idea_comments')
             .insert({
                 idea_id: id,
-                user_id: anonymousUserId,
+                user_id: userId,
                 content
             })
             .select(`
@@ -531,31 +588,45 @@ router.post('/:id/comments', [
             `)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error inserting comment:', error);
+            throw error;
+        }
 
         // Update comment count on idea
-        const { data: commentCount } = await supabase
+        const { count: commentCount, error: countError } = await supabase
             .from('idea_comments')
-            .select('id', { count: 'exact', head: true })
+            .select('*', { count: 'exact', head: true })
             .eq('idea_id', id);
 
-        await supabase
-            .from('ideas')
-            .update({ comments_count: commentCount || 0 })
-            .eq('id', id);
+        if (!countError) {
+            const { error: updateError } = await supabase
+                .from('ideas')
+                .update({ comments_count: commentCount || 0 })
+                .eq('id', id);
 
-        res.status(201).json({ comment, message: 'Comment posted successfully' });
+            if (updateError) {
+                console.error('Error updating comment count:', updateError);
+            } else {
+                console.log('✅ Comment count updated to:', commentCount);
+            }
+        }
+
+        res.status(201).json({ 
+            comment, 
+            message: 'Comment posted successfully' 
+        });
 
     } catch (error) {
         console.error('Error posting comment:', error);
-        res.status(500).json({ message: 'Failed to post comment' });
+        res.status(500).json({ message: 'Failed to post comment', error: error.message });
     }
 });
 
-// Vote on an idea (supports both custom JWT and Supabase auth)
-router.post('/:id/vote', [
+// Like a comment
+router.post('/:id/comments/:commentId/like', authenticateToken, [
     param('id').isUUID().withMessage('Valid idea ID required'),
-    body('voteType').isIn(['like', 'dislike']).withMessage('Valid vote type required')
+    param('commentId').isUUID().withMessage('Valid comment ID required')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -563,98 +634,150 @@ router.post('/:id/vote', [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { id } = req.params;
-        const { voteType } = req.body;
-        
-        let userId = null;
-        
-        // Try to get user from authorization header
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.substring(7);
-            
-            // Try custom JWT first
-            try {
-                const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET, {
-                    algorithms: ['HS256'],
-                    issuer: 'jkuat-innovation-club',
-                    audience: 'jkuat-platform'
-                });
-                userId = decoded.userId;
-                console.log('✅ Authenticated with custom JWT:', userId);
-            } catch (jwtError) {
-                // If custom JWT fails, try Supabase auth
-                try {
-                    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-                    if (user && !authError) {
-                        userId = user.id;
-                        console.log('✅ Authenticated with Supabase auth:', userId);
-                    }
-                } catch (supabaseError) {
-                    console.error('Both auth methods failed:', { jwtError, supabaseError });
-                }
-            }
-        }
-        
+        const { commentId } = req.params;
+        const userId = req.user?.id;
+
         if (!userId) {
             return res.status(401).json({ message: 'Authentication required' });
         }
 
-        console.log('✅ Vote request authenticated:', { ideaId: id, userId, voteType });
+        console.log('❤️ Liking comment:', { commentId, userId });
 
-        // Check if user already voted
-        const { data: existingVote, error: voteError } = await supabase
-            .from('idea_votes')
-            .select('*')
-            .eq('idea_id', id)
+        // Check if already liked
+        const { data: existingLike, error: checkError } = await supabase
+            .from('idea_comment_likes')
+            .select('id')
+            .eq('comment_id', commentId)
             .eq('user_id', userId)
             .single();
 
-        if (existingVote) {
-            // Update existing vote
-            const { error: updateError } = await supabase
-                .from('idea_votes')
-                .update({ vote_type: voteType })
-                .eq('id', existingVote.id);
+        if (checkError && checkError.code !== 'PGRST116') {
+            throw checkError;
+        }
 
-            if (updateError) throw updateError;
+        if (existingLike) {
+            // Unlike - remove the like
+            const { error: deleteError } = await supabase
+                .from('idea_comment_likes')
+                .delete()
+                .eq('comment_id', commentId)
+                .eq('user_id', userId);
+
+            if (deleteError) throw deleteError;
+
+            // Get updated likes count
+            const { data: comment, error: commentError } = await supabase
+                .from('idea_comments')
+                .select('likes_count')
+                .eq('id', commentId)
+                .single();
+
+            if (commentError) throw commentError;
+
+            console.log('✅ Comment unliked');
+            return res.json({ 
+                liked: false, 
+                likes_count: comment.likes_count || 0,
+                message: 'Comment unliked' 
+            });
         } else {
-            // Create new vote
+            // Like - add the like
             const { error: insertError } = await supabase
-                .from('idea_votes')
+                .from('idea_comment_likes')
                 .insert({
-                    idea_id: id,
-                    user_id: userId,
-                    vote_type: voteType
+                    comment_id: commentId,
+                    user_id: userId
                 });
 
             if (insertError) throw insertError;
+
+            // Get updated likes count
+            const { data: comment, error: commentError } = await supabase
+                .from('idea_comments')
+                .select('likes_count')
+                .eq('id', commentId)
+                .single();
+
+            if (commentError) throw commentError;
+
+            console.log('✅ Comment liked');
+            return res.json({ 
+                liked: true, 
+                likes_count: comment.likes_count || 0,
+                message: 'Comment liked' 
+            });
         }
-
-        // Update idea vote counts
-        const { data: voteCounts, error: countError } = await supabase
-            .from('idea_votes')
-            .select('vote_type')
-            .eq('idea_id', id);
-
-        if (!countError && voteCounts) {
-            const likes = voteCounts.filter(v => v.vote_type === 'like').length;
-            
-            await supabase
-                .from('ideas')
-                .update({ 
-                    votes_count: likes
-                })
-                .eq('id', id);
-        }
-
-        console.log('✅ Vote recorded successfully');
-        res.json({ message: 'Vote recorded successfully' });
 
     } catch (error) {
-        console.error('❌ Error voting on idea:', error);
-        res.status(500).json({ message: 'Failed to record vote', error: error.message });
+        console.error('Error liking comment:', error);
+        res.status(500).json({ message: 'Failed to like comment', error: error.message });
+    }
+});
+
+// Reply to a comment
+router.post('/:id/comments/:commentId/reply', authenticateToken, [
+    param('id').isUUID().withMessage('Valid idea ID required'),
+    param('commentId').isUUID().withMessage('Valid comment ID required'),
+    body('content').notEmpty().withMessage('Reply content is required')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { id: ideaId, commentId } = req.params;
+        const { content } = req.body;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        console.log('💬 Replying to comment:', { ideaId, commentId, userId });
+
+        // Create reply
+        const { data: reply, error } = await supabase
+            .from('idea_comments')
+            .insert({
+                idea_id: ideaId,
+                user_id: userId,
+                content,
+                parent_comment_id: commentId
+            })
+            .select(`
+                *,
+                user:user_id(id, name, profile_picture)
+            `)
+            .single();
+
+        if (error) {
+            console.error('Error inserting reply:', error);
+            throw error;
+        }
+
+        // Update comment count on idea
+        const { count: commentCount, error: countError } = await supabase
+            .from('idea_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('idea_id', ideaId);
+
+        if (!countError) {
+            await supabase
+                .from('ideas')
+                .update({ comments_count: commentCount || 0 })
+                .eq('id', ideaId);
+        }
+
+        console.log('✅ Reply posted successfully');
+        res.status(201).json({ 
+            reply, 
+            message: 'Reply posted successfully' 
+        });
+
+    } catch (error) {
+        console.error('Error posting reply:', error);
+        res.status(500).json({ message: 'Failed to post reply', error: error.message });
     }
 });
 
@@ -690,7 +813,7 @@ router.get('/:id/collaborations', [
 });
 
 // Request collaboration on an idea
-router.post('/:id/collaborate', [
+router.post('/:id/collaborate', authenticateToken, [
     param('id').isUUID().withMessage('Valid idea ID required'),
     body('message').notEmpty().withMessage('Message is required'),
     body('role').optional().isLength({ max: 50 }),
@@ -716,7 +839,7 @@ router.post('/:id/collaborate', [
             .select('*')
             .eq('idea_id', id)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
         if (existing) {
             return res.status(400).json({ message: 'Collaboration request already exists' });

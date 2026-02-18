@@ -32,8 +32,10 @@ export class SecureCMSManager {
         this.realTimeSubscriptions = new Map();
         this.scheduledContent = new Map();
         
-        // Memory management
+        // Memory management & cleanup
         this.intervals = new Set();
+        this.abortControllers = new Map(); // Track AbortControllers for cleanup
+        this.currentLoadController = null; // For canceling in-flight requests
         this.keyboardHandler = this.handleKeyboard.bind(this);
         
         this.init();
@@ -174,6 +176,54 @@ export class SecureCMSManager {
                 setTimeout(() => window.location.href = '/dashboard', 3000);
             }
         }
+    }
+
+    /**
+     * Cleanup method - call when destroying CMS instance
+     * Prevents memory leaks by removing all event listeners and subscriptions
+     */
+    destroy() {
+        console.log('🧹 Cleaning up CMS Manager...');
+        
+        // Cancel any in-flight requests
+        if (this.currentLoadController) {
+            this.currentLoadController.abort();
+        }
+        
+        // Abort all tracked controllers
+        this.abortControllers.forEach(controller => controller.abort());
+        this.abortControllers.clear();
+        
+        // Clear all intervals
+        this.intervals.forEach(interval => clearInterval(interval));
+        this.intervals.clear();
+        
+        // Unsubscribe from real-time updates
+        this.realTimeSubscriptions.forEach(subscription => {
+            if (subscription && typeof subscription.unsubscribe === 'function') {
+                subscription.unsubscribe();
+            }
+        });
+        this.realTimeSubscriptions.clear();
+        
+        // Remove keyboard handler
+        if (this.keyboardHandler) {
+            document.removeEventListener('keydown', this.keyboardHandler);
+        }
+        
+        // Clear event handlers map
+        this.eventHandlers.clear();
+        
+        // Clear selected items
+        this.selectedItems.clear();
+        
+        // Destroy editors
+        if (this.editors && typeof this.editors.destroy === 'function') {
+            this.editors.destroy();
+        }
+        
+        this.isInitialized = false;
+        console.log('✅ CMS Manager cleaned up successfully');
     }
 
     validateRequiredElements() {
@@ -1667,7 +1717,7 @@ export class SecureCMSManager {
             </div>
 
             <div class="resource-actions" style="padding: 1rem 1.25rem; background: rgba(255, 255, 255, 0.02); border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; gap: 0.75rem; justify-content: flex-end;">
-                <button class="action-btn view-btn" onclick="window.open('${this.escapeHTML(resource.file_url)}', '_blank')" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); color: #3b82f6; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
+                <button class="action-btn view-btn" data-action="download" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); color: #3b82f6; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
                     <i class="fas fa-download"></i> Download
                 </button>
                 <button class="action-btn edit-btn" data-action="edit" data-id="${resource.id}" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: #10b981; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
@@ -1679,7 +1729,23 @@ export class SecureCMSManager {
             </div>
         `;
 
-        // Add event listeners
+        // Add event listeners (SECURE: No inline onclick)
+        const downloadBtn = card.querySelector('[data-action="download"]');
+        if (downloadBtn && resource.file_url) {
+            downloadBtn.addEventListener('click', () => {
+                // Validate URL before opening
+                try {
+                    const url = new URL(resource.file_url);
+                    if (url.protocol === 'http:' || url.protocol === 'https:') {
+                        window.open(resource.file_url, '_blank', 'noopener,noreferrer');
+                    }
+                } catch (error) {
+                    console.error('Invalid URL:', error);
+                    this.notifications?.show('Invalid file URL', 'error');
+                }
+            });
+        }
+        
         card.querySelector('[data-action="edit"]')?.addEventListener('click', () => this.editResource(resource.id));
         card.querySelector('[data-action="delete"]')?.addEventListener('click', () => this.deleteResource(resource.id));
 
@@ -2078,13 +2144,44 @@ export class SecureCMSManager {
         document.body.style.overflow = 'hidden';
     }
 
-    async deleteResource(id) {
-        if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
-            return;
+    /**
+     * Validate ID format (UUID or number)
+     * @param {string|number} id - The ID to validate
+     * @param {string} context - Context for error message
+     * @returns {string} - Validated ID as string
+     */
+    validateId(id, context = 'ID') {
+        if (!id) {
+            throw new Error(`${context} is required`);
         }
+        
+        if (typeof id !== 'string' && typeof id !== 'number') {
+            throw new Error(`Invalid ${context} format: must be string or number`);
+        }
+        
+        const idStr = String(id);
+        
+        // Check for UUID format or numeric ID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const numericRegex = /^\d+$/;
+        
+        if (!uuidRegex.test(idStr) && !numericRegex.test(idStr)) {
+            throw new Error(`Invalid ${context} format`);
+        }
+        
+        return idStr;
+    }
 
+    async deleteResource(id) {
         try {
-            const response = await fetch(`/api/v1/resources/${id}`, {
+            // Validate ID before proceeding
+            const validId = this.validateId(id, 'Resource ID');
+            
+            if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
+                return;
+            }
+
+            const response = await fetch(`/api/v1/resources/${validId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken') || sessionStorage.getItem('authToken')}`

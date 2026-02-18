@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comment System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .result {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #3a3a3a;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            border-radius: 5px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>💬 Comment System Test</h1>
+    <p>This page helps you test the comment system functionality.</p>
+
+    <!-- Test 1: Check Authentication -->
+    <div class="test-section">
+        <h2>1. Check Authentication</h2>
+        <button onclick="checkAuth()">Check Auth Token</button>
+        <div id="authResult" class="result"></div>
+    </div>
+
+    <!-- Test 2: Get Ideas -->
+    <div class="test-section">
+        <h2>2. Get Ideas</h2>
+        <button onclick="getIdeas()">Fetch Ideas</button>
+        <div id="ideasResult" class="result"></div>
+    </div>
+
+    <!-- Test 3: Get Comments -->
+    <div class="test-section">
+        <h2>3. Get Comments for an Idea</h2>
+        <input type="text" id="ideaIdForComments" placeholder="Enter Idea ID (UUID)">
+        <button onclick="getComments()">Fetch Comments</button>
+        <div id="commentsResult" class="result"></div>
+    </div>
+
+    <!-- Test 4: Post Comment -->
+    <div class="test-section">
+        <h2>4. Post a Comment</h2>
+        <input type="text" id="ideaIdForPost" placeholder="Enter Idea ID (UUID)">
+        <textarea id="commentContent" placeholder="Enter comment text" rows="3"></textarea>
+        <button onclick="postComment()">Post Comment</button>
+        <div id="postResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function getToken() {
+            return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        }
+
+        async function checkAuth() {
+            clearLog('authResult');
+            const token = getToken();
+            
+            if (!token) {
+                log('authResult', '❌ No auth token found', 'error');
+                log('authResult', 'Please log in first at /pages/auth/signin.html', 'info');
+                return;
+            }
+
+            log('authResult', '✅ Auth token found', 'success');
+            log('authResult', `Token: ${token.substring(0, 20)}...`, 'info');
+
+            // Try to decode JWT (basic check)
+            try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    log('authResult', `User ID: ${payload.id || payload.userId || 'unknown'}`, 'info');
+                    log('authResult', `Expires: ${new Date(payload.exp * 1000).toLocaleString()}`, 'info');
+                }
+            } catch (e) {
+                log('authResult', '⚠️ Could not decode token', 'error');
+            }
+        }
+
+        async function getIdeas() {
+            clearLog('ideasResult');
+            log('ideasResult', 'Fetching ideas...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas?limit=5`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log('ideasResult', `✅ Fetched ${data.ideas.length} ideas`, 'success');
+                
+                data.ideas.forEach((idea, index) => {
+                    log('ideasResult', `\n${index + 1}. ${idea.title}`, 'info');
+                    log('ideasResult', `   ID: ${idea.id}`, 'info');
+                    log('ideasResult', `   Comments: ${idea.comments_count || 0}`, 'info');
+                    log('ideasResult', `   Votes: ${idea.votes_count || 0}`, 'info');
+                });
+
+                // Auto-fill first idea ID
+                if (data.ideas.length > 0) {
+                    document.getElementById('ideaIdForComments').value = data.ideas[0].id;
+                    document.getElementById('ideaIdForPost').value = data.ideas[0].id;
+                    log('ideasResult', `\n💡 Auto-filled idea ID: ${data.ideas[0].id}`, 'success');
+                }
+
+            } catch (error) {
+                log('ideasResult', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getComments() {
+            clearLog('commentsResult');
+            const ideaId = document.getElementById('ideaIdForComments').value.trim();
+
+            if (!ideaId) {
+                log('commentsResult', '❌ Please enter an idea ID', 'error');
+                return;
+            }
+
+            log('commentsResult', `Fetching comments for idea: ${ideaId}`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/comments`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                log('commentsResult', `✅ Fetched ${data.comments.length} comments`, 'success');
+                
+                if (data.comments.length === 0) {
+                    log('commentsResult', 'No comments yet. Be the first to comment!', 'info');
+                } else {
+                    data.comments.forEach((comment, index) => {
+                        log('commentsResult', `\n${index + 1}. ${comment.user?.name || 'Anonymous'}`, 'info');
+                        log('commentsResult', `   "${comment.content}"`, 'info');
+                        log('commentsResult', `   Posted: ${new Date(comment.created_at).toLocaleString()}`, 'info');
+                    });
+                }
+
+            } catch (error) {
+                log('commentsResult', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function postComment() {
+            clearLog('postResult');
+            const ideaId = document.getElementById('ideaIdForPost').value.trim();
+            const content = document.getElementById('commentContent').value.trim();
+            const token = getToken();
+
+            if (!token) {
+                log('postResult', '❌ No auth token found. Please log in first.', 'error');
+                return;
+            }
+
+            if (!ideaId) {
+                log('postResult', '❌ Please enter an idea ID', 'error');
+                return;
+            }
+
+            if (!content) {
+                log('postResult', '❌ Please enter comment text', 'error');
+                return;
+            }
+
+            log('postResult', `Posting comment to idea: ${ideaId}`, 'info');
+            log('postResult', `Content: "${content}"`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/ideas/${ideaId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                log('postResult', `✅ Comment posted successfully!`, 'success');
+                log('postResult', `Comment ID: ${data.comment.id}`, 'info');
+                log('postResult', `Posted by: ${data.comment.user?.name || 'You'}`, 'info');
+                log('postResult', `Posted at: ${new Date(data.comment.created_at).toLocaleString()}`, 'info');
+
+                // Clear the textarea
+                document.getElementById('commentContent').value = '';
+
+                // Suggest refreshing comments
+                log('postResult', '\n💡 Click "Fetch Comments" to see your new comment', 'success');
+
+            } catch (error) {
+                log('postResult', `❌ Error: ${error.message}`, 'error');
+                
+                if (error.message.includes('expired') || error.message.includes('401')) {
+                    log('postResult', '⚠️ Your session may have expired. Please log in again.', 'error');
+                }
+            }
+        }
+
+        // Auto-check auth on load
+        window.addEventListener('load', () => {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>
