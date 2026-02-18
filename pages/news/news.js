@@ -12,6 +12,7 @@ class NewsManager {
         this.itemsPerPage = 12;
         this.allContent = [];
         this.filteredContent = [];
+        this.apiBase = '/api/v1/content';
         
         this.init();
     }
@@ -20,9 +21,7 @@ class NewsManager {
         console.log('NewsManager: Initializing...');
         try {
             await this.loadContent();
-            console.log('NewsManager: Content loaded, setting up event listeners...');
             this.setupEventListeners();
-            console.log('NewsManager: Event listeners set up, rendering content...');
             this.renderContent();
             console.log('NewsManager: Initialization complete');
         } catch (error) {
@@ -32,156 +31,31 @@ class NewsManager {
     }
 
     async loadContent() {
-        // Show loading state
-        console.log('NewsManager: Showing loading state...');
         this.showLoading();
 
         try {
-            // In a real app, this would fetch from your API
-            // For now, we'll use mock data
-            console.log('NewsManager: Loading mock content...');
-            this.allContent = await this.getMockContent();
+            const response = await fetch(`${this.apiBase}/articles?status=published&limit=100`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.allContent = data.articles || [];
             this.filteredContent = [...this.allContent];
-            console.log('NewsManager: Loaded', this.allContent.length, 'items');
+            
+            console.log('Loaded', this.allContent.length, 'articles from database');
         } catch (error) {
             console.error('Error loading content:', error);
             throw error;
         }
     }
 
-    async getMockContent() {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        return [
-            {
-                id: 1,
-                type: 'announcement',
-                priority: 'urgent',
-                pinned: true,
-                title: 'Important: Club Meeting Rescheduled',
-                excerpt: 'Our weekly club meeting has been moved to Friday, 3:00 PM in the Innovation Lab. Please mark your calendars.',
-                content: 'Due to unforeseen circumstances, we need to reschedule our weekly club meeting...',
-                author: 'Club Secretary',
-                date: new Date('2026-01-25'),
-                image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['meeting', 'schedule', 'important'],
-                views: 245,
-                likes: 18
-            },
-            {
-                id: 2,
-                type: 'news',
-                priority: 'normal',
-                pinned: false,
-                title: 'JKUAT Innovation Club Wins National Tech Competition',
-                excerpt: 'Our team secured first place in the National University Tech Innovation Challenge with their groundbreaking IoT solution.',
-                content: 'We are thrilled to announce that our innovation team has won the prestigious National University Tech Innovation Challenge...',
-                author: 'Sarah Kimani',
-                date: new Date('2026-01-24'),
-                image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['competition', 'achievement', 'iot', 'technology'],
-                views: 892,
-                likes: 67
-            },
-            {
-                id: 3,
-                type: 'article',
-                priority: 'normal',
-                pinned: false,
-                title: 'The Future of AI in Education: A Student Perspective',
-                excerpt: 'Exploring how artificial intelligence is transforming the educational landscape and what it means for students.',
-                content: 'Artificial Intelligence is revolutionizing every aspect of our lives, and education is no exception...',
-                author: 'Michael Ochieng',
-                date: new Date('2026-01-23'),
-                image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['ai', 'education', 'technology', 'future'],
-                views: 456,
-                likes: 34
-            },
-            {
-                id: 4,
-                type: 'event',
-                priority: 'high',
-                pinned: true,
-                title: 'Upcoming: Innovation Showcase 2024',
-                excerpt: 'Join us for our annual Innovation Showcase featuring student projects, industry speakers, and networking opportunities.',
-                content: 'Mark your calendars for the most anticipated event of the year - Innovation Showcase 2024...',
-                author: 'Events Team',
-                date: new Date('2026-01-22'),
-                image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['event', 'showcase', 'networking', 'projects'],
-                views: 1234,
-                likes: 89
-            },
-            {
-                id: 5,
-                type: 'news',
-                priority: 'normal',
-                pinned: false,
-                title: 'New Partnership with Tech Industry Leaders',
-                excerpt: 'JKUAT Innovation Club announces strategic partnerships with leading technology companies for internship and mentorship programs.',
-                content: 'We are excited to announce new partnerships with several leading technology companies...',
-                author: 'Partnership Team',
-                date: new Date('2026-01-21'),
-                image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['partnership', 'internship', 'mentorship', 'industry'],
-                views: 678,
-                likes: 45
-            },
-            {
-                id: 6,
-                type: 'article',
-                priority: 'normal',
-                pinned: false,
-                title: 'Building Sustainable Tech Solutions: A Guide',
-                excerpt: 'Learn how to develop technology solutions that are not only innovative but also environmentally sustainable.',
-                content: 'In today\'s world, sustainability is not just a buzzword - it\'s a necessity...',
-                author: 'Grace Wanjiku',
-                date: new Date('2026-01-20'),
-                image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['sustainability', 'technology', 'environment', 'guide'],
-                views: 321,
-                likes: 28
-            },
-            {
-                id: 7,
-                type: 'announcement',
-                priority: 'normal',
-                pinned: false,
-                title: 'New Lab Equipment Available for Projects',
-                excerpt: 'The Innovation Lab has been upgraded with new equipment including 3D printers, Arduino kits, and VR headsets.',
-                content: 'We are pleased to announce that our Innovation Lab has received new equipment...',
-                author: 'Lab Manager',
-                date: new Date('2026-01-19'),
-                image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['lab', 'equipment', 'projects', '3d-printing'],
-                views: 543,
-                likes: 41
-            },
-            {
-                id: 8,
-                type: 'event',
-                priority: 'normal',
-                pinned: false,
-                title: 'Workshop: Introduction to Machine Learning',
-                excerpt: 'Join our hands-on workshop to learn the basics of machine learning and build your first ML model.',
-                content: 'Whether you\'re a beginner or looking to refresh your knowledge, this workshop is perfect for you...',
-                author: 'Workshop Team',
-                date: new Date('2026-01-18'),
-                image: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                tags: ['workshop', 'machine-learning', 'ai', 'hands-on'],
-                views: 789,
-                likes: 56
-            }
-        ];
-    }
-
     setupEventListeners() {
         // Filter tabs
         document.querySelectorAll('.filter-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                const button = e.currentTarget; // Use currentTarget instead of target
+                const button = e.currentTarget;
                 this.handleFilterChange(button.dataset.filter);
             });
         });
@@ -237,10 +111,8 @@ class NewsManager {
     updateContentTitle() {
         const titleMap = {
             'all': 'Latest Updates',
-            'announcement': 'Announcements',
             'news': 'News',
-            'article': 'Articles',
-            'event': 'Events'
+            'article': 'Articles'
         };
         
         document.getElementById('contentTitle').textContent = titleMap[this.currentFilter];
@@ -251,15 +123,15 @@ class NewsManager {
 
         // Apply type filter
         if (this.currentFilter !== 'all') {
-            filtered = filtered.filter(item => item.type === this.currentFilter);
+            filtered = filtered.filter(item => item.category === this.currentFilter);
         }
 
         // Apply search filter
         if (this.searchQuery) {
             filtered = filtered.filter(item => 
                 item.title.toLowerCase().includes(this.searchQuery) ||
-                item.excerpt.toLowerCase().includes(this.searchQuery) ||
-                item.tags.some(tag => tag.toLowerCase().includes(this.searchQuery))
+                (item.excerpt && item.excerpt.toLowerCase().includes(this.searchQuery)) ||
+                (item.tags && item.tags.some(tag => tag.toLowerCase().includes(this.searchQuery)))
             );
         }
 
@@ -267,9 +139,9 @@ class NewsManager {
         filtered.sort((a, b) => {
             switch (this.currentSort) {
                 case 'date-desc':
-                    return new Date(b.date) - new Date(a.date);
+                    return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at);
                 case 'date-asc':
-                    return new Date(a.date) - new Date(b.date);
+                    return new Date(a.published_at || a.created_at) - new Date(b.published_at || b.created_at);
                 case 'title-asc':
                     return a.title.localeCompare(b.title);
                 case 'title-desc':
@@ -285,23 +157,8 @@ class NewsManager {
 
     renderContent() {
         this.hideLoading();
-        this.renderPinnedContent();
         this.renderNewsGrid();
         this.updateLoadMoreButton();
-    }
-
-    renderPinnedContent() {
-        const pinnedContent = this.allContent.filter(item => item.pinned);
-        const pinnedGrid = document.getElementById('pinnedGrid');
-        const pinnedSection = document.getElementById('pinnedSection');
-
-        if (pinnedContent.length === 0) {
-            pinnedSection.style.display = 'none';
-            return;
-        }
-
-        pinnedSection.style.display = 'block';
-        pinnedGrid.innerHTML = pinnedContent.map(item => this.createNewsCard(item, true)).join('');
     }
 
     renderNewsGrid() {
@@ -323,25 +180,23 @@ class NewsManager {
         newsGrid.innerHTML = itemsToShow.map(item => this.createNewsCard(item)).join('');
     }
 
-    createNewsCard(item, isPinned = false) {
-        const formattedDate = this.formatDate(item.date);
-        const priorityBadge = item.priority !== 'normal' ? 
-            `<div class="priority-badge ${item.priority}">
-                <i class="fas fa-exclamation"></i>
-                ${item.priority.toUpperCase()}
-            </div>` : '';
+    createNewsCard(item) {
+        const formattedDate = this.formatDate(item.published_at || item.created_at);
+        const authorName = item.author?.name || 'JKUAT Innovation Club';
 
         return `
-            <article class="news-card ${item.type} ${isPinned ? 'pinned' : ''}" data-id="${item.id}">
+            <article class="news-card ${item.category}" data-id="${item.id}">
                 <div class="card-header">
-                    <img src="${item.image}" alt="${item.title}" class="card-image" loading="lazy">
+                    <img src="${item.featured_image || 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800'}" 
+                         alt="${item.title}" 
+                         class="card-image" 
+                         loading="lazy">
                     <div class="card-overlay"></div>
                     <div class="card-badges">
-                        <div class="type-badge ${item.type}">
-                            <i class="fas fa-${this.getTypeIcon(item.type)}"></i>
-                            ${item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                        <div class="type-badge ${item.category}">
+                            <i class="fas fa-${this.getTypeIcon(item.category)}"></i>
+                            ${item.category.charAt(0).toUpperCase() + item.category.slice(1)}
                         </div>
-                        ${priorityBadge}
                     </div>
                 </div>
                 
@@ -351,34 +206,36 @@ class NewsManager {
                             <i class="fas fa-calendar"></i>
                             ${formattedDate}
                         </div>
-                        <div class="card-author">By ${item.author}</div>
+                        <div class="card-author">By ${authorName}</div>
                     </div>
                     
                     <h3 class="card-title">${item.title}</h3>
-                    <p class="card-excerpt">${item.excerpt}</p>
+                    <p class="card-excerpt">${item.excerpt || item.content.substring(0, 150) + '...'}</p>
                     
+                    ${item.tags && item.tags.length > 0 ? `
                     <div class="card-tags">
-                        ${item.tags.map(tag => `<span class="card-tag">#${tag}</span>`).join('')}
+                        ${item.tags.slice(0, 4).map(tag => `<span class="card-tag">#${tag}</span>`).join('')}
                     </div>
+                    ` : ''}
                     
                     <div class="card-footer">
                         <div class="card-stats">
                             <div class="card-stat">
                                 <i class="fas fa-eye"></i>
-                                ${item.views}
+                                ${item.views || 0}
                             </div>
                             <div class="card-stat">
                                 <i class="fas fa-heart"></i>
-                                ${item.likes}
+                                ${item.likes || 0}
                             </div>
                         </div>
                         
                         <div class="card-actions">
-                            <a href="#" class="card-btn primary" onclick="newsManager.readMore(${item.id})">
+                            <a href="#" class="card-btn primary" onclick="newsManager.readMore('${item.id}'); return false;">
                                 <i class="fas fa-book-open"></i>
                                 Read More
                             </a>
-                            <button class="card-btn" onclick="newsManager.shareContent(${item.id})">
+                            <button class="card-btn" onclick="newsManager.shareContent('${item.id}')">
                                 <i class="fas fa-share"></i>
                                 Share
                             </button>
@@ -391,25 +248,26 @@ class NewsManager {
 
     getTypeIcon(type) {
         const icons = {
-            'announcement': 'bullhorn',
             'news': 'newspaper',
-            'article': 'file-alt',
-            'event': 'calendar'
+            'article': 'file-alt'
         };
         return icons[type] || 'file';
     }
 
     formatDate(date) {
         const now = new Date();
-        const diffTime = Math.abs(now - date);
+        const articleDate = new Date(date);
+        const diffTime = Math.abs(now - articleDate);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 1) {
+        if (diffDays === 0) {
+            return 'Today';
+        } else if (diffDays === 1) {
             return 'Yesterday';
         } else if (diffDays < 7) {
             return `${diffDays} days ago`;
         } else {
-            return date.toLocaleDateString('en-US', {
+            return articleDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
@@ -434,12 +292,80 @@ class NewsManager {
         this.renderNewsGrid();
     }
 
-    readMore(id) {
-        const item = this.allContent.find(item => item.id === id);
-        if (item) {
-            // In a real app, this would navigate to a detailed view
-            // For now, we'll show an alert
-            alert(`Opening: ${item.title}\n\n${item.content}`);
+    async readMore(id) {
+        try {
+            const response = await fetch(`${this.apiBase}/articles/${id}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to load article');
+            }
+
+            const data = await response.json();
+            const article = data.article;
+
+            // Create modal to show full article
+            const modal = document.createElement('div');
+            modal.className = 'article-modal';
+            modal.innerHTML = `
+                <div class="modal-overlay" onclick="this.parentElement.remove()"></div>
+                <div class="modal-content">
+                    <button class="modal-close" onclick="this.closest('.article-modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    
+                    ${article.featured_image ? `
+                    <img src="${article.featured_image}" alt="${article.title}" class="modal-image">
+                    ` : ''}
+                    
+                    <div class="modal-header">
+                        <div class="type-badge ${article.category}">
+                            <i class="fas fa-${this.getTypeIcon(article.category)}"></i>
+                            ${article.category.charAt(0).toUpperCase() + article.category.slice(1)}
+                        </div>
+                        <h2>${article.title}</h2>
+                        <div class="modal-meta">
+                            <span><i class="fas fa-user"></i> ${article.author?.name || 'JKUAT Innovation Club'}</span>
+                            <span><i class="fas fa-calendar"></i> ${this.formatDate(article.published_at || article.created_at)}</span>
+                            <span><i class="fas fa-eye"></i> ${article.views || 0} views</span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-body">
+                        ${article.content.split('\n').map(p => `<p>${p}</p>`).join('')}
+                    </div>
+                    
+                    ${article.tags && article.tags.length > 0 ? `
+                    <div class="modal-tags">
+                        ${article.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            // Update view count
+            this.incrementViews(id);
+
+        } catch (error) {
+            console.error('Error loading article:', error);
+            this.showNotification('Failed to load article', 'error');
+        }
+    }
+
+    async incrementViews(id) {
+        try {
+            // Find article in local data and increment
+            const article = this.allContent.find(a => a.id === id);
+            if (article) {
+                article.views = (article.views || 0) + 1;
+            }
+            
+            // In a real implementation, you'd send this to the backend
+            // await fetch(`${this.apiBase}/articles/${id}/view`, { method: 'POST' });
+        } catch (error) {
+            console.error('Error incrementing views:', error);
         }
     }
 
@@ -448,14 +374,16 @@ class NewsManager {
         if (item && navigator.share) {
             navigator.share({
                 title: item.title,
-                text: item.excerpt,
-                url: window.location.href + '#' + id
-            });
+                text: item.excerpt || item.content.substring(0, 150),
+                url: window.location.href + '?article=' + id
+            }).catch(err => console.log('Share failed:', err));
         } else {
             // Fallback: copy to clipboard
-            const url = window.location.href + '#' + id;
+            const url = window.location.href + '?article=' + id;
             navigator.clipboard.writeText(url).then(() => {
                 this.showNotification('Link copied to clipboard!', 'success');
+            }).catch(() => {
+                this.showNotification('Failed to copy link', 'error');
             });
         }
     }
@@ -479,7 +407,6 @@ class NewsManager {
     }
 
     showNotification(message, type = 'info') {
-        // Use the global notification system if available
         if (window.showNotification) {
             window.showNotification(message, type);
         } else {

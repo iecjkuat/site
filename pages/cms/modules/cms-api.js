@@ -93,7 +93,7 @@ export class CMSAPI {
      */
     static async getArticles(filters = {}) {
         try {
-            const data = await this.get('/content', filters);
+            const data = await this.get('/content/articles', filters);
             return data.articles || data.content || data.data || [];
         } catch (error) {
             console.error('Failed to fetch articles:', error);
@@ -106,7 +106,7 @@ export class CMSAPI {
      */
     static async getArticle(id) {
         try {
-            const data = await this.get(`/content/${id}`);
+            const data = await this.get(`/content/articles/${id}`);
             return data.article || data.content || data.data;
         } catch (error) {
             console.error(`Failed to fetch article ${id}:`, error);
@@ -119,7 +119,7 @@ export class CMSAPI {
      */
     static async createArticle(articleData) {
         try {
-            const data = await this.post('/content', articleData);
+            const data = await this.post('/content/articles', articleData);
             return data.article || data.content || data.data;
         } catch (error) {
             console.error('Failed to create article:', error);
@@ -132,7 +132,7 @@ export class CMSAPI {
      */
     static async updateArticle(id, articleData) {
         try {
-            const data = await this.put(`/content/${id}`, articleData);
+            const data = await this.put(`/content/articles/${id}`, articleData);
             return data.article || data.content || data.data;
         } catch (error) {
             console.error(`Failed to update article ${id}:`, error);
@@ -145,7 +145,7 @@ export class CMSAPI {
      */
     static async deleteArticle(id) {
         try {
-            await this.delete(`/content/${id}`);
+            await this.delete(`/content/articles/${id}`);
             return true;
         } catch (error) {
             console.error(`Failed to delete article ${id}:`, error);

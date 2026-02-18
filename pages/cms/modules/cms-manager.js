@@ -1108,16 +1108,13 @@ export class SecureCMSManager {
         container.appendChild(CMSUI.createLoadingElement());
 
         try {
-            const realArticles = await CMSData.getArticles();
-            // Merge with mock data (uses real if available, mock as fallback)
-            const allArticles = CMSMockData.mergeWithRealData(realArticles, 'articles');
-            const filteredArticles = this.filterItems(allArticles);
+            const articles = await CMSData.getArticles({ status: 'published' });
+            const filteredArticles = this.filterItems(articles);
             this.renderArticles(filteredArticles);
         } catch (error) {
             console.error('Error loading articles:', error);
-            // On error, use mock data
-            const mockArticles = CMSMockData.get('articles');
-            this.renderArticles(mockArticles);
+            container.replaceChildren();
+            container.appendChild(CMSUI.createEmptyState('Failed to load articles. Please try again.'));
         }
     }
 
@@ -1920,6 +1917,9 @@ export class SecureCMSManager {
             // For events, use the beautiful detailed modal
             if (type === 'event') {
                 this.viewEventDetails(data);
+            } else if (type === 'article') {
+                // For articles, use beautiful article modal
+                this.viewArticleDetails(data);
             } else {
                 // For other content types, use the standard modal
                 const modal = CMSUI.createContentModal(data, type);
@@ -1930,6 +1930,155 @@ export class SecureCMSManager {
             console.error(`❌ Error creating modal:`, error);
             this.notifications.show(`Error displaying content: ${error.message}`, 'error');
         }
+    }
+
+    viewArticleDetails(article) {
+        // Create beautiful article details modal (similar to news page)
+        const modal = document.createElement('div');
+        modal.id = 'articleDetailsModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        const publishDate = new Date(article.published_at || article.created_at);
+        const featuredImage = article.featured_image;
+        
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-${article.category === 'news' ? 'newspaper' : 'file-alt'}" style="font-size: 1.5rem; color: #10b981;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">${this.escapeHTML(article.title)}</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">JKUAT Innovation Club</p>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 16px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-calendar" style="color: #10b981;"></i>
+                        <span>${publishDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-folder" style="color: #10b981;"></i>
+                        <span style="text-transform: capitalize;">${this.escapeHTML(article.category || 'article')}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-circle" style="color: ${article.status === 'published' ? '#10b981' : '#f59e0b'}; font-size: 0.5rem;"></i>
+                        <span style="text-transform: capitalize;">${this.escapeHTML(article.status || 'draft')}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-eye" style="color: #10b981;"></i>
+                        <span>${article.views || 0} views</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        <i class="fas fa-heart" style="color: #10b981;"></i>
+                        <span>${article.likes || 0} likes</span>
+                    </div>
+                </div>
+
+                ${featuredImage ? `
+                    <div style="margin-bottom: 2rem;">
+                        <img src="${this.escapeHTML(featuredImage)}" alt="${this.escapeHTML(article.title)}" 
+                             style="width: 100%; height: 400px; object-fit: cover; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                    </div>
+                ` : ''}
+
+                ${article.excerpt ? `
+                    <div style="margin-bottom: 2rem;">
+                        <div style="color: rgba(255, 255, 255, 0.9); font-size: 1.125rem; line-height: 1.8; padding: 1.5rem; background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 12px; font-style: italic;">
+                            ${this.escapeHTML(article.excerpt)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-align-left" style="color: #10b981;"></i>
+                        Article Content
+                    </h3>
+                    <div style="color: rgba(255, 255, 255, 0.8); line-height: 1.8; padding: 1.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 12px; font-size: 1.05rem;">
+                        ${article.content ? article.content.split('\n').map(p => p.trim() ? `<p style="margin-bottom: 1rem;">${this.escapeHTML(p)}</p>` : '').join('') : 'No content available.'}
+                    </div>
+                </div>
+
+                ${article.tags && article.tags.length > 0 ? `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: white; font-size: 1.25rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-tags" style="color: #10b981;"></i>
+                            Tags
+                        </h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                            ${article.tags.map(tag => `
+                                <span style="padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; color: #10b981; font-size: 0.875rem; font-weight: 500;">
+                                    ${tag.startsWith('#') ? this.escapeHTML(tag) : '#' + this.escapeHTML(tag)}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="display: flex; gap: 1rem; justify-content: center; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button id="modalCloseBtn" style="padding: 0.75rem 2rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#modalCloseBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        document.body.style.overflow = 'hidden';
     }
 
     viewEventDetails(event) {
@@ -2175,7 +2324,29 @@ export class SecureCMSManager {
         console.log(`✏️ Editing article with ID:`, id);
         
         try {
-            const article = CMSData.findById('articles', id);
+            // Get articles from the rendered list instead of storage
+            const container = document.getElementById('articles-list');
+            const articleCard = container?.querySelector(`[data-id="${id}"]`);
+            
+            if (!articleCard) {
+                this.notifications.show('Article not found', 'error');
+                return;
+            }
+            
+            // Fetch the article data from API
+            this.fetchAndEditArticle(id);
+            
+        } catch (error) {
+            console.error(`❌ Error editing article:`, error);
+            this.notifications.show(`Error editing article: ${error.message}`, 'error');
+        }
+    }
+
+    async fetchAndEditArticle(id) {
+        try {
+            // Fetch article from API
+            const article = await CMSAPI.getArticle(id);
+            
             if (!article) {
                 this.notifications.show('Article not found', 'error');
                 return;
@@ -2183,8 +2354,8 @@ export class SecureCMSManager {
             
             console.log(`✅ Found article:`, article.title);
             
-            // Create proper edit modal instead of prompt()
-            this.showEditModal('article', article, async (updatedData) => {
+            // Create beautiful edit modal for articles
+            this.showArticleEditModal(article, async (updatedData) => {
                 try {
                     // Validate input
                     this.validateTitle(updatedData.title);
@@ -2192,8 +2363,8 @@ export class SecureCMSManager {
                         this.validateContent(updatedData.content);
                     }
                     
-                    // Update with validated data
-                    await CMSData.updateItem('articles', id, updatedData);
+                    // Update via API
+                    await CMSAPI.updateArticle(id, updatedData);
                     this.notifications.show('Article updated successfully!', 'success');
                     this.loadArticles();
                     console.log(`✅ Article updated:`, updatedData.title);
@@ -2206,9 +2377,215 @@ export class SecureCMSManager {
             });
             
         } catch (error) {
-            console.error(`❌ Error editing article:`, error);
-            this.notifications.show(`Error editing article: ${error.message}`, 'error');
+            console.error(`❌ Error fetching article:`, error);
+            this.notifications.show(`Error loading article: ${error.message}`, 'error');
         }
+    }
+
+    showArticleEditModal(article, onSave) {
+        const modal = document.createElement('div');
+        modal.id = 'articleEditModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow-y: auto;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        `;
+
+        modalContent.innerHTML = `
+            <button id="closeModalBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(0, 0, 0, 0.7); border: none; border-radius: 50%; width: 40px; height: 40px; color: white; font-size: 1.5rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+                ×
+            </button>
+
+            <div style="padding: 2rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-edit" style="font-size: 1.5rem; color: #10b981;"></i>
+                    </div>
+                    <h2 style="font-size: 2rem; font-weight: 700; color: white; margin: 0 0 0.5rem 0;">Edit Article</h2>
+                    <p style="color: rgba(255, 255, 255, 0.7); font-size: 1rem;">Update article details and content</p>
+                </div>
+
+                <form id="articleEditForm" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-heading" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Title *
+                        </label>
+                        <input type="text" id="articleTitle" name="title" required
+                               value="${this.escapeHTML(article.title)}"
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; transition: all 0.3s ease;"
+                               placeholder="Enter article title">
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-align-left" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Excerpt
+                        </label>
+                        <textarea id="articleExcerpt" name="excerpt" rows="3"
+                                  style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; resize: vertical; transition: all 0.3s ease;"
+                                  placeholder="Brief summary of the article">${this.escapeHTML(article.excerpt || '')}</textarea>
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-file-alt" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Content *
+                        </label>
+                        <textarea id="articleContent" name="content" rows="12" required
+                                  style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; line-height: 1.6; resize: vertical; transition: all 0.3s ease;"
+                                  placeholder="Write your article content here...">${this.escapeHTML(article.content || '')}</textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                                <i class="fas fa-folder" style="color: #10b981; margin-right: 0.5rem;"></i>
+                                Category *
+                            </label>
+                            <select id="articleCategory" name="category" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+                                <option value="news" ${article.category === 'news' ? 'selected' : ''}>News</option>
+                                <option value="article" ${article.category === 'article' ? 'selected' : ''}>Article</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                                <i class="fas fa-circle" style="color: #10b981; margin-right: 0.5rem;"></i>
+                                Status *
+                            </label>
+                            <select id="articleStatus" name="status" required
+                                    style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+                                <option value="draft" ${article.status === 'draft' ? 'selected' : ''}>Draft</option>
+                                <option value="published" ${article.status === 'published' ? 'selected' : ''}>Published</option>
+                                <option value="archived" ${article.status === 'archived' ? 'selected' : ''}>Archived</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-image" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Featured Image URL
+                        </label>
+                        <input type="url" id="articleImage" name="featured_image"
+                               value="${this.escapeHTML(article.featured_image || '')}"
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; transition: all 0.3s ease;"
+                               placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <div>
+                        <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                            <i class="fas fa-tags" style="color: #10b981; margin-right: 0.5rem;"></i>
+                            Tags (comma-separated)
+                        </label>
+                        <input type="text" id="articleTags" name="tags"
+                               value="${article.tags ? article.tags.join(', ') : ''}"
+                               style="width: 100%; padding: 0.875rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; font-size: 1rem; transition: all 0.3s ease;"
+                               placeholder="technology, innovation, news">
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <button type="button" id="cancelBtn" style="padding: 0.875rem 2rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: rgba(255, 255, 255, 0.9); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 0.875rem 2rem; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                            <i class="fas fa-save" style="margin-right: 0.5rem;"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Form submission
+        const form = modal.querySelector('#articleEditForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const tags = formData.get('tags').split(',').map(t => t.trim()).filter(t => t);
+            
+            const updatedData = {
+                title: formData.get('title'),
+                content: formData.get('content'),
+                excerpt: formData.get('excerpt'),
+                category: formData.get('category'),
+                status: formData.get('status'),
+                featured_image: formData.get('featured_image'),
+                tags: tags
+            };
+
+            try {
+                await onSave(updatedData);
+                closeModal();
+            } catch (error) {
+                // Error handled by onSave, modal stays open
+            }
+        };
+
+        // Close handlers
+        const closeModal = () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        };
+
+        modal.querySelector('#closeModalBtn').onclick = closeModal;
+        modal.querySelector('#cancelBtn').onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Focus styling
+        const inputs = modal.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.onfocus = () => {
+                input.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                input.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+            };
+            input.onblur = () => {
+                input.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                input.style.boxShadow = 'none';
+            };
+        });
+
+        document.body.style.overflow = 'hidden';
     }
 
     editEvent(id) {
