@@ -500,15 +500,6 @@ router.get('/:id/download-proxy', async (req, res) => {
     res.status(500).json({ message: 'Download failed' });
   }
 });
-      fileName: resource.file_name,
-      fileType: resource.file_type,
-      fileSize: resource.file_size
-    });
-  } catch (error) {
-    console.error('Error processing download:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 // Get resources by category
 router.get('/category/:category', async (req, res) => {

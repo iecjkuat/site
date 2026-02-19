@@ -16,24 +16,89 @@ class LeadershipPage {
     init() {
         console.log('✅ LeadershipPage initialized');
         
-        // Always use mock data for now (can be enhanced later to fetch from API)
-        this.useMockData();
+        // Fetch data from API
+        this.loadLeadershipData();
         this.bindEvents();
     }
 
-    useMockData() {
-        console.log('📋 Loading mock leadership data');
-        if (window.MOCK_LEADERSHIP_DATA) {
-            this.stats = window.MOCK_LEADERSHIP_DATA.stats;
-            this.executives = window.MOCK_LEADERSHIP_DATA.executives;
-            this.patrons = window.MOCK_LEADERSHIP_DATA.patrons;
-            
-            this.updateStatsDisplay();
-            this.renderExecutiveCommittee();
-            this.renderClubPatrons();
-            console.log('✅ Mock data loaded successfully');
-        } else {
-            console.error('❌ Mock data not available');
+    async loadLeadershipData() {
+        console.log('📋 Loading leadership data from API');
+        try {
+            // Fetch all data in parallel
+            const [execRes, patronRes, statsRes] = await Promise.all([
+                fetch('/api/v1/leadership/executive-committee'),
+                fetch('/api/v1/leadership/patrons'),
+                fetch('/api/v1/leadership/stats')
+            ]);
+
+            console.log('API Response status:', {
+                executives: execRes.status,
+                patrons: patronRes.status,
+                stats: statsRes.status
+            });
+
+            if (execRes.ok && patronRes.ok && statsRes.ok) {
+                const execData = await execRes.json();
+                const patronData = await patronRes.json();
+                const statsData = await statsRes.json();
+
+                console.log('API Response data:', {
+                    execData,
+                    patronData,
+                    statsData
+                });
+
+                this.executives = execData.executives || [];
+                this.patrons = patronData.patrons || [];
+                this.stats = {
+                    executiveMembers: statsData.executiveMembers || 0,
+                    clubPatrons: statsData.clubPatrons || 0,
+                    totalLeadership: statsData.totalLeadership || 0
+                };
+
+                console.log('✅ Leadership data loaded:', {
+                    executives: this.executives.length,
+                    patrons: this.patrons.length,
+                    stats: this.stats
+                });
+
+                this.updateStatsDisplay();
+                this.renderExecutiveCommittee();
+                this.renderClubPatrons();
+            } else {
+                const execError = !execRes.ok ? await execRes.text() : null;
+                const patronError = !patronRes.ok ? await patronRes.text() : null;
+                const statsError = !statsRes.ok ? await statsRes.text() : null;
+                
+                console.error('API Errors:', { execError, patronError, statsError });
+                throw new Error('Failed to fetch leadership data');
+            }
+        } catch (error) {
+            console.error('❌ Error loading leadership data:', error);
+            this.showError('Failed to load leadership data. Please try again later.');
+        }
+    }
+
+    showError(message) {
+        const execGrid = document.getElementById('executiveGrid');
+        const patronGrid = document.getElementById('patronsGrid');
+        
+        if (execGrid) {
+            execGrid.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        if (patronGrid) {
+            patronGrid.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${message}</p>
+                </div>
+            `;
         }
     }
 

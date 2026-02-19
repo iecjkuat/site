@@ -27,7 +27,54 @@
           crossorigin="anonymous" rel="stylesheet">
     <link href="/shared/global-navbar.css" rel="stylesheet">
     <link href="/home/home.css" rel="stylesheet">
-    <link href="leadership.css" rel="stylesheet">
+    <link href="/pages/leadership/leadership.css" rel="stylesheet">
+    
+    <!-- Critical CSS for immediate styling -->
+    <style>
+        /* Match other pages - dark background with subtle image */
+        body {
+            background: #0f172a !important;
+            min-height: 100vh;
+            color: white !important;
+        }
+        
+        /* Ensure container content is visible */
+        .container {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Loading and error states */
+        .loading-state, .error-state {
+            color: white !important;
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .error-state {
+            color: #ef4444 !important;
+        }
+        
+        .error-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ef4444;
+        }
+        
+        /* Hero section text */
+        .hero-section {
+            color: white !important;
+            padding-top: 8rem;
+        }
+        
+        .hero-title, .section-title {
+            color: white !important;
+        }
+        
+        .hero-subtitle, .section-subtitle {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+    </style>
     
     <!-- Override conflicting navbar styles -->
     <style>
@@ -189,9 +236,8 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="mock-data.js"></script>
-    <script src="leadership.js"></script>
-    <script src="leadership-init.js"></script>
+    <script src="/pages/leadership/leadership.js"></script>
+    <script src="/pages/leadership/leadership-init.js"></script>
 
 
 </body>

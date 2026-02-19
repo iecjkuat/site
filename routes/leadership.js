@@ -40,35 +40,42 @@ router.get('/executive-committee', async (req, res) => {
   try {
     const { data: executives, error } = await supabase
       .from('executive_committee')
-      .select(`
-        id, position, position_order, bio, profile_photo, office_hours,
-        contact_info, social_media, start_date, end_date, is_active,
-        achievements, responsibilities, created_at,
-        users!inner(id, name, email, phone, course, year_of_study, college)
-      `)
+      .select('*')
       .eq('is_active', true)
-      .order('position_order', { ascending: true });
+      .order('display_order', { ascending: true });
 
     if (error) {
       console.error('Executive committee fetch error:', error);
       return res.status(500).json({ message: 'Failed to fetch executive committee' });
     }
 
-    // Format the response
+    // Format the response to match frontend expectations
     const formattedExecutives = executives.map(exec => ({
       id: exec.id,
       position: exec.position,
-      positionOrder: exec.position_order,
+      positionOrder: exec.display_order,
       bio: exec.bio,
-      profilePhoto: exec.profile_photo,
-      officeHours: exec.office_hours,
-      contactInfo: exec.contact_info,
-      socialMedia: exec.social_media,
-      startDate: exec.start_date,
-      endDate: exec.end_date,
-      achievements: exec.achievements,
-      responsibilities: exec.responsibilities,
-      user: exec.users
+      profilePhoto: exec.profile_image_url,
+      officeHours: exec.office_hours || '',
+      contactInfo: {
+        email: exec.email,
+        phone: exec.phone
+      },
+      socialMedia: exec.social_links || {},
+      startDate: exec.term_start_date,
+      endDate: exec.term_end_date,
+      achievements: [],
+      responsibilities: [],
+      // Create user object from executive_committee fields for frontend compatibility
+      user: {
+        id: exec.user_id,
+        name: exec.name,
+        email: exec.email,
+        phone: exec.phone,
+        course: exec.course,
+        year_of_study: exec.year_of_study,
+        college: 'JKUAT'
+      }
     }));
 
     res.json({
@@ -114,12 +121,7 @@ router.get('/executive-committee/:id', async (req, res) => {
 
     const { data: executive, error } = await supabase
       .from('executive_committee')
-      .select(`
-        id, position, position_order, bio, profile_photo, office_hours,
-        contact_info, social_media, start_date, end_date, is_active,
-        achievements, responsibilities, created_at, updated_at,
-        users!inner(id, name, email, phone, course, year_of_study, college, bio, skills)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -130,17 +132,30 @@ router.get('/executive-committee/:id', async (req, res) => {
     const formattedExecutive = {
       id: executive.id,
       position: executive.position,
-      positionOrder: executive.position_order,
+      positionOrder: executive.display_order,
       bio: executive.bio,
-      profilePhoto: executive.profile_photo,
-      officeHours: executive.office_hours,
-      contactInfo: executive.contact_info,
-      socialMedia: executive.social_media,
-      startDate: executive.start_date,
-      endDate: executive.end_date,
-      achievements: executive.achievements,
-      responsibilities: executive.responsibilities,
-      user: executive.users
+      profilePhoto: executive.profile_image_url,
+      officeHours: executive.office_hours || '',
+      contactInfo: {
+        email: executive.email,
+        phone: executive.phone
+      },
+      socialMedia: executive.social_links || {},
+      startDate: executive.term_start_date,
+      endDate: executive.term_end_date,
+      achievements: [],
+      responsibilities: [],
+      user: {
+        id: executive.user_id,
+        name: executive.name,
+        email: executive.email,
+        phone: executive.phone,
+        course: executive.course,
+        year_of_study: executive.year_of_study,
+        college: 'JKUAT',
+        bio: executive.bio,
+        skills: []
+      }
     };
 
     res.json(formattedExecutive);

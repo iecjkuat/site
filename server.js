@@ -192,6 +192,22 @@ app.use('/cms', express.static(path.join(__dirname, 'pages', 'cms'), {
   index: false
 }));
 
+// Serve all page assets with proper MIME types
+app.use('/pages', express.static(path.join(__dirname, 'pages'), {
+  setHeaders: (res, filepath) => {
+    // Set correct MIME type for JavaScript files
+    if (filepath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    }
+    // Set correct MIME type for CSS files
+    if (filepath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    }
+  },
+  redirect: false,
+  index: false
+}));
+
 // Serve page assets (CSS, JS, images) but block HTML files
 app.use((req, res, next) => {
   // Block HTML files everywhere

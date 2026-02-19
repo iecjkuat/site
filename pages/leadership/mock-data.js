@@ -1,56 +1,56 @@
-// Leadership Page - Mock Data
-// Provides fallback data when API is unavailable
+// Mock Leadership Data for JKUAT Innovation and Entrepreneurship Club
 
-const MOCK_LEADERSHIP_DATA = {
+window.MOCK_LEADERSHIP_DATA = {
     stats: {
-        executiveMembers: 7,
-        clubPatrons: 2,
-        totalLeadership: 9,
-        positionBreakdown: {
-            "Chairperson": 1,
-            "Vice-Chairperson (Membership)": 1,
-            "Vice-Chairperson (Projects)": 1,
-            "Vice-Chairperson (Education)": 1,
-            "Secretary-General": 1,
-            "Treasurer": 1,
-            "Communications & PR Officer": 1
-        }
+        executiveCount: 7,
+        patronCount: 3,
+        totalLeadership: 10
     },
-
+    
     executives: [
         {
-            id: "mock-chair-001",
+            id: 1,
+            name: "John Kamau",
             position: "Chairperson",
-            positionOrder: 1,
-            bio: "Visionary leader driving innovation and entrepreneurship initiatives at JKUAT. Passionate about fostering a culture of creativity and business development among students.",
-            profilePhoto: null,
-            officeHours: {
-                "monday": "2:00 PM - 4:00 PM",
-                "wednesday": "10:00 AM - 12:00 PM",
-                "friday": "3:00 PM - 5:00 PM"
-            },
-            contactInfo: {
-                email: "chairperson@jkuatinnovation.ac.ke",
-                phone: "+254700000001",
-                office: "Innovation Hub, Room 101"
-            },
-            socialMedia: {
-                twitter: "@JKUATChair",
-                linkedin: "https://linkedin.com/in/chairperson"
-            },
+            email: "john.kamau@students.jkuat.ac.ke",
+            phone: "+254 712 345 678",
+            course: "BSc. Computer Science",
+            year: "4th Year",
+            bio: "Passionate about innovation and technology. Leading the club towards excellence in entrepreneurship and tech innovation.",
+            avatar: null,
+            officeHours: "Mon-Fri, 2PM-4PM",
+            joinedDate: "2023-01-15",
             achievements: [
-                "Led 15+ successful innovation projects",
-                "Established partnerships with 10+ industry leaders",
-                "Increased club membership by 200%"
+                "Led 5 successful innovation workshops",
+                "Secured partnerships with 3 tech companies",
+                "Increased club membership by 40%"
             ],
-            responsibilities: [
-                "Strategic planning and vision setting",
-                "External partnerships and stakeholder relations",
-                "Overall club governance and leadership"
+            socialMedia: {
+                linkedin: "https://linkedin.com/in/johnkamau",
+                twitter: "https://twitter.com/johnkamau",
+                github: "https://github.com/johnkamau"
+            }
+        },
+        {
+            id: 2,
+            name: "Mary Wanjiku",
+            position: "Vice Chairperson",
+            email: "mary.wanjiku@students.jkuat.ac.ke",
+            phone: "+254 723 456 789",
+            course: "BSc. Information Technology",
+            year: "3rd Year",
+            bio: "Dedicated to fostering innovation culture and supporting student entrepreneurs in their journey.",
+            avatar: null,
+            officeHours: "Tue-Thu, 3PM-5PM",
+            joinedDate: "2023-02-20",
+            achievements: [
+                "Organized 3 hackathons",
+                "Mentored 20+ student projects",
+                "Established innovation lab"
             ],
-            user: {
-                id: "mock-user-001",
-                name: "Alex Mwangi",
+            socialMedia: {
+                linkedin: "https://linkedin.com/in/marywanjiku",
+                twitter: "https://twitter.com/marywanjiku"
                 email: "chairperson@jkuatinnovation.ac.ke",
                 phone: "+254700000001",
                 course: "Computer Science",
