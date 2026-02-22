@@ -157,6 +157,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Just wait a moment for it to initialize
     setTimeout(() => {
         console.log('✅ CMS page ready with secure event handlers');
+        
+        // Initialize Leadership Manager if on CMS page
+        if (window.cmsManager && window.LeadershipManager) {
+            window.leadershipManager = new LeadershipManager(window.cmsManager);
+            console.log('✅ Leadership Manager initialized');
+        }
+
+        // Ensure global navbar dropdown is working
+        if (window.globalNavbar) {
+            console.log('🔄 Re-initializing global navbar dropdown listeners');
+            window.globalNavbar.setupDropdownListeners();
+        }
     }, 500);
 });
 

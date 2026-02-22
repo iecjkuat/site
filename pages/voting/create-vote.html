@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Vote - JKUAT Innovation Club</title>
+    
+    <!-- Security Meta Tags -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    
+    <!-- Global Systems -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" defer></script>
+    <script src="/shared/auth.js" defer></script>
+    <script src="/shared/global-navbar.js" defer></script>
+    
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/shared/core/base.css" rel="stylesheet">
+    <link href="/shared/core/theme.css" rel="stylesheet">
+    <link href="/shared/global-navbar.css" rel="stylesheet">
+    <link href="/voting/create-vote.css" rel="stylesheet">
+</head>
+<body>
+    <div class="global-bg"></div>
+    <div id="navigation-placeholder"></div>
+    
+    <main class="main-content">
+        <div class="create-vote-container">
+            <div class="page-header">
+                <h1 class="page-title">Create New Vote</h1>
+                <p class="page-subtitle">Create a poll or voting activity for club members</p>
+            </div>
+            
+            <form id="createVoteForm" class="vote-form glass-card">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h2 class="section-title">Basic Information</h2>
+                    
+                    <div class="form-group">
+                        <label for="voteTitle">Question / Title *</label>
+                        <input type="text" id="voteTitle" placeholder="e.g., Who should be our next president?" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="voteDescription">Description (Optional)</label>
+                        <textarea id="voteDescription" rows="3" placeholder="Add more context about this vote..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="voteType">Vote Type *</label>
+                            <select id="voteType" required>
+                                <option value="general">General Poll</option>
+                                <option value="leadership">Leadership Election</option>
+                                <option value="project">Project Selection</option>
+                                <option value="referendum">Referendum/Amendment</option>
+                                <option value="special">Special Vote</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="optionType">Option Type *</label>
+                            <select id="optionType" required>
+                                <option value="text">Plain Text</option>
+                                <option value="profile">Candidates (with photos)</option>
+                                <option value="image">Images</option>
+                                <option value="video">Videos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Voting Options -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Voting Options</h2>
+                        <button type="button" id="addOptionBtn" class="btn-add-option">
+                            <i class="fas fa-plus"></i> Add Option
+                  

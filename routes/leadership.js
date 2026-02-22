@@ -168,11 +168,9 @@ router.get('/executive-committee/:id', async (req, res) => {
 
 // Add new executive member (admin only)
 router.post('/executive-committee', authenticateToken, [
-  body('userId').isUUID().withMessage('Valid user ID is required'),
+  body('name').notEmpty().withMessage('Name is required'),
   body('position').notEmpty().withMessage('Position is required'),
-  body('positionOrder').isInt({ min: 1 }).withMessage('Valid position order is required'),
-  body('bio').optional().isLength({ max: 1000 }).withMessage('Bio must be less than 1000 characters'),
-  body('startDate').isISO8601().withMessage('Valid start date is required')
+  body('email').optional().isEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
     // Check if user is admin
@@ -186,52 +184,28 @@ router.post('/executive-committee', authenticateToken, [
     }
 
     const {
-      userId, position, positionOrder, bio, officeHours,
-      contactInfo, socialMedia, startDate, achievements, responsibilities
+      name, position, email, phone, bio, course, year_of_study,
+      office_hours, term_start_date, term_end_date, display_order, social_links
     } = req.body;
-
-    // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError || !user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
-
-    // Check if user is already in executive committee
-    const { data: existing } = await supabase
-      .from('executive_committee')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .single();
-
-    if (existing) {
-      return res.status(400).json({ message: 'User is already in executive committee' });
-    }
 
     const { data: newExecutive, error } = await supabase
       .from('executive_committee')
       .insert({
-        user_id: userId,
+        name,
         position,
-        position_order: positionOrder,
+        email,
+        phone,
         bio,
-        office_hours: officeHours || {},
-        contact_info: contactInfo || {},
-        social_media: socialMedia || {},
-        start_date: startDate,
-        achievements: achievements || [],
-        responsibilities: responsibilities || []
+        course,
+        year_of_study,
+        office_hours,
+        term_start_date: term_start_date || new Date().toISOString().split('T')[0],
+        term_end_date,
+        display_order: display_order || 0,
+        social_links: social_links || {},
+        is_active: true
       })
-      .select(`
-        id, position, position_order, bio, office_hours, contact_info,
-        social_media, start_date, achievements, responsibilities,
-        users!inner(id, name, email, phone)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -252,9 +226,9 @@ router.post('/executive-committee', authenticateToken, [
 
 // Update executive member (admin only)
 router.put('/executive-committee/:id', authenticateToken, [
+  body('name').optional().notEmpty().withMessage('Name cannot be empty'),
   body('position').optional().notEmpty().withMessage('Position cannot be empty'),
-  body('positionOrder').optional().isInt({ min: 1 }).withMessage('Valid position order is required'),
-  body('bio').optional().isLength({ max: 1000 }).withMessage('Bio must be less than 1000 characters')
+  body('email').optional().isEmail().withMessage('Valid email is required')
 ], async (req, res) => {
   try {
     // Check if user is admin
@@ -281,11 +255,7 @@ router.put('/executive-committee/:id', authenticateToken, [
       .from('executive_committee')
       .update(updateData)
       .eq('id', id)
-      .select(`
-        id, position, position_order, bio, office_hours, contact_info,
-        social_media, start_date, end_date, achievements, responsibilities,
-        users!inner(id, name, email, phone)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -404,6 +374,101 @@ router.post('/patrons', authenticateToken, [
   } catch (error) {
     console.error('Add patron error:', error);
     res.status(500).json({ message: 'Server error while adding club patron' });
+  }
+});
+
+// Update club patron (admin only)
+router.put('/patrons/:id', authenticateToken, [
+  body('name').optional().notEmpty().withMessage('Name cannot be empty'),
+  body('title').optional().notEmpty().withMessage('Title cannot be empty'),
+  body('email').optional().isEmail().withMessage('Valid email is required')
+], async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const updateData = { ...req.body, updated_at: new Date().toISOString() };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
+
+    const { data: updatedPatron, error } = await supabase
+      .from('club_patrons')
+      .update(updateData)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Patron update error:', error);
+      return res.status(500).json({ message: 'Failed to update club patron' });
+    }
+
+    if (!updatedPatron) {
+      return res.status(404).json({ message: 'Club patron not found' });
+    }
+
+    res.json({
+      message: 'Club patron updated successfully',
+      patron: updatedPatron
+    });
+
+  } catch (error) {
+    console.error('Update patron error:', error);
+    res.status(500).json({ message: 'Server error while updating club patron' });
+  }
+});
+
+// Delete club patron (admin only)
+router.delete('/patrons/:id', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+
+    // Soft delete by setting is_active to false
+    const { data: deletedPatron, error } = await supabase
+      .from('club_patrons')
+      .update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select('id, name, title')
+      .single();
+
+    if (error) {
+      console.error('Patron deletion error:', error);
+      return res.status(500).json({ message: 'Failed to remove club patron' });
+    }
+
+    if (!deletedPatron) {
+      return res.status(404).json({ message: 'Club patron not found' });
+    }
+
+    res.json({
+      message: 'Club patron removed successfully',
+      patron: deletedPatron
+    });
+
+  } catch (error) {
+    console.error('Delete patron error:', error);
+    res.status(500).json({ message: 'Server error while removing club patron' });
   }
 });
 

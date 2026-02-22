@@ -1116,6 +1116,15 @@ export class SecureCMSManager {
                 case 'members':
                     await this.loadMembers();
                     break;
+                case 'leadership':
+                    // Leadership is handled by LeadershipManager
+                    if (window.leadershipManager) {
+                        await window.leadershipManager.loadLeadership();
+                    }
+                    break;
+                case 'voting':
+                    await this.loadVoting();
+                    break;
                 case 'media':
                     await this.loadMediaLibrary();
                     break;
@@ -1442,7 +1451,7 @@ export class SecureCMSManager {
     async loadMediaLibrary() {
         const container = document.getElementById('media-library');
         if (!container) return;
-
+        
         container.replaceChildren();
         container.appendChild(CMSUI.createLoadingElement());
 
@@ -1478,6 +1487,593 @@ export class SecureCMSManager {
             });
             container.appendChild(mediaItem);
         });
+    }
+
+    async loadVoting() {
+        const container = document.getElementById('voting-content');
+        if (!container) {
+            console.error('❌ Voting container not found');
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="cms-section-header">
+                <h2><i class="fas fa-vote-yea"></i> Voting Management</h2>
+                <button id="createVoteBtn" class="btn-primary">
+                    <i class="fas fa-plus"></i> Create New Vote
+                </button>
+            </div>
+            
+            <div id="votesListContainer" class="votes-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading votes...
+                </div>
+            </div>
+        `;
+
+        try {
+            // Load votes directly from API
+            const apiBase = '/api/v1';
+            const url = `${apiBase}/voting?limit=100`;
+            
+            console.log('📡 Fetching votes from:', url);
+            
+            const response = await fetch(url);
+            
+            console.log('📡 Voting API response status:', response.status);
+            console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ API error:', response.status, errorText);
+                throw new Error(`API returned ${response.status}: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 Raw API response:', data);
+            
+            const votes = data.elections || [];
+            
+            console.log('📊 Loaded votes:', votes.length, votes);
+            
+            // Render votes list
+            this.renderVotingList(votes);
+            
+            // Bind create button
+            document.getElementById('createVoteBtn')?.addEventListener('click', () => {
+                this.showCreateVoteModal();
+            });
+            
+        } catch (error) {
+            console.error('❌ Error loading votes:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name,
+                type: error.constructor.name
+            });
+            
+            // Check for specific error types
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                console.error('🌐 Network error detected - possible CORS or connectivity issue');
+            }
+            
+            const votesContainer = document.getElementById('votesListContainer');
+            if (votesContainer) {
+                votesContainer.innerHTML = `
+                    <div class="error-state" style="text-align: center; padding: 3rem; color: #ef4444;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>Failed to Load Votes</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">${error.message}</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Check the browser console for more details</p>
+                        <button class="btn-primary" onclick="cmsManager.loadVoting()">
+                            <i class="fas fa-redo"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Re-throw the error so it can be caught by loadTabContent
+            throw new Error('Failed to load votes');
+        }
+    }
+
+    renderVotingList(votes) {
+        const container = document.getElementById('votesListContainer');
+        if (!container) return;
+
+        if (votes.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-vote-yea"></i>
+                    <h3>No Votes Created</h3>
+                    <p>Create your first vote to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        const statusColors = {
+            active: 'success',
+            draft: 'secondary',
+            completed: 'info',
+            upcoming: 'warning'
+        };
+
+        container.innerHTML = `
+            <div class="votes-grid">
+                ${votes.map(vote => `
+                    <div class="vote-card">
+                        <div class="vote-card-header">
+                            <span class="badge badge-${statusColors[vote.status] || 'secondary'}">
+                                ${vote.status}
+                            </span>
+                            <span class="vote-type">${vote.election_type}</span>
+                        </div>
+                        
+                        <h3 class="vote-title">${vote.title}</h3>
+                        <p class="vote-description">${vote.description || 'No description'}</p>
+                        
+                        <div class="vote-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>${new Date(vote.start_date).toLocaleDateString()} - ${new Date(vote.end_date).toLocaleDateString()}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-users"></i>
+                                <span>${vote.votes_cast || 0} / ${vote.total_voters || 0} votes</span>
+                            </div>
+                        </div>
+                        
+                        <div class="vote-actions">
+                            <button class="btn-sm btn-secondary" onclick="cmsManager.viewVoteDetails('${vote.id}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn-sm btn-primary" onclick="cmsManager.editVote('${vote.id}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn-sm btn-danger" onclick="cmsManager.deleteVote('${vote.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    showCreateVoteModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.id = 'createVoteModal';
+        modal.innerHTML = `
+            <div class="modal-content vote-creator-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-poll"></i> Create New Vote</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="createVoteForm" class="vote-creator-form">
+                    <!-- Vote Title/Question -->
+                    <div class="form-group">
+                        <label for="voteTitle">
+                            <i class="fas fa-question-circle"></i> Question/Title
+                        </label>
+                        <input 
+                            type="text" 
+                            id="voteTitle" 
+                            name="title" 
+                            placeholder="e.g., Who should be the next president?"
+                            required
+                            maxlength="200"
+                        />
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="voteDescription">
+                            <i class="fas fa-align-left"></i> Description (Optional)
+                        </label>
+                        <textarea 
+                            id="voteDescription" 
+                            name="description" 
+                            placeholder="Add more details about this vote..."
+                            rows="3"
+                            maxlength="500"
+                        ></textarea>
+                    </div>
+
+                    <!-- Vote Type -->
+                    <div class="form-group">
+                        <label for="voteType">
+                            <i class="fas fa-tag"></i> Vote Type
+                        </label>
+                        <select id="voteType" name="election_type" required>
+                            <option value="general">General Vote</option>
+                            <option value="election">Leadership Election</option>
+                            <option value="poll">Quick Poll</option>
+                            <option value="referendum">Referendum</option>
+                        </select>
+                    </div>
+
+                    <!-- Option Type Selector -->
+                    <div class="form-group">
+                        <label for="optionType">
+                            <i class="fas fa-list"></i> Option Type
+                        </label>
+                        <select id="optionType" required>
+                            <option value="text">Text Options</option>
+                            <option value="profile">Candidates with Photos</option>
+                            <option value="image">Images</option>
+                            <option value="video">Videos</option>
+                        </select>
+                    </div>
+
+                    <!-- Options Container -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-list-ul"></i> Options
+                            <span class="option-count">(0 options)</span>
+                        </label>
+                        <div id="optionsContainer" class="options-container">
+                            <!-- Options will be added here -->
+                        </div>
+                        <button type="button" class="btn-add-option" id="addOptionBtn">
+                            <i class="fas fa-plus"></i> Add Option
+                        </button>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDate">
+                                <i class="fas fa-calendar-start"></i> Start Date
+                            </label>
+                            <input type="datetime-local" id="startDate" name="start_date" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">
+                                <i class="fas fa-calendar-end"></i> End Date
+                            </label>
+                            <input type="datetime-local" id="endDate" name="end_date" required />
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-cog"></i> Settings
+                        </label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="allow_multiple" id="allowMultiple" />
+                                <span>Allow multiple selections</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="show_results_before_voting" id="showResults" />
+                                <span>Show results before voting</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="anonymous_voting" id="anonymousVoting" checked />
+                                <span>Anonymous voting</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="voteStatus">
+                            <i class="fas fa-toggle-on"></i> Status
+                        </label>
+                        <select id="voteStatus" name="status" required>
+                            <option value="draft">Draft (not visible to members)</option>
+                            <option value="upcoming">Upcoming (visible but not started)</option>
+                            <option value="active">Active (voting open)</option>
+                        </select>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="this.closest('.modal-backdrop').remove()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-check"></i> Create Vote
+                        </button>
+                    </div>
+                </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Initialize the form
+        this.initializeVoteCreator();
+    }
+
+    initializeVoteCreator() {
+        const optionType = document.getElementById('optionType');
+        const addOptionBtn = document.getElementById('addOptionBtn');
+        const form = document.getElementById('createVoteForm');
+        
+        let optionCount = 0;
+
+        // Set default dates
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const now = new Date();
+        startDate.value = now.toISOString().slice(0, 16);
+        const tomorrow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        endDate.value = tomorrow.toISOString().slice(0, 16);
+
+        // Add option button handler
+        addOptionBtn.addEventListener('click', () => {
+            const type = optionType.value;
+            this.addVoteOption(type, optionCount++);
+            this.updateOptionCount();
+        });
+
+        // Option type change handler
+        optionType.addEventListener('change', () => {
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            optionCount = 0;
+            this.updateOptionCount();
+        });
+
+        // Form submit handler
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleCreateVote(e.target);
+        });
+
+        // Add initial options
+        this.addVoteOption(optionType.value, optionCount++);
+        this.addVoteOption(optionType.value, optionCount++);
+        this.updateOptionCount();
+    }
+
+    addVoteOption(type, index) {
+        const container = document.getElementById('optionsContainer');
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'vote-option-item';
+        optionDiv.dataset.index = index;
+
+        let optionHTML = '';
+
+        switch (type) {
+            case 'text':
+                optionHTML = `
+                    <input 
+                        type="text" 
+                        name="option_${index}_name" 
+                        placeholder="Option ${index + 1}"
+                        required
+                        class="option-input"
+                    />
+                `;
+                break;
+
+            case 'profile':
+                optionHTML = `
+                    <input 
+                        type="text" 
+                        name="option_${index}_name" 
+                        placeholder="Candidate name"
+                        required
+                        class="option-input"
+                    />
+                    <input 
+                        type="url" 
+                        name="option_${index}_photo" 
+                        placeholder="Photo URL (optional)"
+                        class="option-input"
+                    />
+                `;
+                break;
+
+            case 'image':
+                optionHTML = `
+                    <input 
+                        type="text" 
+                        name="option_${index}_name" 
+                        placeholder="Image title/description"
+                        required
+                        class="option-input"
+                    />
+                    <input 
+                        type="url" 
+                        name="option_${index}_image" 
+                        placeholder="Image URL"
+                        required
+                        class="option-input"
+                    />
+                `;
+                break;
+
+            case 'video':
+                optionHTML = `
+                    <input 
+                        type="text" 
+                        name="option_${index}_name" 
+                        placeholder="Video title/description"
+                        required
+                        class="option-input"
+                    />
+                    <input 
+                        type="url" 
+                        name="option_${index}_video" 
+                        placeholder="Video URL"
+                        required
+                        class="option-input"
+                    />
+                    <input 
+                        type="url" 
+                        name="option_${index}_thumbnail" 
+                        placeholder="Thumbnail URL (optional)"
+                        class="option-input"
+                    />
+                `;
+                break;
+        }
+
+        optionDiv.innerHTML = `
+            <div class="option-number">${index + 1}</div>
+            <div class="option-fields">
+                ${optionHTML}
+            </div>
+            <button type="button" class="btn-remove-option" onclick="this.closest('.vote-option-item').remove(); cmsManager.updateOptionCount();">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        container.appendChild(optionDiv);
+    }
+
+    updateOptionCount() {
+        const container = document.getElementById('optionsContainer');
+        const count = container.querySelectorAll('.vote-option-item').length;
+        const countSpan = document.querySelector('.option-count');
+        if (countSpan) {
+            countSpan.textContent = `(${count} option${count !== 1 ? 's' : ''})`;
+        }
+
+        // Update option numbers
+        container.querySelectorAll('.vote-option-item').forEach((item, idx) => {
+            const numberDiv = item.querySelector('.option-number');
+            if (numberDiv) numberDiv.textContent = idx + 1;
+        });
+    }
+
+    async handleCreateVote(form) {
+        try {
+            const formData = new FormData(form);
+            const optionType = document.getElementById('optionType').value;
+            
+            // Collect options first
+            const options = [];
+            const container = document.getElementById('optionsContainer');
+            const optionItems = container.querySelectorAll('.vote-option-item');
+
+            optionItems.forEach((item) => {
+                const name = formData.get(`option_${item.dataset.index}_name`);
+                if (!name) return;
+
+                const option = {
+                    name: name,
+                    media_type: optionType
+                };
+
+                // Add media URLs based on type
+                if (optionType === 'profile') {
+                    option.media_url = formData.get(`option_${item.dataset.index}_photo`) || null;
+                } else if (optionType === 'image') {
+                    option.media_url = formData.get(`option_${item.dataset.index}_image`);
+                } else if (optionType === 'video') {
+                    option.media_url = formData.get(`option_${item.dataset.index}_video`);
+                    option.thumbnail_url = formData.get(`option_${item.dataset.index}_thumbnail`) || null;
+                }
+
+                options.push(option);
+            });
+
+            if (options.length < 2) {
+                this.notifications.show('Please add at least 2 options', 'error');
+                return;
+            }
+
+            // Build election data in the format the API expects
+            const electionData = {
+                title: formData.get('title'),
+                description: formData.get('description') || '',
+                electionType: formData.get('election_type'),
+                startDate: formData.get('start_date'),
+                endDate: formData.get('end_date'),
+                status: formData.get('status'),
+                requireVerification: false,
+                positions: [
+                    {
+                        title: formData.get('title'), // Use the vote title as position title
+                        description: formData.get('description') || '',
+                        maxVotes: formData.get('allow_multiple') === 'on' ? options.length : 1,
+                        minVotes: 1,
+                        candidates: options.map((opt, idx) => ({
+                            name: opt.name,
+                            bio: '',
+                            media_type: opt.media_type,
+                            media_url: opt.media_url || null,
+                            thumbnail_url: opt.thumbnail_url || null,
+                            display_order: idx,
+                            is_approved: true,
+                            is_active: true
+                        }))
+                    }
+                ]
+            };
+
+            console.log('Creating vote with data:', electionData);
+
+            // Create the vote via API
+            const apiBase = '/api/v1';
+            const response = await fetch(`${apiBase}/voting`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(electionData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to create vote');
+            }
+
+            const result = await response.json();
+            console.log('Vote created:', result);
+            
+            this.notifications.show('Vote created successfully!', 'success');
+            document.getElementById('createVoteModal').remove();
+            
+            // Reload the voting list
+            await this.loadVoting();
+
+        } catch (error) {
+            console.error('Error creating vote:', error);
+            this.notifications.show(error.message || 'Failed to create vote', 'error');
+        }
+    }
+
+    async viewVoteDetails(id) {
+        // TODO: Show vote details and results
+        alert(`View details for vote: ${id}`);
+    }
+
+    async editVote(id) {
+        // TODO: Edit vote
+        alert(`Edit vote: ${id}`);
+    }
+
+    async deleteVote(id) {
+        if (!confirm('Are you sure you want to delete this vote?')) return;
+        
+        try {
+            const apiBase = '/api/v1';
+            const response = await fetch(`${apiBase}/voting/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete vote');
+            
+            this.notifications.show('Vote deleted successfully', 'success');
+            this.loadVoting(); // Reload the list
+        } catch (error) {
+            console.error('Error deleting vote:', error);
+            this.notifications.show('Failed to delete vote', 'error');
+        }
     }
 
     // New tab loading methods
