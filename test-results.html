@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Results Endpoint</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+        }
+        button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .success {
+            color: #10b981;
+        }
+        .info {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗳️ Test Results Endpoint</h1>
+        
+        <div class="test-section">
+            <h2>Test Results API</h2>
+            <div class="input-group">
+                <label for="electionId">Election ID:</label>
+                <input type="text" id="electionId" placeholder="Enter election UUID">
+            </div>
+            <button onclick="testResults()">Fetch Results</button>
+            <div id="resultsOutput" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>List All Elections</h2>
+            <button onclick="listElections()">List Elections</button>
+            <div id="electionsOutput" class="results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+
+        async function testResults() {
+            const electionId = document.getElementById('electionId').value.trim();
+            const output = document.getElementById('resultsOutput');
+            
+            if (!electionId) {
+                output.style.display = 'block';
+                output.innerHTML = '<pre class="error">Please enter an election ID</pre>';
+                return;
+            }
+
+            output.style.display = 'block';
+            output.innerHTML = '<pre class="info">Loading results...</pre>';
+
+            try {
+                console.log('📊 Fetching results for election:', electionId);
+                
+                const response = await fetch(`${API_BASE}/voting/${electionId}/results`);
+                
+                console.log('📡 Response status:', response.status);
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    output.innerHTML = `<pre class="error">Error ${response.status}: ${JSON.stringify(data, null, 2)}</pre>`;
+                    return;
+                }
+
+                console.log('✅ Results received:', data);
+
+                // Format results nicely
+                let formatted = `<pre class="success">✅ Results fetched successfully!\n\n`;
+                formatted += `Total records: ${data.length}\n\n`;
+                
+                if (data.length > 0) {
+                    formatted += `Election: ${data[0].election_title}\n`;
+                    formatted += `Anonymous: ${data[0].anonymous_voting}\n\n`;
+                    
+                    // Group by position
+                    const byPosition = {};
+                    data.forEach(r => {
+                        if (!byPosition[r.position_title]) {
+                            byPosition[r.position_title] = [];
+                        }
+                        byPosition[r.position_title].push(r);
+                    });
+
+                    Object.entries(byPosition).forEach(([position, candidates]) => {
+                        formatted += `\n📊 ${position}:\n`;
+                        candidates.forEach((c, i) => {
+                            formatted += `  ${i + 1}. ${c.candidate_name}: ${c.vote_count} votes (${c.vote_percentage}%)\n`;
+                        });
+                    });
+                }
+
+                formatted += `\n\nRaw JSON:\n${JSON.stringify(data, null, 2)}</pre>`;
+                output.innerHTML = formatted;
+            } catch (error) {
+                console.error('❌ Error:', error);
+                output.innerHTML = `<pre class="error">Error: ${error.message}\n\n${error.stack}</pre>`;
+            }
+        }
+
+        async function listElections() {
+            const output = document.getElementById('electionsOutput');
+            output.style.display = 'block';
+            output.innerHTML = '<pre class="info">Loading elections...</pre>';
+
+            try {
+                const response = await fetch(`${API_BASE}/voting`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    output.innerHTML = `<pre class="error">Error ${response.status}: ${JSON.stringify(data, null, 2)}</pre>`;
+                    return;
+                }
+
+                let formatted = `<pre class="success">✅ Elections fetched successfully!\n\n`;
+                formatted += `Total elections: ${data.length}\n\n`;
+
+                data.forEach((e, i) => {
+                    formatted += `${i + 1}. ${e.title}\n`;
+                    formatted += `   ID: ${e.id}\n`;
+                    formatted += `   Status: ${e.status}\n`;
+                    formatted += `   End Date: ${e.end_date}\n`;
+                    formatted += `   Results Visible: ${e.results_visible}\n`;
+                    formatted += `   Votes: ${e.vote_count || 0} / ${e.eligible_voters || 0}\n\n`;
+                });
+
+                formatted += `\nRaw JSON:\n${JSON.stringify(data, null, 2)}</pre>`;
+                output.innerHTML = formatted;
+            } catch (error) {
+                console.error('❌ Error:', error);
+                output.innerHTML = `<pre class="error">Error: ${error.message}</pre>`;
+            }
+        }
+
+        // Auto-load elections on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            listElections();
+        });
+    </script>
+</body>
+</html>

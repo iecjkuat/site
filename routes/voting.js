@@ -4,6 +4,19 @@ const { supabaseAdmin: supabase } = require('../lib/supabase');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const crypto = require('crypto');
 
+// Helper function to retry database queries
+async function retryQuery(queryFn, maxRetries = 3, delay = 1000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await queryFn();
+        } catch (error) {
+            console.error(`❌ Query attempt ${i + 1} failed:`, error.message);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+        }
+    }
+}
+
 // =============================================
 // ELECTION ROUTES
 // =============================================
@@ -34,35 +47,84 @@ router.get('/test', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         console.log('📡 GET /voting - Fetching elections...');
-        const { status = 'all', page = 1, limit = 10 } = req.query;
-
-        // Simple direct query
-        let query = supabase
-            .from('elections')
-            .select('*')
-            .order('start_date', { ascending: false });
-
-        if (status !== 'all') {
-            query = query.eq('status', status);
+        
+        // Validate and sanitize pagination parameters
+        let page = parseInt(req.query.page) || 1;
+        let limit = parseInt(req.query.limit) || 10;
+        const { status = 'all' } = req.query;
+        
+        // Enforce limits
+        page = Math.max(1, page);
+        limit = Math.min(100, Math.max(1, limit));
+        
+        // Validate status parameter
+        const validStatuses = ['all', 'active', 'upcoming', 'completed', 'draft'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status parameter' });
         }
 
-        const offset = (page - 1) * limit;
-        const { data: elections, error } = await query.range(offset, offset + limit - 1);
+        // Use retry mechanism for database query
+        const result = await retryQuery(async () => {
+            let query = supabase
+                .from('elections')
+                .select('*')
+                .order('start_date', { ascending: false });
 
-        if (error) {
-            console.error('❌ Supabase error:', error);
-            return res.status(500).json({ error: 'Database query failed', details: error });
-        }
+            if (status !== 'all') {
+                query = query.eq('status', status);
+            }
+
+            const offset = (page - 1) * limit;
+            const { data: elections, error } = await query.range(offset, offset + limit - 1);
+
+            if (error) throw error;
+            
+            // Get vote counts and eligible voters for each election
+            const electionsWithStats = await Promise.all(elections.map(async (election) => {
+                // Count votes for this election
+                const { count: votesCount, error: votesError } = await supabase
+                    .from('votes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('election_id', election.id);
+                
+                // Count eligible voters for this election
+                const { count: eligibleCount, error: eligibleError } = await supabase
+                    .from('voter_eligibility')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('election_id', election.id)
+                    .eq('is_eligible', true);
+                
+                if (votesError) console.error('Error counting votes:', votesError);
+                if (eligibleError) console.error('Error counting eligible voters:', eligibleError);
+                
+                return {
+                    ...election,
+                    votes_cast: votesCount || 0,
+                    total_voters: eligibleCount || 0
+                };
+            }));
+            
+            return electionsWithStats;
+        });
 
         // Get total count separately
-        const { count, error: countError } = await supabase
-            .from('elections')
-            .select('*', { count: 'exact', head: true });
+        const count = await retryQuery(async () => {
+            const { count, error } = await supabase
+                .from('elections')
+                .select('*', { count: 'exact', head: true });
+            if (error) throw error;
+            return count;
+        });
 
-        console.log('✅ Elections fetched:', elections?.length || 0, 'Total:', count);
+        console.log('✅ Elections fetched:', result?.length || 0, 'Total:', count);
+        console.log('📊 Sample election stats:', result?.[0] ? {
+            title: result[0].title,
+            votes_cast: result[0].votes_cast,
+            total_voters: result[0].total_voters
+        } : 'No elections');
 
         res.json({
-            elections: elections || [],
+            elections: result || [],
             pagination: {
                 current: parseInt(page),
                 total: count ? Math.ceil(count / limit) : 0,
@@ -70,10 +132,224 @@ router.get('/', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ Error in GET /voting:', error);
-        res.status(500).json({ error: 'Failed to fetch elections', details: error.message });
+        console.error('❌ Error in GET /voting:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+        
+        res.status(500).json({ 
+            error: 'Failed to fetch elections. Please try again later.'
+        });
     }
 });
+
+// =============================================
+// SPECIFIC ID ROUTES (must come before generic /:id route)
+// =============================================
+
+// Check vote status
+router.get('/:id/vote-status', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { data: votes, error } = await supabase
+            .from('votes')
+            .select('position_id')
+            .eq('election_id', id)
+            .eq('voter_id', req.user.id);
+
+        if (error) throw error;
+
+        res.json({ 
+            hasVoted: votes && votes.length > 0, 
+            votedPositions: votes?.map(v => v.position_id) || [] 
+        });
+    } catch (error) {
+        console.error('Error checking vote status:', error);
+        res.status(500).json({ error: 'Failed to check vote status' });
+    }
+});
+
+// Get election results
+router.get('/:id/results', async (req, res) => {
+    console.log(`\n📊 ========== RESULTS REQUEST START ==========`);
+    console.log(`📊 Election ID: ${req.params.id}`);
+    console.log(`📊 Timestamp: ${new Date().toISOString()}`);
+    
+    try {
+        const { id } = req.params;
+
+        console.log(`📊 Step 1: Fetching election metadata...`);
+        const { data: election, error: electionError } = await supabase
+            .from('elections')
+            .select('results_visible, status, end_date, title, anonymous_voting')
+            .eq('id', id)
+            .single();
+
+        if (electionError) {
+            console.error('❌ Election fetch error:', electionError);
+            return res.status(404).json({ error: 'Election not found' });
+        }
+
+        console.log(`✅ Election found: ${election.title}`);
+        console.log(`   Status: ${election.status}`);
+        console.log(`   End Date: ${election.end_date}`);
+        console.log(`   Results Visible: ${election.results_visible}`);
+
+        // Allow results if election is completed OR results are explicitly visible
+        const now = new Date();
+        const isCompleted = election.status === 'completed' || now > new Date(election.end_date);
+        
+        console.log(`   Is Completed: ${isCompleted}`);
+        
+        if (!election.results_visible && !isCompleted) {
+            console.log('❌ Results not available yet');
+            return res.status(403).json({ error: 'Results are not yet available' });
+        }
+
+        console.log(`📊 Step 2: Fetching positions...`);
+        const { data: positions, error: positionsError } = await supabase
+            .from('positions')
+            .select('id, title, display_order')
+            .eq('election_id', id)
+            .order('display_order');
+
+        if (positionsError) {
+            console.error('❌ Positions fetch error:', positionsError);
+            return res.status(500).json({ error: 'Failed to load positions' });
+        }
+
+        console.log(`✅ Found ${positions?.length || 0} positions for election ${id}`);
+
+        // Get candidates with vote counts for each position
+        const results = [];
+        
+        // Handle case where positions is null or empty
+        if (!positions || positions.length === 0) {
+            console.log('⚠️ No positions found for this election');
+            return res.json([]);
+        }
+        
+        console.log(`📊 Step 3: Processing ${positions.length} positions...`);
+        for (const position of positions) {
+            console.log(`\n  📊 Position: ${position.title} (${position.id})`);
+            
+            const { data: candidates, error: candidatesError } = await supabase
+                .from('candidates')
+                .select('id, name')
+                .eq('position_id', position.id)
+                .eq('is_active', true);
+
+            if (candidatesError) {
+                console.error('  ❌ Candidates fetch error:', candidatesError);
+                continue;
+            }
+
+            console.log(`  ✅ Found ${candidates?.length || 0} candidates`);
+
+            // Handle case where candidates is null or empty
+            if (!candidates || candidates.length === 0) {
+                console.log(`  ⚠️ No candidates found for position "${position.title}"`);
+                continue;
+            }
+
+            // Get vote count for each candidate
+            for (const candidate of candidates) {
+                console.log(`    📊 Counting votes for: ${candidate.name}`);
+                
+                const { count: voteCount, error: voteError } = await supabase
+                    .from('votes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('candidate_id', candidate.id);
+
+                if (voteError) {
+                    console.error('    ❌ Vote count error for candidate', candidate.name, ':', voteError);
+                }
+
+                console.log(`    ✅ ${candidate.name}: ${voteCount || 0} votes`);
+
+                results.push({
+                    election_id: id,
+                    election_title: election.title,
+                    anonymous_voting: election.anonymous_voting,
+                    position_id: position.id,
+                    position_title: position.title,
+                    candidate_id: candidate.id,
+                    candidate_name: candidate.name,
+                    vote_count: voteCount || 0
+                });
+            }
+        }
+
+        console.log(`\n📊 Step 4: Calculating percentages and sorting...`);
+        // Calculate percentages and sort
+        const resultsByPosition = {};
+        results.forEach(result => {
+            if (!resultsByPosition[result.position_id]) {
+                resultsByPosition[result.position_id] = [];
+            }
+            resultsByPosition[result.position_id].push(result);
+        });
+
+        // Calculate percentages for each position
+        Object.keys(resultsByPosition).forEach(positionId => {
+            const positionResults = resultsByPosition[positionId];
+            const totalVotes = positionResults.reduce((sum, r) => sum + r.vote_count, 0);
+            
+            positionResults.forEach(result => {
+                result.vote_percentage = totalVotes > 0 
+                    ? Math.round((result.vote_count / totalVotes) * 100 * 100) / 100 
+                    : 0;
+            });
+
+            // Sort by vote count descending
+            positionResults.sort((a, b) => b.vote_count - a.vote_count);
+        });
+
+        // Flatten back to array
+        const finalResults = Object.values(resultsByPosition).flat();
+
+        console.log(`\n✅ Results fetched successfully: ${finalResults.length} records`);
+        console.log('📊 Sample results:', JSON.stringify(finalResults.slice(0, 3), null, 2));
+        console.log(`📊 ========== RESULTS REQUEST END ==========\n`);
+        
+        res.json(finalResults);
+    } catch (error) {
+        console.error('\n❌ ========== RESULTS REQUEST FAILED ==========');
+        console.error('❌ Error fetching results:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+        console.error('❌ ========================================\n');
+        res.status(500).json({ error: 'Failed to fetch results. Please try again later.' });
+    }
+});
+
+// Get voter participation stats
+router.get('/:id/participation', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { data: stats, error } = await supabase
+            .from('voter_participation')
+            .select('*')
+            .eq('election_id', id)
+            .single();
+
+        if (error) throw error;
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Error fetching participation:', error);
+        res.status(500).json({ error: 'Failed to fetch participation stats' });
+    }
+});
+
+// =============================================
+// GENERIC ID ROUTE (must come after specific routes)
+// =============================================
 
 // Get single election with positions and candidates
 router.get('/:id', async (req, res) => {
@@ -131,10 +407,11 @@ router.post('/', authenticateToken, requireRole(['admin', 'super_admin']), async
             endDate,
             status = 'draft',
             requireVerification = true,
+            anonymousVoting = false,
             positions = []
         } = req.body;
 
-        console.log('📝 Creating election:', { title, electionType, positions: positions.length });
+        console.log('📝 Creating election:', { title, electionType, anonymousVoting, positions: positions.length });
 
         const { data: election, error: electionError } = await supabase
             .from('elections')
@@ -146,6 +423,7 @@ router.post('/', authenticateToken, requireRole(['admin', 'super_admin']), async
                 end_date: endDate,
                 status: status,
                 require_verification: requireVerification,
+                anonymous_voting: anonymousVoting,
                 created_by: req.user.id
             })
             .select()
@@ -392,14 +670,31 @@ router.post('/:id/vote', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { votes } = req.body; // Array of { positionId, candidateId }
 
-        // Check election status and timing
+        // Input validation
+        if (!Array.isArray(votes) || votes.length === 0) {
+            return res.status(400).json({ error: 'Votes must be a non-empty array' });
+        }
+
+        // Validate vote structure
+        for (const vote of votes) {
+            if (!vote.positionId || !vote.candidateId) {
+                return res.status(400).json({ 
+                    error: 'Each vote must have positionId and candidateId' 
+                });
+            }
+        }
+
+        // Check election status, timing, and anonymity setting
         const { data: election, error: electionError } = await supabase
             .from('elections')
-            .select('start_date, end_date, status')
+            .select('start_date, end_date, status, anonymous_voting')
             .eq('id', id)
             .single();
 
-        if (electionError) throw electionError;
+        if (electionError) {
+            console.error('Election fetch error:', electionError);
+            return res.status(404).json({ error: 'Election not found' });
+        }
 
         const now = new Date();
         if (election.status !== 'active' || now < new Date(election.start_date) || now > new Date(election.end_date)) {
@@ -419,26 +714,46 @@ router.post('/:id/vote', authenticateToken, async (req, res) => {
         }
 
         // Check if already voted
-        const { data: existingVotes } = await supabase
-            .from('votes')
-            .select('id')
-            .eq('election_id', id)
-            .eq('voter_id', req.user.id)
-            .limit(1);
+        if (election.anonymous_voting) {
+            // For anonymous voting, check voter_participation table
+            const { data: participation } = await supabase
+                .from('voter_participation')
+                .select('id')
+                .eq('election_id', id)
+                .eq('user_id', req.user.id)
+                .limit(1);
 
-        if (existingVotes && existingVotes.length > 0) {
-            return res.status(400).json({ error: 'You have already voted' });
+            if (participation && participation.length > 0) {
+                return res.status(400).json({ error: 'You have already voted' });
+            }
+        } else {
+            // For non-anonymous voting, check votes table
+            const { data: existingVotes } = await supabase
+                .from('votes')
+                .select('id')
+                .eq('election_id', id)
+                .eq('voter_id', req.user.id)
+                .limit(1);
+
+            if (existingVotes && existingVotes.length > 0) {
+                return res.status(400).json({ error: 'You have already voted' });
+            }
         }
 
+        // Generate random salt for vote hash
+        const salt = crypto.randomBytes(16).toString('hex');
+        
         // Cast votes
         const voteRecords = votes.map(vote => ({
             election_id: id,
             position_id: vote.positionId,
             candidate_id: vote.candidateId,
-            voter_id: req.user.id,
-            vote_hash: crypto.createHash('sha256').update(`${id}-${vote.positionId}-${req.user.id}-${Date.now()}`).digest('hex'),
-            ip_address: req.ip,
-            user_agent: req.get('user-agent')
+            voter_id: election.anonymous_voting ? null : req.user.id, // NULL for anonymous
+            vote_hash: crypto.createHash('sha256')
+                .update(`${id}-${vote.positionId}-${req.user.id}-${Date.now()}-${salt}`)
+                .digest('hex'),
+            ip_address: election.anonymous_voting ? null : req.ip, // NULL for anonymous
+            user_agent: election.anonymous_voting ? null : req.get('user-agent') // NULL for anonymous
         }));
 
         const { data: voteResults, error: voteError } = await supabase
@@ -446,93 +761,48 @@ router.post('/:id/vote', authenticateToken, async (req, res) => {
             .insert(voteRecords)
             .select();
 
-        if (voteError) throw voteError;
-
-        res.json({ message: 'Vote cast successfully', voteCount: voteResults.length });
-    } catch (error) {
-        console.error('Error casting vote:', error);
-        res.status(500).json({ error: 'Failed to cast vote' });
-    }
-});
-
-// Check vote status
-router.get('/:id/vote-status', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const { data: votes, error } = await supabase
-            .from('votes')
-            .select('position_id')
-            .eq('election_id', id)
-            .eq('voter_id', req.user.id);
-
-        if (error) throw error;
-
-        res.json({ 
-            hasVoted: votes && votes.length > 0, 
-            votedPositions: votes?.map(v => v.position_id) || [] 
-        });
-    } catch (error) {
-        console.error('Error checking vote status:', error);
-        res.status(500).json({ error: 'Failed to check vote status' });
-    }
-});
-
-// =============================================
-// RESULTS ROUTES
-// =============================================
-
-// Get election results
-router.get('/:id/results', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const { data: election, error: electionError } = await supabase
-            .from('elections')
-            .select('results_visible, status')
-            .eq('id', id)
-            .single();
-
-        if (electionError) throw electionError;
-
-        if (!election.results_visible && election.status !== 'completed') {
-            return res.status(403).json({ error: 'Results not yet available' });
+        if (voteError) {
+            console.error('Vote insertion error:', voteError);
+            
+            // Check for unique constraint violation (duplicate vote)
+            if (voteError.code === '23505') {
+                return res.status(400).json({ error: 'You have already voted' });
+            }
+            
+            return res.status(500).json({ error: 'Failed to record vote. Please try again.' });
         }
 
-        // Use the election_results view
-        const { data: results, error } = await supabase
-            .from('election_results')
-            .select('*')
-            .eq('election_id', id)
-            .order('position_id')
-            .order('rank');
+        // If anonymous voting, record participation separately
+        if (election.anonymous_voting) {
+            const { error: participationError } = await supabase
+                .from('voter_participation')
+                .insert({
+                    election_id: id,
+                    user_id: req.user.id,
+                    ip_address: req.ip,
+                    user_agent: req.get('user-agent')
+                });
 
-        if (error) throw error;
+            if (participationError) {
+                console.error('Error recording participation:', participationError);
+                // Don't fail the vote if participation recording fails
+            }
+        }
 
-        res.json(results);
+        console.log(`✅ Vote cast successfully by user ${req.user.id} (anonymous: ${election.anonymous_voting})`);
+        res.json({ 
+            message: 'Vote cast successfully', 
+            voteCount: voteResults.length,
+            anonymous: election.anonymous_voting 
+        });
     } catch (error) {
-        console.error('Error fetching results:', error);
-        res.status(500).json({ error: 'Failed to fetch results' });
-    }
-});
-
-// Get voter participation stats
-router.get('/:id/participation', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const { data: stats, error } = await supabase
-            .from('voter_participation')
-            .select('*')
-            .eq('election_id', id)
-            .single();
-
-        if (error) throw error;
-
-        res.json(stats);
-    } catch (error) {
-        console.error('Error fetching participation:', error);
-        res.status(500).json({ error: 'Failed to fetch participation stats' });
+        console.error('Error casting vote:', {
+            message: error.message,
+            stack: error.stack,
+            userId: req.user?.id,
+            timestamp: new Date().toISOString()
+        });
+        res.status(500).json({ error: 'Failed to cast vote. Please try again later.' });
     }
 });
 

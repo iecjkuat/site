@@ -1626,13 +1626,13 @@ export class SecureCMSManager {
                         </div>
                         
                         <div class="vote-actions">
-                            <button class="btn-sm btn-secondary" onclick="cmsManager.viewVoteDetails('${vote.id}')">
+                            <button class="btn-sm btn-secondary view-vote-btn" data-vote-id="${vote.id}">
                                 <i class="fas fa-eye"></i> View
                             </button>
-                            <button class="btn-sm btn-primary" onclick="cmsManager.editVote('${vote.id}')">
+                            <button class="btn-sm btn-primary edit-vote-btn" data-vote-id="${vote.id}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="btn-sm btn-danger" onclick="cmsManager.deleteVote('${vote.id}')">
+                            <button class="btn-sm btn-danger delete-vote-btn" data-vote-id="${vote.id}">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
@@ -1640,6 +1640,30 @@ export class SecureCMSManager {
                 `).join('')}
             </div>
         `;
+
+        // Bind event listeners using event delegation
+        container.addEventListener('click', (e) => {
+            const viewBtn = e.target.closest('.view-vote-btn');
+            const editBtn = e.target.closest('.edit-vote-btn');
+            const deleteBtn = e.target.closest('.delete-vote-btn');
+
+            if (viewBtn) {
+                e.preventDefault();
+                const voteId = viewBtn.dataset.voteId;
+                console.log('🔍 View button clicked for vote:', voteId);
+                this.viewVoteDetails(voteId);
+            } else if (editBtn) {
+                e.preventDefault();
+                const voteId = editBtn.dataset.voteId;
+                console.log('✏️ Edit button clicked for vote:', voteId);
+                this.editVote(voteId);
+            } else if (deleteBtn) {
+                e.preventDefault();
+                const voteId = deleteBtn.dataset.voteId;
+                console.log('🗑️ Delete button clicked for vote:', voteId);
+                this.deleteVote(voteId);
+            }
+        });
     }
 
     showCreateVoteModal() {
@@ -1867,12 +1891,21 @@ export class SecureCMSManager {
                         required
                         class="option-input"
                     />
-                    <input 
-                        type="url" 
-                        name="option_${index}_photo" 
-                        placeholder="Photo URL (optional)"
-                        class="option-input"
-                    />
+                    <div class="file-upload-wrapper">
+                        <input 
+                            type="file" 
+                            id="option_${index}_photo_file"
+                            name="option_${index}_photo_file" 
+                            accept="image/*"
+                            class="file-input"
+                            onchange="cmsManager.handleFilePreview(this, 'option_${index}_preview')"
+                        />
+                        <label for="option_${index}_photo_file" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload Photo</span>
+                        </label>
+                        <div id="option_${index}_preview" class="file-preview"></div>
+                    </div>
                 `;
                 break;
 
@@ -1885,13 +1918,22 @@ export class SecureCMSManager {
                         required
                         class="option-input"
                     />
-                    <input 
-                        type="url" 
-                        name="option_${index}_image" 
-                        placeholder="Image URL"
-                        required
-                        class="option-input"
-                    />
+                    <div class="file-upload-wrapper">
+                        <input 
+                            type="file" 
+                            id="option_${index}_image_file"
+                            name="option_${index}_image_file" 
+                            accept="image/*"
+                            class="file-input"
+                            required
+                            onchange="cmsManager.handleFilePreview(this, 'option_${index}_preview')"
+                        />
+                        <label for="option_${index}_image_file" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload Image</span>
+                        </label>
+                        <div id="option_${index}_preview" class="file-preview"></div>
+                    </div>
                 `;
                 break;
 
@@ -1904,19 +1946,22 @@ export class SecureCMSManager {
                         required
                         class="option-input"
                     />
-                    <input 
-                        type="url" 
-                        name="option_${index}_video" 
-                        placeholder="Video URL"
-                        required
-                        class="option-input"
-                    />
-                    <input 
-                        type="url" 
-                        name="option_${index}_thumbnail" 
-                        placeholder="Thumbnail URL (optional)"
-                        class="option-input"
-                    />
+                    <div class="file-upload-wrapper">
+                        <input 
+                            type="file" 
+                            id="option_${index}_video_file"
+                            name="option_${index}_video_file" 
+                            accept="video/*"
+                            class="file-input"
+                            required
+                            onchange="cmsManager.handleFilePreview(this, 'option_${index}_preview')"
+                        />
+                        <label for="option_${index}_video_file" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload Video</span>
+                        </label>
+                        <div id="option_${index}_preview" class="file-preview"></div>
+                    </div>
                 `;
                 break;
         }
@@ -1926,12 +1971,100 @@ export class SecureCMSManager {
             <div class="option-fields">
                 ${optionHTML}
             </div>
-            <button type="button" class="btn-remove-option" onclick="this.closest('.vote-option-item').remove(); cmsManager.updateOptionCount();">
+            <button type="button" class="btn-remove-option" data-action="remove">
                 <i class="fas fa-times"></i>
             </button>
         `;
 
+        // Bind remove button event
+        const removeBtn = optionDiv.querySelector('.btn-remove-option');
+        removeBtn.addEventListener('click', () => {
+            this.removeVoteOption(removeBtn);
+        });
+
         container.appendChild(optionDiv);
+    }
+
+    removeVoteOption(button) {
+        button.closest('.vote-option-item').remove();
+        this.updateOptionCount();
+    }
+
+    handleFilePreview(input, previewId) {
+        const preview = document.getElementById(previewId);
+        if (!preview) {
+            console.error('Preview element not found:', previewId);
+            return;
+        }
+
+        const file = input.files[0];
+        if (!file) {
+            preview.innerHTML = '';
+            return;
+        }
+
+        const fileType = file.type.split('/')[0];
+        const fileName = file.name;
+        const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+
+        console.log('📸 Previewing file:', fileName, fileType, fileSize, 'MB');
+
+        if (fileType === 'image') {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.innerHTML = `
+                    <div class="preview-content">
+                        <img src="${e.target.result}" alt="Preview" />
+                        <div class="preview-info">
+                            <span class="preview-name">${fileName}</span>
+                            <span class="preview-size">${fileSize} MB</span>
+                        </div>
+                        <button type="button" class="preview-remove" data-input-id="${input.id}" data-preview-id="${previewId}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Bind remove button
+                const removeBtn = preview.querySelector('.preview-remove');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', () => {
+                        this.clearFileInput(input.id, previewId);
+                    });
+                }
+            };
+            reader.readAsDataURL(file);
+        } else if (fileType === 'video') {
+            preview.innerHTML = `
+                <div class="preview-content">
+                    <div class="video-preview-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="preview-info">
+                        <span class="preview-name">${fileName}</span>
+                        <span class="preview-size">${fileSize} MB</span>
+                    </div>
+                    <button type="button" class="preview-remove" data-input-id="${input.id}" data-preview-id="${previewId}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Bind remove button
+            const removeBtn = preview.querySelector('.preview-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    this.clearFileInput(input.id, previewId);
+                });
+            }
+        }
+    }
+
+    clearFileInput(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        if (input) input.value = '';
+        if (preview) preview.innerHTML = '';
     }
 
     updateOptionCount() {
@@ -1954,36 +2087,59 @@ export class SecureCMSManager {
             const formData = new FormData(form);
             const optionType = document.getElementById('optionType').value;
             
-            // Collect options first
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            // Collect options and upload files
             const options = [];
             const container = document.getElementById('optionsContainer');
             const optionItems = container.querySelectorAll('.vote-option-item');
 
-            optionItems.forEach((item) => {
-                const name = formData.get(`option_${item.dataset.index}_name`);
-                if (!name) return;
+            for (const item of optionItems) {
+                const idx = item.dataset.index;
+                const name = formData.get(`option_${idx}_name`);
+                if (!name) continue;
 
                 const option = {
                     name: name,
                     media_type: optionType
                 };
 
-                // Add media URLs based on type
+                // Handle file uploads based on type
                 if (optionType === 'profile') {
-                    option.media_url = formData.get(`option_${item.dataset.index}_photo`) || null;
+                    const photoFile = formData.get(`option_${idx}_photo_file`);
+                    if (photoFile && photoFile.size > 0) {
+                        const photoUrl = await this.uploadFile(photoFile, 'candidate-photos');
+                        option.media_url = photoUrl;
+                    }
                 } else if (optionType === 'image') {
-                    option.media_url = formData.get(`option_${item.dataset.index}_image`);
+                    const imageFile = formData.get(`option_${idx}_image_file`);
+                    if (imageFile && imageFile.size > 0) {
+                        const imageUrl = await this.uploadFile(imageFile, 'voting-images');
+                        option.media_url = imageUrl;
+                    } else {
+                        throw new Error('Image file is required for image options');
+                    }
                 } else if (optionType === 'video') {
-                    option.media_url = formData.get(`option_${item.dataset.index}_video`);
-                    option.thumbnail_url = formData.get(`option_${item.dataset.index}_thumbnail`) || null;
+                    const videoFile = formData.get(`option_${idx}_video_file`);
+                    if (videoFile && videoFile.size > 0) {
+                        const videoUrl = await this.uploadFile(videoFile, 'voting-videos');
+                        option.media_url = videoUrl;
+                        // Generate thumbnail from video (optional - can be enhanced later)
+                        option.thumbnail_url = null;
+                    } else {
+                        throw new Error('Video file is required for video options');
+                    }
                 }
 
                 options.push(option);
-            });
+            }
 
             if (options.length < 2) {
-                this.notifications.show('Please add at least 2 options', 'error');
-                return;
+                throw new Error('Please add at least 2 options');
             }
 
             // Build election data in the format the API expects
@@ -1995,9 +2151,10 @@ export class SecureCMSManager {
                 endDate: formData.get('end_date'),
                 status: formData.get('status'),
                 requireVerification: false,
+                anonymousVoting: formData.get('anonymous_voting') === 'on',
                 positions: [
                     {
-                        title: formData.get('title'), // Use the vote title as position title
+                        title: formData.get('title'),
                         description: formData.get('description') || '',
                         maxVotes: formData.get('allow_multiple') === 'on' ? options.length : 1,
                         minVotes: 1,
@@ -2017,19 +2174,31 @@ export class SecureCMSManager {
 
             console.log('Creating vote with data:', electionData);
 
+            // Get auth token
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                throw new Error('Authentication required. Please log in again.');
+            }
+
             // Create the vote via API
             const apiBase = '/api/v1';
             const response = await fetch(`${apiBase}/voting`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(electionData)
             });
 
+            if (response.status === 401) {
+                throw new Error('Session expired. Please log in again.');
+            }
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to create vote');
+                const error = await response.json().catch(() => ({ error: 'Failed to create vote' }));
+                throw new Error(error.error || `Failed to create vote (${response.status})`);
             }
 
             const result = await response.json();
@@ -2043,36 +2212,568 @@ export class SecureCMSManager {
 
         } catch (error) {
             console.error('Error creating vote:', error);
+            console.error('Error stack:', error.stack);
             this.notifications.show(error.message || 'Failed to create vote', 'error');
+            
+            // Restore button state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Create Vote';
+            }
         }
     }
 
-    async viewVoteDetails(id) {
-        // TODO: Show vote details and results
-        alert(`View details for vote: ${id}`);
+    async uploadFile(file, bucket) {
+        try {
+            // Generate unique filename
+            const timestamp = Date.now();
+            const randomStr = Math.random().toString(36).substring(7);
+            const ext = file.name.split('.').pop();
+            const filename = `${timestamp}-${randomStr}.${ext}`;
+
+            console.log(`📤 Uploading ${file.name} to ${bucket}/${filename}`);
+
+            // Create FormData for upload
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', file);
+            uploadFormData.append('bucket', bucket);
+            uploadFormData.append('path', filename);
+
+            // Get auth token
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            // Upload via API endpoint
+            const uploadRes = await fetch('/api/v1/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: uploadFormData
+            });
+
+            if (uploadRes.status === 401) {
+                throw new Error('Session expired. Please log in again.');
+            }
+
+            if (!uploadRes.ok) {
+                const errorData = await uploadRes.json().catch(() => ({ error: 'Upload failed' }));
+                throw new Error(errorData.error || `Upload failed with status ${uploadRes.status}`);
+            }
+
+            const uploadData = await uploadRes.json();
+            console.log(`✅ File uploaded: ${uploadData.url}`);
+            
+            return uploadData.url;
+
+        } catch (error) {
+            console.error('File upload error:', error);
+            throw error;
+        }
     }
 
+    async waitForCmsVoting(timeout = 5000) {
+        // If already loaded, return immediately
+        if (window.cmsVoting) {
+            return true;
+        }
+
+        console.log('⏳ Waiting for CMS Voting module to load...');
+        
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            const checkInterval = setInterval(() => {
+                if (window.cmsVoting) {
+                    clearInterval(checkInterval);
+                    console.log('✅ CMS Voting module loaded');
+                    resolve(true);
+                } else if (Date.now() - startTime > timeout) {
+                    clearInterval(checkInterval);
+                    console.error('❌ Timeout waiting for CMS Voting module');
+                    resolve(false);
+                }
+            }, 50); // Check every 50ms
+        });
+    }
+
+    async viewVoteDetails(id) {
+        console.log('🔍 viewVoteDetails called with id:', id);
+        
+        try {
+            // Fetch vote details directly
+            const apiBase = '/api/v1';
+            const response = await fetch(`${apiBase}/voting/${id}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to load vote details');
+            }
+            
+            const vote = await response.json();
+            
+            // Create and show modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-eye"></i> ${vote.title}</h2>
+                        <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="vote-details-section">
+                            <!-- Status Badge -->
+                            <div class="detail-header">
+                                <span class="badge badge-${vote.status === 'active' ? 'success' : vote.status === 'completed' ? 'info' : vote.status === 'upcoming' ? 'warning' : 'secondary'}">
+                                    ${vote.status.toUpperCase()}
+                                </span>
+                                <span class="vote-type-badge">${vote.election_type}</span>
+                            </div>
+                            
+                            <!-- Description -->
+                            ${vote.description ? `
+                                <div class="detail-block">
+                                    <h3><i class="fas fa-align-left"></i> Description</h3>
+                                    <p class="description-text">${vote.description}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Date & Time -->
+                            <div class="detail-block">
+                                <h3><i class="fas fa-calendar"></i> Voting Period</h3>
+                                <div class="date-range">
+                                    <div class="date-item">
+                                        <span class="date-label">Starts:</span>
+                                        <span class="date-value">${new Date(vote.start_date).toLocaleString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</span>
+                                    </div>
+                                    <div class="date-item">
+                                        <span class="date-label">Ends:</span>
+                                        <span class="date-value">${new Date(vote.end_date).toLocaleString('en-US', { 
+                                            weekday: 'short', 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Participation Stats -->
+                            <div class="detail-block">
+                                <h3><i class="fas fa-chart-bar"></i> Participation</h3>
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-value">${vote.votes_cast || 0}</div>
+                                        <div class="stat-label">Votes Cast</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value">${vote.total_voters || 0}</div>
+                                        <div class="stat-label">Total Voters</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value">${vote.total_voters > 0 ? Math.round((vote.votes_cast / vote.total_voters) * 100) : 0}%</div>
+                                        <div class="stat-label">Turnout</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Candidates/Options -->
+                            ${vote.positions && vote.positions.length > 0 ? `
+                                <div class="detail-block">
+                                    <h3><i class="fas fa-users"></i> ${vote.positions[0].title || 'Candidates/Options'}</h3>
+                                    <div class="candidates-grid">
+                                        ${vote.positions[0].candidates?.map(c => `
+                                            <div class="candidate-card">
+                                                ${c.media_url ? `
+                                                    <div class="candidate-media">
+                                                        ${c.media_type === 'video' ? `
+                                                            <video src="${c.media_url}" controls style="width: 100%; border-radius: 8px;"></video>
+                                                        ` : `
+                                                            <img src="${c.media_url}" alt="${c.name}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;" />
+                                                        `}
+                                                    </div>
+                                                ` : ''}
+                                                <div class="candidate-info">
+                                                    <h4>${c.name}</h4>
+                                                    ${c.bio ? `<p class="candidate-bio">${c.bio}</p>` : ''}
+                                                    ${c.media_type ? `<span class="media-type-badge"><i class="fas fa-${c.media_type === 'video' ? 'video' : c.media_type === 'image' ? 'image' : 'user'}"></i> ${c.media_type}</span>` : ''}
+                                                </div>
+                                            </div>
+                                        `).join('') || '<p>No candidates added</p>'}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Settings -->
+                            <div class="detail-block">
+                                <h3><i class="fas fa-cog"></i> Settings</h3>
+                                <div class="settings-list">
+                                    <div class="setting-item">
+                                        <i class="fas fa-${vote.anonymous_voting ? 'check-circle' : 'times-circle'}" style="color: ${vote.anonymous_voting ? '#10b981' : '#ef4444'}"></i>
+                                        <span>Anonymous Voting: ${vote.anonymous_voting ? 'Enabled' : 'Disabled'}</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <i class="fas fa-${vote.require_verification ? 'check-circle' : 'times-circle'}" style="color: ${vote.require_verification ? '#10b981' : '#ef4444'}"></i>
+                                        <span>Verification Required: ${vote.require_verification ? 'Yes' : 'No'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove()">Close</button>
+                        <button class="btn-primary" onclick="cmsManager.editVote('${vote.id}'); this.closest('.modal-backdrop').remove();">
+                            <i class="fas fa-edit"></i> Edit Vote
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+        } catch (error) {
+            console.error('Error viewing vote:', error);
+            this.notifications?.show('Failed to load vote details', 'error');
+        }
+    }
+
+
     async editVote(id) {
-        // TODO: Edit vote
-        alert(`Edit vote: ${id}`);
+        console.log('✏️ editVote called with id:', id);
+        
+        try {
+            // Fetch vote details
+            const apiBase = '/api/v1';
+            const response = await fetch(`${apiBase}/voting/${id}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to load vote details');
+            }
+            
+            const vote = await response.json();
+            const candidates = vote.positions?.[0]?.candidates || [];
+            
+            // Create edit modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.innerHTML = `
+                <div class="modal-content large" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-edit"></i> Edit Vote</h2>
+                        <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <form id="editVoteForm">
+                            <!-- Basic Info -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                                
+                                <div class="form-group">
+                                    <label for="editTitle">Title *</label>
+                                    <input type="text" id="editTitle" value="${vote.title}" required />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="editDescription">Description</label>
+                                    <textarea id="editDescription" rows="3">${vote.description || ''}</textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editElectionType">Type</label>
+                                        <select id="editElectionType">
+                                            <option value="general" ${vote.election_type === 'general' ? 'selected' : ''}>General Vote</option>
+                                            <option value="election" ${vote.election_type === 'election' ? 'selected' : ''}>Election</option>
+                                            <option value="poll" ${vote.election_type === 'poll' ? 'selected' : ''}>Poll</option>
+                                            <option value="referendum" ${vote.election_type === 'referendum' ? 'selected' : ''}>Referendum</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editStatus">Status</label>
+                                        <select id="editStatus">
+                                            <option value="draft" ${vote.status === 'draft' ? 'selected' : ''}>Draft</option>
+                                            <option value="upcoming" ${vote.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+                                            <option value="active" ${vote.status === 'active' ? 'selected' : ''}>Active</option>
+                                            <option value="completed" ${vote.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editStartDate">Start Date *</label>
+                                        <input type="datetime-local" id="editStartDate" 
+                                               value="${new Date(vote.start_date).toISOString().slice(0, 16)}" required />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editEndDate">End Date *</label>
+                                        <input type="datetime-local" id="editEndDate" 
+                                               value="${new Date(vote.end_date).toISOString().slice(0, 16)}" required />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Candidates/Options -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-users"></i> Candidates/Options</h3>
+                                <div id="candidatesContainer">
+                                    ${candidates.map((candidate, index) => `
+                                        <div class="candidate-edit-card" data-candidate-id="${candidate.id}" data-index="${index}">
+                                            <div class="candidate-edit-header">
+                                                <span class="candidate-number">#${index + 1}</span>
+                                                <button type="button" class="btn-remove-candidate" onclick="this.closest('.candidate-edit-card').remove()">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label>Name *</label>
+                                                <input type="text" class="candidate-name" value="${candidate.name}" required />
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label>Bio/Description</label>
+                                                <textarea class="candidate-bio" rows="2">${candidate.bio || ''}</textarea>
+                                            </div>
+                                            
+                                            ${candidate.media_url ? `
+                                                <div class="current-media">
+                                                    <label>Current Media:</label>
+                                                    ${candidate.media_type === 'video' ? `
+                                                        <video src="${candidate.media_url}" controls style="width: 100%; max-height: 200px; border-radius: 8px;"></video>
+                                                    ` : `
+                                                        <img src="${candidate.media_url}" alt="${candidate.name}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;" />
+                                                    `}
+                                                    <input type="hidden" class="candidate-media-url" value="${candidate.media_url}" />
+                                                    <input type="hidden" class="candidate-media-type" value="${candidate.media_type || 'image'}" />
+                                                </div>
+                                            ` : ''}
+                                            
+                                            <div class="form-group">
+                                                <label>Update Media (optional)</label>
+                                                <input type="file" class="candidate-media-file" accept="image/*,video/*" />
+                                                <small style="color: rgba(255,255,255,0.6);">Leave empty to keep current media</small>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <button type="button" class="btn-secondary" id="addCandidateBtn" style="margin-top: 1rem;">
+                                    <i class="fas fa-plus"></i> Add Candidate/Option
+                                </button>
+                            </div>
+                            
+                            <!-- Settings -->
+                            <div class="form-section">
+                                <h3><i class="fas fa-cog"></i> Settings</h3>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="editAnonymous" ${vote.anonymous_voting ? 'checked' : ''} />
+                                        <span>Anonymous Voting</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="editVerification" ${vote.require_verification ? 'checked' : ''} />
+                                        <span>Require Verification</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+                        <button class="btn-primary" id="saveEditBtn">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add candidate button handler
+            let candidateCounter = candidates.length;
+            document.getElementById('addCandidateBtn').addEventListener('click', () => {
+                const container = document.getElementById('candidatesContainer');
+                const newCard = document.createElement('div');
+                newCard.className = 'candidate-edit-card';
+                newCard.dataset.index = candidateCounter;
+                newCard.innerHTML = `
+                    <div class="candidate-edit-header">
+                        <span class="candidate-number">#${candidateCounter + 1}</span>
+                        <button type="button" class="btn-remove-candidate" onclick="this.closest('.candidate-edit-card').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" class="candidate-name" required />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Bio/Description</label>
+                        <textarea class="candidate-bio" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Media (optional)</label>
+                        <input type="file" class="candidate-media-file" accept="image/*,video/*" />
+                    </div>
+                `;
+                container.appendChild(newCard);
+                candidateCounter++;
+            });
+            
+            // Handle save
+            const saveBtn = document.getElementById('saveEditBtn');
+            const saveHandler = async () => {
+                try {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    
+                    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                    
+                    // Collect candidate data
+                    const candidateCards = document.querySelectorAll('.candidate-edit-card');
+                    const updatedCandidates = [];
+                    
+                    for (const card of candidateCards) {
+                        const candidateData = {
+                            id: card.dataset.candidateId || null,
+                            name: card.querySelector('.candidate-name').value,
+                            bio: card.querySelector('.candidate-bio')?.value || '',
+                            media_url: card.querySelector('.candidate-media-url')?.value || null,
+                            media_type: card.querySelector('.candidate-media-type')?.value || 'text',
+                            display_order: parseInt(card.dataset.index),
+                            is_approved: true,
+                            is_active: true
+                        };
+                        
+                        // Handle new media upload
+                        const mediaFile = card.querySelector('.candidate-media-file')?.files[0];
+                        if (mediaFile) {
+                            // Upload new media
+                            const formData = new FormData();
+                            formData.append('file', mediaFile);
+                            formData.append('bucket', mediaFile.type.startsWith('video/') ? 'voting-videos' : mediaFile.type.startsWith('image/') ? 'candidate-photos' : 'voting-images');
+                            
+                            const uploadRes = await fetch('/api/v1/upload', {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                body: formData
+                            });
+                            
+                            if (uploadRes.ok) {
+                                const uploadData = await uploadRes.json();
+                                candidateData.media_url = uploadData.url;
+                                candidateData.media_type = mediaFile.type.startsWith('video/') ? 'video' : 'image';
+                            }
+                        }
+                        
+                        updatedCandidates.push(candidateData);
+                    }
+                    
+                    const updateData = {
+                        title: document.getElementById('editTitle').value,
+                        description: document.getElementById('editDescription').value,
+                        electionType: document.getElementById('editElectionType').value,
+                        startDate: document.getElementById('editStartDate').value,
+                        endDate: document.getElementById('editEndDate').value,
+                        status: document.getElementById('editStatus').value,
+                        anonymousVoting: document.getElementById('editAnonymous').checked,
+                        requireVerification: document.getElementById('editVerification').checked,
+                        positions: [{
+                            id: vote.positions?.[0]?.id || null,
+                            title: document.getElementById('editTitle').value,
+                            description: document.getElementById('editDescription').value,
+                            maxVotes: 1,
+                            minVotes: 1,
+                            candidates: updatedCandidates
+                        }]
+                    };
+                    
+                    const updateResponse = await fetch(`${apiBase}/voting/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                    
+                    if (!updateResponse.ok) {
+                        const error = await updateResponse.json();
+                        throw new Error(error.error || 'Failed to update vote');
+                    }
+                    
+                    this.notifications?.show('Vote updated successfully!', 'success');
+                    modal.remove();
+                    this.loadVoting(); // Reload the list
+                    
+                } catch (error) {
+                    console.error('Error updating vote:', error);
+                    this.notifications?.show(error.message || 'Failed to update vote', 'error');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                }
+            };
+            
+            saveBtn.addEventListener('click', saveHandler);
+            
+        } catch (error) {
+            console.error('Error editing vote:', error);
+            this.notifications?.show('Failed to load vote for editing', 'error');
+        }
     }
 
     async deleteVote(id) {
-        if (!confirm('Are you sure you want to delete this vote?')) return;
+        console.log('🗑️ deleteVote called with id:', id);
+        
+        if (!confirm('Are you sure you want to delete this vote? This action cannot be undone.')) {
+            return;
+        }
         
         try {
             const apiBase = '/api/v1';
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
             const response = await fetch(`${apiBase}/voting/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
             
-            if (!response.ok) throw new Error('Failed to delete vote');
+            if (!response.ok) {
+                throw new Error('Failed to delete vote');
+            }
             
-            this.notifications.show('Vote deleted successfully', 'success');
+            this.notifications?.show('Vote deleted successfully', 'success');
             this.loadVoting(); // Reload the list
+            
         } catch (error) {
             console.error('Error deleting vote:', error);
-            this.notifications.show('Failed to delete vote', 'error');
+            this.notifications?.show('Failed to delete vote', 'error');
         }
     }
 

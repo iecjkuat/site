@@ -2335,24 +2335,18 @@
 /* Position Section */
 .positions-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
     margin-bottom: 2rem;
 }
 
-@media (max-width: 1200px) {
-    .positions-container {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (max-width: 900px) {
+@media (max-width: 1400px) {
     .positions-container {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 900px) {
     .positions-container {
         grid-template-columns: 1fr;
     }
@@ -2364,17 +2358,18 @@
     border-radius: 1rem;
     padding: 1.5rem;
     width: 100%;
-    aspect-ratio: 1;
     display: flex;
     flex-direction: column;
 }
 
 .position-header {
     display: flex;
-    align-items: start;
+    align-items: center;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     flex-shrink: 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .position-number {
@@ -2393,7 +2388,6 @@
 
 .position-info {
     flex: 1;
-    min-width: 0;
 }
 
 .position-title {
@@ -2405,31 +2399,23 @@
 
 .position-description {
     color: rgba(255, 255, 255, 0.6);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     line-height: 1.3;
 }
 
-/* Candidates Grid - Simple List */
+/* Candidates Grid - Compact List */
 .candidates-grid {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-}
-
-.candidates-grid::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
 }
 
 .vote-option {
     background: rgba(255, 255, 255, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
@@ -2450,6 +2436,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 }
 
 .vote-option-radio {
@@ -2482,13 +2469,78 @@
 
 .vote-option-info {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .vote-option-name {
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     color: white;
     margin: 0;
+}
+
+/* Media content in vote options - Compact */
+.vote-option-media {
+    flex-shrink: 0;
+}
+
+.vote-option-media.profile .profile-photo,
+.vote-option-media.image .option-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: block;
+}
+
+.vote-option-media.profile .profile-photo-placeholder {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.vote-option-media.video {
+    position: relative;
+    width: 50px;
+    height: 50px;
+}
+
+.vote-option-media.video .video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.vote-option-media.video .video-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.25rem;
+    color: white;
+    opacity: 0.9;
+}
+
+.vote-option-media.video .video-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .no-candidates {

@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
+const { authenticateToken } = require('../middleware/auth');
 const path = require('path');
 
 const router = express.Router();
@@ -48,7 +49,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 100 * 1024 * 1024, // 100MB limit for videos
     },
     fileFilter: (req, file, cb) => {
         // Allow images and videos
@@ -61,6 +62,71 @@ const upload = multer({
         } else {
             cb(new Error('Only images and videos are allowed!'));
         }
+    }
+});
+
+// General upload endpoint for any bucket
+router.post('/', authenticateToken, upload.single('file'), async (req, res) => {
+    try {
+        console.log('📤 General upload request received');
+        console.log('📤 User:', req.user?.email);
+        console.log('📤 Body:', req.body);
+        
+        if (!req.file) {
+            console.error('❌ No file in request');
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        console.log('📤 File received:', req.file.originalname, req.file.size, 'bytes');
+
+        const { bucket, path: filePath } = req.body;
+        
+        if (!bucket) {
+            console.error('❌ No bucket specified');
+            return res.status(400).json({ error: 'Bucket name is required' });
+        }
+
+        const fileName = filePath || `${Date.now()}-${req.file.originalname}`;
+        
+        console.log(`📤 Uploading to bucket: ${bucket}, path: ${fileName}`);
+
+        // Upload to Supabase storage
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype,
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) {
+            console.error('❌ Supabase upload error:', error);
+            return res.status(500).json({ 
+                error: 'Upload failed', 
+                details: error.message 
+            });
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(fileName);
+
+        console.log(`✅ File uploaded successfully: ${urlData.publicUrl}`);
+
+        res.json({
+            success: true,
+            url: urlData.publicUrl,
+            path: fileName,
+            bucket: bucket
+        });
+
+    } catch (error) {
+        console.error('❌ Upload endpoint error:', error);
+        res.status(500).json({ 
+            error: 'Upload failed', 
+            details: error.message 
+        });
     }
 });
 

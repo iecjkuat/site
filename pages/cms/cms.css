@@ -2361,6 +2361,24 @@ div#projects-list > * {
     overflow-y: auto;
 }
 
+.vote-creator-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vote-creator-modal::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.vote-creator-modal::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.3);
+    border-radius: 4px;
+}
+
+.vote-creator-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.5);
+}
+
 .vote-creator-form {
     display: flex;
     flex-direction: column;
@@ -2378,43 +2396,66 @@ div#projects-list > * {
     align-items: center;
     gap: 0.5rem;
     font-weight: 600;
-    color: white;
+    color: #f3f4f6;
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
 }
 
 .form-group label i {
-    color: #10b981;
+    color: #34d399;
     font-size: 0.875rem;
 }
 
 .option-count {
-    color: rgba(255, 255, 255, 0.5);
+    color: #9ca3af;
     font-weight: 400;
     font-size: 0.875rem;
 }
 
-.form-group input[type="text"],
-.form-group input[type="url"],
-.form-group input[type="datetime-local"],
-.form-group textarea,
-.form-group select {
+.vote-creator-form .form-group input[type="text"],
+.vote-creator-form .form-group input[type="url"],
+.vote-creator-form .form-group input[type="datetime-local"],
+.vote-creator-form .form-group textarea,
+.vote-creator-form .form-group select {
     width: 100%;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #1f2937 !important;
+    border: 1px solid #374151 !important;
     border-radius: 8px;
-    color: white;
+    color: #f3f4f6 !important;
     font-size: 0.95rem;
     transition: all 0.2s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.vote-creator-form .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2334d399' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px;
+    padding-right: 2.5rem;
+}
+
+.vote-creator-form .form-group select option {
+    background: #1f2937 !important;
+    color: #f3f4f6 !important;
+    padding: 0.5rem;
+}
+
+.vote-creator-form .form-group input::placeholder,
+.vote-creator-form .form-group textarea::placeholder {
+    color: #6b7280 !important;
+}
+
+.vote-creator-form .form-group input:focus,
+.vote-creator-form .form-group textarea:focus,
+.vote-creator-form .form-group select:focus {
     outline: none;
-    border-color: #10b981;
-    background: rgba(255, 255, 255, 0.08);
+    border-color: #10b981 !important;
+    background: #111827 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .form-group textarea {
@@ -2434,15 +2475,15 @@ div#projects-list > * {
     align-items: flex-start;
     gap: 0.75rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #1f2937;
+    border: 1px solid #374151;
     border-radius: 8px;
     transition: all 0.2s ease;
 }
 
 .vote-option-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: #111827;
+    border-color: #4b5563;
 }
 
 .option-number {
@@ -2451,8 +2492,8 @@ div#projects-list > * {
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
+    background: #065f46;
+    color: #34d399;
     border-radius: 50%;
     font-weight: 700;
     font-size: 0.875rem;
@@ -2466,28 +2507,144 @@ div#projects-list > * {
     gap: 0.5rem;
 }
 
-.option-input {
+.vote-creator-form .option-input {
     width: 100%;
     padding: 0.625rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #111827 !important;
+    border: 1px solid #374151 !important;
     border-radius: 6px;
-    color: white;
+    color: #f3f4f6 !important;
     font-size: 0.9rem;
 }
 
-.option-input:focus {
+.vote-creator-form .option-input::placeholder {
+    color: #6b7280 !important;
+}
+
+.vote-creator-form .option-input:focus {
     outline: none;
-    border-color: #10b981;
-    background: rgba(255, 255, 255, 0.08);
+    border-color: #10b981 !important;
+    background: #0f172a !important;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+/* File Upload Styles */
+.file-upload-wrapper {
+    position: relative;
+}
+
+.file-input {
+    display: none;
+}
+
+.file-upload-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #064e3b;
+    border: 2px dashed #10b981;
+    border-radius: 6px;
+    color: #34d399;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.file-upload-label:hover {
+    background: #065f46;
+    border-color: #34d399;
+    transform: translateY(-1px);
+}
+
+.file-upload-label i {
+    font-size: 1.1rem;
+}
+
+.file-preview {
+    margin-top: 0.5rem;
+}
+
+.preview-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 6px;
+}
+
+.preview-content img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #4b5563;
+}
+
+.video-preview-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #065f46;
+    border-radius: 4px;
+    color: #34d399;
+    font-size: 1.5rem;
+}
+
+.preview-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.preview-name {
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-size {
+    color: #9ca3af;
+    font-size: 0.75rem;
+}
+
+.preview-remove {
+    width: 28px;
+    height: 28px;
+    background: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #991b1b;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.preview-remove:hover {
+    background: #991b1b;
+    color: #fef2f2;
+    transform: scale(1.05);
 }
 
 .btn-remove-option {
     width: 32px;
     height: 32px;
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #991b1b;
     border-radius: 6px;
     cursor: pointer;
     display: flex;
@@ -2498,16 +2655,17 @@ div#projects-list > * {
 }
 
 .btn-remove-option:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: #991b1b;
+    color: #fef2f2;
     transform: scale(1.05);
 }
 
 .btn-add-option {
     width: 100%;
     padding: 0.75rem;
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-    border: 1px dashed rgba(16, 185, 129, 0.3);
+    background: #064e3b;
+    color: #34d399;
+    border: 1px dashed #10b981;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -2519,8 +2677,8 @@ div#projects-list > * {
 }
 
 .btn-add-option:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: #065f46;
+    border-color: #34d399;
     transform: translateY(-1px);
 }
 
@@ -2529,7 +2687,7 @@ div#projects-list > * {
     flex-direction: column;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: #1f2937;
     border-radius: 8px;
 }
 
@@ -2538,8 +2696,13 @@ div#projects-list > * {
     align-items: center;
     gap: 0.75rem;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.9);
+    color: #ffffff !important;
     font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.checkbox-label span {
+    color: #ffffff !important;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -2550,7 +2713,19 @@ div#projects-list > * {
 }
 
 .checkbox-label:hover {
-    color: white;
+    color: #ffffff !important;
+}
+
+.checkbox-label:hover span {
+    color: #ffffff !important;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid #374151;
 }
 
 @media (max-width: 768px) {
@@ -2569,5 +2744,13 @@ div#projects-list > * {
 
     .option-number {
         align-self: flex-start;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .modal-actions button {
+        width: 100%;
     }
 }

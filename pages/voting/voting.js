@@ -7,14 +7,150 @@ class VotingPortal {
         this.elections = [];
         this.currentElection = null;
         this.apiBase = '/api/v1';
+        this.isSubmitting = false;
+        this.isOnline = navigator.onLine;
+        this.cachedElections = null;
+        this.timers = {
+            countdown: null,
+            refresh: null
+        };
         this.init();
     }
 
     async init() {
         console.log('🗳️ Initializing Voting Portal...');
+        
+        // Setup network listeners
+        this.setupNetworkListeners();
+        
         this.bindEvents();
         await this.loadElections();
         this.updateStats();
+        
+        // Start live countdown timer (updates every second)
+        this.startCountdownTimer();
+        
+        // Refresh election data every 30 seconds to get live vote counts
+        this.startAutoRefresh();
+    }
+
+    setupNetworkListeners() {
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.showNotification('You are back online!', 'success');
+            this.loadElections();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.showNotification('You are offline. Using cached data.', 'warning');
+            if (this.cachedElections) {
+                this.renderElections(this.cachedElections);
+            }
+        });
+    }
+
+    startCountdownTimer() {
+        // Clear existing timer if any
+        if (this.timers.countdown) {
+            clearInterval(this.timers.countdown);
+        }
+        
+        // Update countdown every second
+        this.timers.countdown = setInterval(() => {
+            document.querySelectorAll('[data-end-date]').forEach(element => {
+                const endDate = element.dataset.endDate;
+                const timeRemaining = this.getTimeRemaining(endDate);
+                element.textContent = timeRemaining;
+            });
+        }, 1000);
+    }
+
+    startAutoRefresh() {
+        // Clear existing timer if any
+        if (this.timers.refresh) {
+            clearInterval(this.timers.refresh);
+        }
+        
+        // Refresh election data every 30 seconds (silently in background)
+        this.timers.refresh = setInterval(() => {
+            (async () => {
+                try {
+                    console.log('🔄 Auto-refreshing election data (background)...');
+                    await this.refreshElectionsQuietly();
+                } catch (error) {
+                    console.error('Auto-refresh failed:', error);
+                }
+            })();
+        }, 30000);
+    }
+
+    destroy() {
+        // Clean up timers to prevent memory leaks
+        if (this.timers.countdown) {
+            clearInterval(this.timers.countdown);
+            this.timers.countdown = null;
+        }
+        if (this.timers.refresh) {
+            clearInterval(this.timers.refresh);
+            this.timers.refresh = null;
+        }
+        
+        // Remove network listeners
+        window.removeEventListener('online', this.setupNetworkListeners);
+        window.removeEventListener('offline', this.setupNetworkListeners);
+        
+        console.log('🧹 VotingPortal cleaned up');
+    }
+
+    async fetchWithTimeout(url, options = {}, timeout = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout - please check your connection');
+            }
+            throw error;
+        }
+    }
+
+    async getValidToken() {
+        let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        
+        if (!token) return null;
+        
+        // Check if token is expired (simple JWT decode)
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+                console.warn('⚠️ Token expired');
+                // Clear expired token
+                localStorage.removeItem('authToken');
+                sessionStorage.removeItem('authToken');
+                return null;
+            }
+        } catch (e) {
+            console.error('Token validation failed:', e);
+            return null;
+        }
+        
+        return token;
+    }
+
+    sanitizeInput(input) {
+        // Sanitize user input to prevent XSS
+        return String(input || '')
+            .replace(/[<>&'"]/g, '')
+            .trim();
     }
 
     bindEvents() {
@@ -43,38 +179,209 @@ class VotingPortal {
         });
     }
 
-    async loadElections() {
+    async loadElections(retryCount = 0, maxRetries = 3) {
         try {
             console.log('📡 Fetching elections from:', `${this.apiBase}/voting`);
-            const response = await fetch(`${this.apiBase}/voting`);
+            
+            // Show loading state
+            const grid = document.getElementById('votingGrid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading elections...</p>
+                    </div>
+                `;
+            }
+            
+            // Check online status
+            if (!this.isOnline) {
+                const cached = localStorage.getItem('cachedElections');
+                if (cached) {
+                    const cachedData = JSON.parse(cached);
+                    this.elections = cachedData;
+                    this.renderElections(this.elections);
+                    this.updateStats();
+                    this.showNotification('Showing cached data', 'info');
+                    return;
+                }
+                throw new Error('You are offline');
+            }
+            
+            const response = await this.fetchWithTimeout(`${this.apiBase}/voting`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
             console.log('📡 Response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
                 console.log('📊 Received data:', data);
                 this.elections = data.elections || [];
+                
+                // Cache for offline use
+                this.cachedElections = this.elections;
+                localStorage.setItem('cachedElections', JSON.stringify(this.elections));
+                
                 console.log('📊 Elections loaded:', this.elections.length);
                 this.renderElections(this.elections);
+                this.updateStats();
             } else {
-                const errorText = await response.text();
-                console.error('❌ API error:', response.status, errorText);
-                throw new Error(`API returned ${response.status}`);
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('❌ API error:', response.status, errorData);
+                throw new Error(errorData.hint || errorData.error || `API returned ${response.status}`);
             }
         } catch (error) {
-            console.error('❌ Error loading elections:', error);
-            this.showError('Failed to load elections');
-            // Show empty state
-            const grid = document.getElementById('votingGrid');
-            if (grid) {
-                grid.innerHTML = `
-                    <div class="no-votes-message">
-                        <i class="fas fa-exclamation-triangle no-votes-icon"></i>
-                        <h3 class="no-votes-title">Unable to Load Elections</h3>
-                        <p class="no-votes-text">${error.message}</p>
-                    </div>
-                `;
+            console.error(`❌ Error loading elections (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+            
+            if (retryCount < maxRetries) {
+                // Exponential backoff
+                const delay = Math.pow(2, retryCount) * 1000;
+                console.log(`⏳ Retrying in ${delay}ms...`);
+                
+                setTimeout(() => {
+                    this.loadElections(retryCount + 1, maxRetries);
+                }, delay);
+            } else {
+                // Try to load from cache on error
+                const cached = localStorage.getItem('cachedElections');
+                if (cached) {
+                    this.elections = JSON.parse(cached);
+                    this.renderElections(this.elections);
+                    this.updateStats();
+                    this.showNotification('Showing cached data', 'info');
+                    return;
+                }
+                
+                // Show error state with retry button
+                const grid = document.getElementById('votingGrid');
+                if (grid) {
+                    grid.innerHTML = `
+                        <div class="no-votes-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Connection Error</h3>
+                            <p>${error.message || 'Unable to connect to the server'}</p>
+                            <button class="btn-primary" onclick="window.votingPortal.loadElections(0, 3)">
+                                <i class="fas fa-redo"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
+    }
+
+    async refreshElectionsQuietly() {
+        try {
+            // Fetch fresh data without showing loading state
+            const response = await this.fetchWithTimeout(`${this.apiBase}/voting`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }, 5000); // Shorter timeout for background refresh
+            
+            if (!response.ok) {
+                console.warn('⚠️ Background refresh failed:', response.status);
+                return;
+            }
+            
+            const data = await response.json();
+            const newElections = data.elections || [];
+            
+            console.log('✅ Background refresh successful:', newElections.length, 'elections');
+            
+            // Check if there are new elections or updates
+            const hasChanges = this.detectElectionChanges(this.elections, newElections);
+            
+            if (hasChanges) {
+                console.log('📊 Changes detected, updating display...');
+                this.elections = newElections;
+                
+                // Cache updated data
+                this.cachedElections = this.elections;
+                localStorage.setItem('cachedElections', JSON.stringify(this.elections));
+                
+                // Update only the stats on existing cards (no full re-render)
+                this.updateElectionCardsQuietly(newElections);
+            } else {
+                console.log('✅ No changes detected');
+            }
+        } catch (error) {
+            console.warn('⚠️ Background refresh failed:', error.message);
+            // Fail silently - don't disrupt user experience
+        }
+    }
+
+    detectElectionChanges(oldElections, newElections) {
+        // Check if election count changed
+        if (oldElections.length !== newElections.length) {
+            return true;
+        }
+        
+        // Check if any vote counts or stats changed
+        for (let i = 0; i < newElections.length; i++) {
+            const oldElection = oldElections.find(e => e.id === newElections[i].id);
+            if (!oldElection) {
+                return true; // New election added
+            }
+            
+            // Check if vote counts changed
+            if (oldElection.votes_cast !== newElections[i].votes_cast ||
+                oldElection.total_voters !== newElections[i].total_voters ||
+                oldElection.status !== newElections[i].status) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    updateElectionCardsQuietly(newElections) {
+        newElections.forEach(election => {
+            const card = document.querySelector(`[data-election-id="${election.id}"]`);
+            if (!card) {
+                // New election - need full re-render
+                console.log('🆕 New election detected, full re-render needed');
+                this.renderElections(newElections);
+                return;
+            }
+            
+            // Update vote count
+            const voteCountElement = card.querySelector('.election-votes');
+            if (voteCountElement) {
+                const progress = election.total_voters > 0 
+                    ? Math.round((election.votes_cast / election.total_voters) * 100) 
+                    : 0;
+                
+                voteCountElement.textContent = `${election.votes_cast || 0} / ${election.total_voters || 0} votes`;
+                
+                // Update progress bar
+                const progressBar = card.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${progress}%`;
+                }
+                
+                // Update turnout percentage
+                const progressText = card.querySelector('.progress-text');
+                if (progressText) {
+                    progressText.textContent = `${progress}% turnout`;
+                }
+            }
+            
+            // Update status badge if status changed
+            const statusBadge = card.querySelector('.election-status-badge');
+            if (statusBadge) {
+                const status = this.getElectionStatus(election);
+                statusBadge.className = `election-status-badge ${status.class}`;
+                statusBadge.innerHTML = `<i class="fas fa-${status.icon}"></i> ${status.text}`;
+            }
+        });
+        
+        console.log('✅ Cards updated quietly');
     }
 
     renderElections(elections) {
@@ -85,6 +392,16 @@ class VotingPortal {
         }
 
         console.log('🎨 Rendering elections:', elections.length);
+        
+        // Log first election stats for debugging
+        if (elections.length > 0) {
+            console.log('📊 First election stats:', {
+                title: elections[0].title,
+                votes_cast: elections[0].votes_cast,
+                total_voters: elections[0].total_voters,
+                end_date: elections[0].end_date
+            });
+        }
 
         if (elections.length === 0) {
             grid.innerHTML = `
@@ -97,14 +414,30 @@ class VotingPortal {
             return;
         }
 
-        grid.innerHTML = elections.map(election => this.createElectionCard(election)).join('');
-
-        // Add click handlers
-        grid.querySelectorAll('[data-election-id]').forEach(card => {
-            card.addEventListener('click', () => {
-                this.viewElection(card.dataset.electionId);
+        // Use event delegation instead of individual listeners
+        if (!grid.dataset.delegationAttached) {
+            grid.addEventListener('click', (e) => {
+                const card = e.target.closest('[data-election-id]');
+                if (card) {
+                    this.viewElection(card.dataset.electionId);
+                }
             });
+            grid.dataset.delegationAttached = 'true';
+        }
+
+        // Use DocumentFragment for batch DOM updates
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+        
+        elections.forEach(election => {
+            tempDiv.innerHTML = this.createElectionCard(election);
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
         });
+        
+        grid.innerHTML = '';
+        grid.appendChild(fragment);
         
         console.log('✅ Elections rendered successfully');
     }
@@ -146,7 +479,7 @@ class VotingPortal {
                             <i class="fas fa-clock"></i>
                             <div class="stat-content">
                                 <span class="stat-label">Time Remaining</span>
-                                <span class="stat-value">${timeRemaining}</span>
+                                <span class="stat-value" data-end-date="${election.end_date}">${timeRemaining}</span>
                             </div>
                         </div>
                     ` : ''}
@@ -239,19 +572,32 @@ class VotingPortal {
 
     async viewElection(electionId) {
         try {
-            const response = await fetch(`${this.apiBase}/voting/${electionId}`);
+            const response = await this.fetchWithTimeout(`${this.apiBase}/voting/${electionId}`);
             if (!response.ok) throw new Error('Failed to load election');
             
             const election = await response.json();
+            
+            // Validate election data
+            if (!election || !election.id) {
+                throw new Error('Invalid election data received');
+            }
+            
             this.currentElection = election;
-            this.showElectionDetail(election);
+            
+            // Check if we should show results or ballot
+            const status = this.getElectionStatus(election);
+            if (status.text === 'Completed') {
+                this.showElectionResults(election);
+            } else {
+                this.showElectionDetail(election);
+            }
         } catch (error) {
             console.error('Error loading election:', error);
-            this.showError('Failed to load election details');
+            this.showError(error.message || 'Failed to load election details');
         }
     }
 
-    showElectionDetail(election) {
+    async showElectionResults(election) {
         const detailSection = document.getElementById('voteDetailSection');
         const listSection = document.getElementById('votingListSection');
         const content = document.getElementById('voteDetailContent');
@@ -261,47 +607,182 @@ class VotingPortal {
         listSection.classList.add('hidden');
         detailSection.classList.remove('hidden');
 
-        const status = this.getElectionStatus(election);
-        const timeRemaining = this.getTimeRemaining(election.end_date);
-
+        // Show loading state
         content.innerHTML = `
-            <div class="ballot-container">
-                <!-- Election Header -->
-                <div class="ballot-header">
-                    <div class="ballot-header-content">
-                        <div class="ballot-title-section">
-                            <h1 class="ballot-title">${election.title}</h1>
-                            <p class="ballot-subtitle">${election.description}</p>
-                        </div>
-                        <div class="ballot-status-section">
-                            <div class="status-badge ${status.class}">
-                                <i class="fas fa-circle"></i>
-                                ${status.text}
-                            </div>
-                            ${status.canVote ? `
-                                <div class="time-remaining-badge">
-                                    <i class="fas fa-clock"></i>
-                                    ${timeRemaining}
-                                </div>
-                            ` : ''}
-                        </div>
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading results...</p>
+            </div>
+        `;
+
+        try {
+            console.log('📊 Fetching results for election:', election.id);
+            
+            // Fetch results from API
+            const response = await this.fetchWithTimeout(`${this.apiBase}/voting/${election.id}/results`);
+            
+            console.log('📡 Results response status:', response.status);
+            
+            if (!response.ok) {
+                let errorData = {};
+                const responseText = await response.text();
+                console.error('❌ Results API error response text:', responseText);
+                
+                try {
+                    errorData = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('❌ Could not parse error response as JSON');
+                    errorData = { error: responseText || 'Unknown error' };
+                }
+                
+                console.error('❌ Results API error:', response.status, errorData);
+                
+                if (response.status === 403) {
+                    throw new Error(errorData.error || 'Results are not yet available for this election');
+                } else if (response.status === 404) {
+                    throw new Error('Election not found');
+                } else if (response.status === 500) {
+                    throw new Error(errorData.error || 'Server error while loading results. Please check server logs.');
+                } else {
+                    throw new Error(errorData.error || `Failed to load results (Status: ${response.status})`);
+                }
+            }
+
+            const results = await response.json();
+            console.log('📊 Results received:', results);
+            
+            if (!Array.isArray(results) || results.length === 0) {
+                throw new Error('No results data available for this election');
+            }
+            
+            // Group results by position
+            const resultsByPosition = {};
+            results.forEach(result => {
+                if (!resultsByPosition[result.position_id]) {
+                    resultsByPosition[result.position_id] = {
+                        title: result.position_title,
+                        candidates: []
+                    };
+                }
+                resultsByPosition[result.position_id].candidates.push(result);
+            });
+
+            console.log('📊 Grouped results:', resultsByPosition);
+
+            // Render results
+            content.innerHTML = `
+                <div class="results-container">
+                    <div class="results-header">
+                        <h1 class="results-title">
+                            <i class="fas fa-chart-bar"></i>
+                            ${election.title} - Results
+                        </h1>
+                        <p class="results-subtitle">
+                            ${election.anonymous_voting ? 'Anonymous Voting' : 'Public Voting'} • 
+                            Ended ${this.formatDate(election.end_date)}
+                        </p>
+                    </div>
+
+                    <div class="results-positions">
+                        ${Object.entries(resultsByPosition).map(([positionId, position], index) => 
+                            this.renderPositionResults(position, index + 1)
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('❌ Error loading results:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                electionId: election.id
+            });
+            
+            content.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Unable to Load Results</h3>
+                    <p>${error.message || 'An unexpected error occurred'}</p>
+                    <button class="btn-primary" onclick="window.votingPortal.showListView()">
+                        <i class="fas fa-arrow-left"></i> Back to Elections
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    renderPositionResults(position, positionNumber) {
+        const totalVotes = position.candidates.reduce((sum, c) => sum + (c.vote_count || 0), 0);
+        const winner = position.candidates[0]; // First candidate has most votes (sorted by backend)
+
+        return `
+            <div class="position-results">
+                <div class="position-results-header">
+                    <div class="position-number">${positionNumber}</div>
+                    <div>
+                        <h2 class="position-title">${position.title}</h2>
+                        <p class="position-stats">${totalVotes} total votes</p>
                     </div>
                 </div>
 
-                <!-- Voting Instructions -->
-                ${status.canVote ? `
-                    <div class="voting-instructions glass-card">
-                        <i class="fas fa-info-circle"></i>
-                        <div>
-                            <h3>How to Vote</h3>
-                            <p>Select one candidate for each position below. Review your selections and click "Submit Vote" when ready.</p>
+                <div class="candidates-results">
+                    ${position.candidates.map((candidate, index) => `
+                        <div class="candidate-result ${index === 0 ? 'winner' : ''}">
+                            <div class="candidate-result-info">
+                                <div class="candidate-rank">${index + 1}</div>
+                                <div class="candidate-details">
+                                    <h3 class="candidate-name">
+                                        ${candidate.candidate_name}
+                                        ${index === 0 ? '<i class="fas fa-crown winner-icon"></i>' : ''}
+                                    </h3>
+                                    <p class="candidate-votes">${candidate.vote_count || 0} votes (${candidate.vote_percentage || 0}%)</p>
+                                </div>
+                            </div>
+                            <div class="candidate-result-bar">
+                                <div class="result-bar-fill ${index === 0 ? 'winner' : ''}" 
+                                     style="width: ${candidate.vote_percentage || 0}%">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ` : ''}
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
 
+    showElectionDetail(election) {
+        const detailSection = document.getElementById('voteDetailSection');
+        const listSection = document.getElementById('votingListSection');
+        const content = document.getElementById('voteDetailContent');
+
+        if (!detailSection || !listSection || !content) return;
+
+        // Validate election data
+        if (!election) {
+            this.showError('Election data is missing');
+            return;
+        }
+
+        // Validate positions array
+        if (!Array.isArray(election.positions)) {
+            console.error('Election has no positions:', election);
+            content.innerHTML = '<p class="error">This election has no positions configured</p>';
+            return;
+        }
+
+        listSection.classList.add('hidden');
+        detailSection.classList.remove('hidden');
+
+        const status = this.getElectionStatus(election);
+
+        // Filter out invalid positions
+        const validPositions = election.positions.filter(pos => pos && pos.id && pos.title);
+
+        content.innerHTML = `
+            <div class="ballot-container">
                 <!-- Positions and Candidates -->
                 <div class="positions-container">
-                    ${election.positions?.map((pos, index) => this.renderPosition(pos, election, index + 1)).join('') || '<p class="no-data">No positions available</p>'}
+                    ${validPositions.map((pos, index) => this.renderPosition(pos, election, index + 1)).join('') || '<p class="no-data">No positions available</p>'}
                 </div>
 
                 <!-- Submit Section -->
@@ -309,7 +790,7 @@ class VotingPortal {
                     <div class="ballot-footer">
                         <div class="selection-summary glass-card">
                             <i class="fas fa-check-circle"></i>
-                            <span id="selectionCount">0 of ${election.positions?.length || 0} positions selected</span>
+                            <span id="selectionCount">0 of ${validPositions.length} positions selected</span>
                         </div>
                         <button id="submitVoteBtn" class="btn-submit-vote" disabled>
                             <i class="fas fa-paper-plane"></i>
@@ -350,43 +831,58 @@ class VotingPortal {
     renderCandidate(candidate, position) {
         const mediaType = candidate.media_type || 'text';
         
+        console.log('🎨 Rendering candidate:', candidate.name, 'Type:', mediaType, 'URL:', candidate.media_url);
+        
         // Render based on media type
         let mediaContent = '';
         
-        if (mediaType === 'profile' || candidate.image_url) {
+        if (mediaType === 'profile' && (candidate.media_url || candidate.image_url)) {
             // Candidate with profile picture
+            const imageUrl = candidate.media_url || candidate.image_url;
             mediaContent = `
-                <div class="vote-option-media profile">
-                    ${candidate.image_url ? `
-                        <img src="${candidate.image_url}" alt="${candidate.name}" class="profile-photo">
-                    ` : `
-                        <div class="profile-photo-placeholder">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    `}
+                <img src="${imageUrl}" 
+                     alt="${candidate.name}" 
+                     class="profile-photo"
+                     onerror="console.error('❌ Failed to load profile image:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     onload="console.log('✅ Profile image loaded:', this.src)">
+                <div class="profile-photo-placeholder" style="display:none;">
+                    <i class="fas fa-user"></i>
                 </div>
             `;
-        } else if (mediaType === 'image') {
+        } else if (mediaType === 'image' && (candidate.media_url || candidate.image_url)) {
             // Image voting option
+            const imageUrl = candidate.media_url || candidate.image_url;
+            console.log('📸 Rendering image URL:', imageUrl);
             mediaContent = `
-                <div class="vote-option-media image">
-                    <img src="${candidate.media_url || candidate.image_url}" alt="${candidate.name}" class="option-image">
+                <img src="${imageUrl}" 
+                     alt="${candidate.name}" 
+                     class="option-image"
+                     crossorigin="anonymous"
+                     onerror="console.error('❌ Failed to load image:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     onload="console.log('✅ Image loaded successfully:', this.src)">
+                <div class="profile-photo-placeholder" style="display:none;">
+                    <i class="fas fa-image"></i>
                 </div>
             `;
         } else if (mediaType === 'video') {
             // Video voting option
             mediaContent = `
-                <div class="vote-option-media video">
-                    ${candidate.thumbnail_url ? `
-                        <img src="${candidate.thumbnail_url}" alt="${candidate.name}" class="video-thumbnail">
-                        <div class="video-play-icon">
-                            <i class="fas fa-play-circle"></i>
-                        </div>
-                    ` : `
-                        <div class="video-placeholder">
-                            <i class="fas fa-video"></i>
-                        </div>
-                    `}
+                ${candidate.thumbnail_url ? `
+                    <img src="${candidate.thumbnail_url}" alt="${candidate.name}" class="video-thumbnail">
+                ` : `
+                    <div class="video-placeholder">
+                        <i class="fas fa-video"></i>
+                    </div>
+                `}
+                <div class="video-play-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+            `;
+        } else {
+            // Text only - no media
+            mediaContent = `
+                <div class="profile-photo-placeholder">
+                    <i class="fas fa-user"></i>
                 </div>
             `;
         }
@@ -397,8 +893,10 @@ class VotingPortal {
                     <div class="vote-option-radio">
                         <i class="fas fa-circle"></i>
                     </div>
-                    ${mediaContent}
                     <div class="vote-option-info">
+                        <div class="vote-option-media ${mediaType}">
+                            ${mediaContent}
+                        </div>
                         <h4 class="vote-option-name">${candidate.name}</h4>
                     </div>
                 </div>
@@ -487,37 +985,100 @@ class VotingPortal {
     }
 
     async submitVote(electionId) {
-        const selectedCandidates = [];
-        
-        document.querySelectorAll('.candidate-card.selected').forEach(card => {
-            selectedCandidates.push({
-                positionId: card.dataset.positionId,
-                candidateId: card.dataset.candidateId
-            });
-        });
+        // Prevent double submission
+        if (this.isSubmitting) {
+            console.log('⚠️ Already submitting, please wait...');
+            return;
+        }
 
-        if (selectedCandidates.length === 0) {
+        // Use the stored selections from bindCandidateSelection
+        if (!this.currentSelections || this.currentSelections.size === 0) {
             this.showError('Please select at least one candidate');
             return;
         }
 
-        try {
-            const response = await fetch(`${this.apiBase}/voting/${electionId}/vote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ votes: selectedCandidates })
+        // Convert Map to array format for API (use camelCase as expected by backend)
+        const votes = [];
+        this.currentSelections.forEach((candidateId, positionId) => {
+            votes.push({
+                positionId: positionId,
+                candidateId: candidateId
             });
+        });
+
+        console.log('📤 Submitting votes:', votes);
+
+        const submitBtn = document.getElementById('submitVoteBtn');
+
+        try {
+            this.isSubmitting = true;
+
+            // Disable submit button and show loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            }
+
+            // Get and validate auth token
+            const token = await this.getValidToken();
+            
+            console.log('🔑 Token found:', token ? 'Yes' : 'No');
+            
+            if (!token) {
+                this.showError('Please log in to vote');
+                setTimeout(() => {
+                    window.location.href = '/pages/auth/signin.html';
+                }, 2000);
+                return;
+            }
+            
+            const response = await this.fetchWithTimeout(`${this.apiBase}/voting/${electionId}/vote`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ votes })
+            }, 10000); // 10 second timeout for vote submission
+
+            console.log('📡 Vote response status:', response.status);
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Failed to submit vote');
+                console.error('❌ Vote error:', error);
+                
+                // Handle specific error cases
+                if (response.status === 403) {
+                    throw new Error('You are not eligible to vote in this election. Please contact an administrator.');
+                } else if (response.status === 401) {
+                    throw new Error('Your session has expired. Please log in again.');
+                } else if (response.status === 400) {
+                    throw new Error(error.error || 'Invalid vote submission');
+                } else {
+                    throw new Error(error.error || 'Failed to submit vote');
+                }
             }
 
+            const result = await response.json();
+            console.log('✅ Vote submitted successfully:', result);
+            
             this.showSuccess('Vote submitted successfully!');
+            
+            // Refresh elections to show updated counts
+            await this.loadElections();
+            
             setTimeout(() => this.showListView(), 2000);
         } catch (error) {
-            console.error('Error submitting vote:', error);
+            console.error('❌ Error submitting vote:', error);
             this.showError(error.message);
+        } finally {
+            this.isSubmitting = false;
+            
+            // Re-enable button
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit My Vote';
+            }
         }
     }
 
@@ -528,23 +1089,34 @@ class VotingPortal {
     }
 
     filterElections(filter) {
-        let filtered = [...this.elections];
-        
-        if (filter !== 'all') {
-            if (['active', 'upcoming', 'completed', 'draft'].includes(filter)) {
-                filtered = filtered.filter(e => e.status === filter);
-            } else {
-                filtered = filtered.filter(e => e.election_type === filter);
-            }
+        // Only filter if needed, don't copy entire array unnecessarily
+        if (filter === 'all') {
+            this.renderElections(this.elections);
+            return;
         }
+        
+        const filtered = this.elections.filter(e => {
+            if (['active', 'upcoming', 'completed', 'draft'].includes(filter)) {
+                return e.status === filter;
+            }
+            return e.election_type === filter;
+        });
         
         this.renderElections(filtered);
     }
 
     searchElections(query) {
+        // Sanitize input to prevent XSS
+        const sanitizedQuery = this.sanitizeInput(query).toLowerCase();
+        
+        if (!sanitizedQuery) {
+            this.renderElections(this.elections);
+            return;
+        }
+        
         const filtered = this.elections.filter(e => 
-            e.title.toLowerCase().includes(query.toLowerCase()) ||
-            e.description?.toLowerCase().includes(query.toLowerCase())
+            (e.title && e.title.toLowerCase().includes(sanitizedQuery)) ||
+            (e.description && e.description.toLowerCase().includes(sanitizedQuery))
         );
         this.renderElections(filtered);
     }
@@ -571,8 +1143,11 @@ class VotingPortal {
         const active = this.elections.filter(e => e.status === 'active').length;
         const upcoming = this.elections.filter(e => e.status === 'upcoming').length;
         
-        document.getElementById('activeCount').textContent = active;
-        document.getElementById('upcomingCount').textContent = upcoming;
+        const activeEl = document.getElementById('activeCount');
+        const upcomingEl = document.getElementById('upcomingCount');
+        
+        if (activeEl) activeEl.textContent = active;
+        if (upcomingEl) upcomingEl.textContent = upcoming;
     }
 
     formatDate(dateString) {
