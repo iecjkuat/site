@@ -428,6 +428,44 @@ router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
+// Update user membership status (simpler endpoint for status changes)
+router.patch('/users/:id/status', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { membership_status } = req.body;
+
+        if (!membership_status) {
+            return res.status(400).json({ message: 'membership_status is required' });
+        }
+
+        // Validate status
+        const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
+        if (!validStatuses.includes(membership_status)) {
+            return res.status(400).json({ message: 'Invalid membership status' });
+        }
+
+        const { data, error } = await supabase
+            .from('users')
+            .update({ 
+                membership_status,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        console.log(`✅ User ${req.params.id} status updated to: ${membership_status}`);
+        res.json({ 
+            message: 'Membership status updated successfully', 
+            user: data 
+        });
+    } catch (error) {
+        console.error('Error updating membership status:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // --- Event Management ---
 router.get('/events/export', authenticateToken, requireAdmin, async (req, res) => {
     try {

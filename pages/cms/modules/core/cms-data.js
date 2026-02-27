@@ -1153,6 +1153,79 @@ export class CMSData {
         return this.storage.members[idx];
     }
 
+    // ---------- Resources ----------
+    static async getResources(filters = {}) {
+        const cacheKey = this.getCacheKey('resources', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getResources(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.warn('API getResources failed:', error);
+            throw error;
+        }
+    }
+
+    static async getResource(id) {
+        try {
+            if (this.useSupabase) {
+                console.log('🔍 Fetching resource with ID:', id);
+                const data = await CMSAPI.getResource(id);
+                console.log('📦 Raw API response:', data);
+                const resource = data.resource || data.data || data;
+                console.log('✅ Processed resource:', resource);
+                return resource;
+            }
+        } catch (error) {
+            console.warn('API getResource failed:', error);
+            throw error;
+        }
+    }
+
+    static async createResource(data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.createResource(data);
+                this.clearCache('resources');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API createResource failed:', error);
+            throw error;
+        }
+    }
+
+    static async updateResource(id, data) {
+        try {
+            if (this.useSupabase) {
+                const result = await CMSAPI.updateResource(id, data);
+                this.clearCache('resources');
+                return result;
+            }
+        } catch (error) {
+            console.warn('API updateResource failed:', error);
+            throw error;
+        }
+    }
+
+    static async deleteResource(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSAPI.deleteResource(id);
+                this.clearCache('resources');
+                return true;
+            }
+        } catch (error) {
+            console.warn('API deleteResource failed:', error);
+            throw error;
+        }
+    }
+
     // ---------- Utilities ----------
     static generateId() {
         return (window.CMSSecurity?.generateSecureId?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);

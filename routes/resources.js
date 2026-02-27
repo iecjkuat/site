@@ -152,20 +152,20 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    // Get user's club_id
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('club_id')
-      .eq('id', userId)
+    // Get the first available club as default (since users table doesn't have club_id column)
+    const { data: clubData, error: clubError } = await supabase
+      .from('clubs')
+      .select('id')
+      .limit(1)
       .single();
-
-    if (userError || !userData) {
-      console.error('❌ Failed to get user club:', userError);
-      return res.status(400).json({ message: 'User not found' });
+    
+    if (clubError || !clubData) {
+      console.error('❌ No clubs found:', clubError);
+      return res.status(500).json({ message: 'No club available. Please create a club first.' });
     }
-
-    const clubId = userData.club_id;
-    console.log('✅ User club:', clubId);
+    
+    const clubId = clubData.id;
+    console.log('✅ Using default club:', clubId);
 
     // Generate unique filename
     const fileExt = path.extname(req.file.originalname);

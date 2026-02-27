@@ -6,12 +6,13 @@ class LeadershipManager {
         this.executives = [];
         this.patrons = [];
         this.currentSection = 'executives';
-        this.init();
+        this.isInitialized = false;
     }
 
     init() {
+        if (this.isInitialized) return;
         this.bindEvents();
-        this.loadLeadership();
+        this.isInitialized = true;
     }
 
     bindEvents() {
@@ -915,7 +916,16 @@ class LeadershipManager {
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
+
+    // Alias for consistency with other managers
+    async load() {
+        this.init(); // Ensure events are bound
+        await this.loadLeadership();
+    }
 }
 
 // Make it globally accessible
 window.LeadershipManager = LeadershipManager;
+
+// ES6 export for module imports
+export { LeadershipManager as CMSLeadershipManager };

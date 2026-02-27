@@ -4,14 +4,18 @@
  */
 
 class ProjectsManager {
-    constructor() {
-        this.currentTab = 'showcase';
-        this.currentFilter = 'all';
-        this.projects = [];
-        this.hackathons = [];
-        this.incubationProjects = [];
+    // moved from constructor per S7757
+    currentTab = 'showcase';
+    currentFilter = 'all';
+    projects = [];
+    hackathons = [];
+    incubationProjects = [];
 
-        this.init();
+    constructor() {
+        // no async work here (Sonar S7059); init() is invoked below
+        this.setupEventListeners();
+        this.setupDocumentListeners();
+        // stats updated after data is loaded in init()
     }
 
     // Utility method to get time ago
@@ -36,8 +40,7 @@ class ProjectsManager {
     }
 
     async init() {
-        this.setupEventListeners();
-        this.setupDocumentListeners(); // Fix potential memory leak
+        // stats updated after data is loaded in init()
         await this.loadInitialData();
         this.updateStats();
     }
@@ -557,9 +560,15 @@ class ProjectsManager {
             category: document.getElementById('projectCategory').value,
             description: document.getElementById('projectDescription').value,
             expected_duration: document.getElementById('projectDuration').value,
-            budget_estimate: parseFloat(document.getElementById('projectBudget').value) || 0,
-            technologies: document.getElementById('projectTechnologies').value.split(',').map(t => t.trim()).filter(t => t),
-            objectives: document.getElementById('projectObjectives').value.split('\n').filter(o => o.trim()),
+            budget_estimate: Number.parseFloat(document.getElementById('projectBudget').value) || 0, // prefer Number.parseFloat (S7773)
+            technologies: document
+                .getElementById('projectTechnologies')
+                .value.split(',')
+                .map(t => t.trim())
+                .filter(Boolean), // arrow => Boolean (S7770)
+            objectives: document.getElementById('projectObjectives').value
+                .split('\n')
+                .filter(o => o.trim()),
             submissionStatus: 'pending',
             submitted_at: new Date().toISOString(),
             submitted_by: 'current_user' // In real app, get from auth
@@ -605,10 +614,9 @@ class ProjectsManager {
     }
 
     simulateProjectSubmission(projectData) {
-        // In a real application, this would make an API call
-        // For demo purposes, we'll add it to pending projects
-        if (!window.pendingProjects) {
-            window.pendingProjects = [];
+        // prefer globalThis over window (S7764)
+        if (!globalThis.pendingProjects) {
+            globalThis.pendingProjects = [];
         }
 
         projectData.id = 'pending_proj_' + Date.now();
@@ -620,12 +628,10 @@ class ProjectsManager {
         };
         projectData.created_at = new Date().toISOString();
 
-        window.pendingProjects.push(projectData);
+        globalThis.pendingProjects.push(projectData);
 
         console.log('Project added to pending queue:', projectData);
-
-        // Simulate admin notification (in real app, this would be an email/notification)
-        console.log('ðŸ“§ Admin notification sent for new project submission');
+        console.log('🗳️ Admin notification sent for new project submission');
     }
 
     async handleCollaborationSubmission(e) {
@@ -1632,10 +1638,12 @@ window.closeCollaborationRequestsModal = function () {
 };
 
 // Initialize page when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Navigation is handled by global-navbar.js
     // No need to initialize it here
 
     // Initialize Projects Manager
     window.projectsManager = new ProjectsManager();
+    await globalThis.projectsManager.init();     // async, outside of ctor
+    console.log('✅ Projects Manager initialized successfully');
 });

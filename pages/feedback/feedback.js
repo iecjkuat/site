@@ -1,285 +1,229 @@
 /**
- * JKUAT Innovation Club - Feedback UI Interactions
- * Enhanced whisper submission functionality
+ * Simple Feedback System
+ * Clean implementation with no dependencies
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Feedback page loaded');
+console.log('✅ Feedback script loaded');
 
-    // Initialize Navigation
-    if (typeof window.Navigation === 'function' && !window.navInstance) {
-        window.navInstance = new Navigation();
-    }
+let currentMode = 'whisper';
+let selectedRating = 5;
 
-    const form = document.getElementById('feedbackForm');
-    console.log('Form found:', !!form);
-
-    // Initial load of community voices
-    loadWhispers();
-
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('Form submitted');
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            console.log('Submit button found:', !!submitBtn);
-
-            if (!submitBtn) {
-                console.error('Submit button not found');
-                return;
-            }
-
-            const originalBtnText = submitBtn.innerHTML;
-
-            // Loading State
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Encrypting & Sending...';
-
-            try {
-                // Gather data
-                const titleInput = form.querySelector('input[type="text"]');
-                const commentInput = form.querySelector('textarea');
-
-                console.log('Title input:', titleInput?.value);
-                console.log('Comment input:', commentInput?.value);
-
-                if (!commentInput || !commentInput.value.trim()) {
-                    throw new Error('Please enter your message before sending');
-                }
-
-                const formData = {
-                    title: titleInput ? titleInput.value.trim() : '',
-                    comment: commentInput.value.trim(),
-                    isAnonymous: true,
-                    timestamp: new Date().toISOString()
-                };
-
-                console.log('Sending data:', formData);
-
-                // Simulate API call for now (since we don't have a backend)
-                await simulateWhisperSubmission(formData);
-
-                // Success Visuals
-                showSuccessMessage();
-
-                // Reset form
-                form.reset();
-
-                // Refresh the wall immediately
-                loadWhispers();
-
-            } catch (error) {
-                console.error('Submission error:', error);
-                showErrorMessage(error.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        });
-    } else {
-        console.error('Feedback form not found');
-    }
-});
-
-// Submit whisper to API (with fallback to localStorage)
-async function simulateWhisperSubmission(formData) {
-    try {
-        // Try API first
-        const response = await fetch('/api/feedback', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                title: formData.title || 'Anonymous Whisper',
-                message: formData.comment,
-                isAnonymous: formData.isAnonymous,
-                timestamp: formData.timestamp
-            })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log('✅ Whisper submitted to API:', result);
-            return { success: true, fromAPI: true };
+// Wait for auth system to be ready
+function waitForAuth() {
+    return new Promise((resolve) => {
+        if (window.authManager) {
+            console.log('✅ Auth manager already available');
+            resolve();
         } else {
-            throw new Error('API submission failed');
+            console.log('⏳ Waiting for auth manager...');
+            document.addEventListener('authReady', () => {
+                console.log('✅ Auth manager ready');
+                resolve();
+            });
+            
+            // Fallback timeout
+            setTimeout(() => {
+                console.log('⚠️ Auth manager timeout, continuing anyway');
+                resolve();
+            }, 3000);
         }
-    } catch (error) {
-        console.log('⚠️ API unavailable, using localStorage fallback');
-
-        // Fallback to localStorage for demo purposes
-        const whispers = JSON.parse(localStorage.getItem('whispers') || '[]');
-        whispers.unshift({
-            id: Date.now(),
-            title: formData.title || 'Anonymous Whisper',
-            comment: formData.comment,
-            created_at: formData.timestamp,
-            isAnonymous: true
-        });
-        // Keep only last 10 whispers
-        whispers.splice(10);
-        localStorage.setItem('whispers', JSON.stringify(whispers));
-        return { success: true, fromAPI: false };
-    }
+    });
 }
 
-function showSuccessMessage() {
-    const successToast = document.createElement('div');
-    successToast.className = 'fixed top-4 right-4 bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 animate-fade-in flex items-center gap-3 border border-emerald-400';
-    successToast.style.animation = 'fadeIn 0.5s ease-out';
-    successToast.innerHTML = `
-        <i class="fas fa-shield-alt text-2xl"></i>
-        <div>
-            <h4 class="font-bold">Whisper Received</h4>
-            <p class="text-sm opacity-90">Your voice is safe with us.</p>
-        </div>
-    `;
-    document.body.appendChild(successToast);
-    setTimeout(() => {
-        successToast.style.animation = 'fadeOut 0.5s ease-out';
-        setTimeout(() => successToast.remove(), 500);
-    }, 4000);
-}
-
-function showErrorMessage(message) {
-    const errorToast = document.createElement('div');
-    errorToast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 border border-red-400';
-    errorToast.style.animation = 'fadeIn 0.5s ease-out';
-    errorToast.innerHTML = `
-        <i class="fas fa-exclamation-triangle text-2xl"></i>
-        <div>
-            <h4 class="font-bold">Submission Failed</h4>
-            <p class="text-sm opacity-90">${message}</p>
-        </div>
-    `;
-    document.body.appendChild(errorToast);
-    setTimeout(() => {
-        errorToast.style.animation = 'fadeOut 0.5s ease-out';
-        setTimeout(() => errorToast.remove(), 500);
-    }, 5000);
-}
-
-async function loadWhispers() {
-    const grid = document.getElementById('whispersGrid');
-    if (!grid) {
-        console.log('Whispers grid not found');
+// Wait for DOM and Auth
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('✅ DOM loaded');
+    
+    // Wait for auth system
+    await waitForAuth();
+    
+    const form = document.getElementById('feedbackForm');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const stars = document.querySelectorAll('.star');
+    const ratingGroup = document.getElementById('ratingGroup');
+    const submitBtn = document.getElementById('submitBtn');
+    const commentInput = document.getElementById('comment');
+    
+    if (!form) {
+        console.error('❌ Form not found!');
         return;
     }
-
-    try {
-        // Try API first
-        const response = await fetch('/api/feedback?limit=10');
-        if (response.ok) {
-            const data = await response.json();
-            const whispers = data.feedback || data;
-            console.log('✅ Whispers loaded from API:', whispers.length);
-            renderWhispers(whispers, grid);
+    
+    console.log('✅ Form found, setting up...');
+    
+    // Show user info if logged in
+    const user = window.authManager?.getUser();
+    if (user) {
+        console.log('👤 User logged in:', user.name || user.email);
+        const userInfo = document.createElement('div');
+        userInfo.style.cssText = `
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 0.5rem;
+        `;
+        userInfo.innerHTML = `
+            <i class="fas fa-user-check" style="color: #10b981;"></i>
+            Logged in as <strong>${user.name || user.email}</strong>
+        `;
+        document.querySelector('.container').insertBefore(userInfo, document.querySelector('.mode-toggle'));
+    } else {
+        console.log('👤 User not logged in');
+    }
+    
+    // Mode toggle
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            console.log('🔄 Switching to mode:', mode);
+            
+            currentMode = mode;
+            
+            // Update button states
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Show/hide rating
+            if (mode === 'review') {
+                ratingGroup.style.display = 'block';
+                submitBtn.innerHTML = '<i class="fas fa-star"></i> Post Review';
+                
+                // Check if logged in using authManager
+                const isLoggedIn = window.authManager?.isAuthenticated?.();
+                console.log('🔐 Is logged in:', isLoggedIn);
+                
+                if (!isLoggedIn) {
+                    showToast('Please log in to post a public review', 'error');
+                    // Switch back to whisper
+                    setTimeout(() => {
+                        modeBtns[0].click();
+                    }, 2000);
+                }
+            } else {
+                ratingGroup.style.display = 'none';
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Whisper';
+            }
+        });
+    });
+    
+    // Rating stars
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            selectedRating = index + 1;
+            console.log('⭐ Rating selected:', selectedRating);
+            updateStars();
+        });
+    });
+    
+    function updateStars() {
+        stars.forEach((star, index) => {
+            if (index < selectedRating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+    
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('📤 Form submitted');
+        
+        const comment = commentInput.value.trim();
+        
+        if (!comment || comment.length < 3) {
+            showToast('Please enter at least 3 characters', 'error');
             return;
         }
-    } catch (error) {
-        console.log('⚠️ API unavailable, using localStorage fallback');
-    }
-
-    // Fallback to localStorage
-    let whispers = JSON.parse(localStorage.getItem('whispers') || '[]');
-
-    // Add some demo whispers if none exist
-    if (whispers.length === 0) {
-        whispers = [
-            {
-                id: 1,
-                title: 'Event Feedback',
-                comment: 'The AI bootcamp was incredible! The mentors really knew their stuff and the hands-on sessions were invaluable.',
-                created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
-            },
-            {
-                id: 2,
-                title: 'Club Suggestion',
-                comment: 'Would love to see more networking events with industry professionals. Maybe monthly meetups?',
-                created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
-            },
-            {
-                id: 3,
-                title: 'Innovation Week',
-                comment: 'Innovation Week was a blast. Loved the networking opportunities and the pitch competition format.',
-                created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
-            },
-            {
-                id: 4,
-                title: 'Workshop Request',
-                comment: 'Could we have more workshops on blockchain and Web3 development? There\'s a lot of interest in the community.',
-                created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
-            },
-            {
-                id: 5,
-                title: 'Meeting Times',
-                comment: 'The current meeting times conflict with some classes. Maybe we could have multiple time slots?',
-                created_at: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
-            },
-            {
-                id: 6,
-                title: 'Great Work!',
-                comment: 'Just wanted to say the leadership team is doing an amazing job. Keep up the great work!',
-                created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-                isAnonymous: true
+        
+        if (comment.length > 2000) {
+            showToast('Message is too long (max 2000 characters)', 'error');
+            return;
+        }
+        
+        // Disable button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            const data = {
+                comment: comment,
+                isAnonymous: currentMode === 'whisper',
+                rating: currentMode === 'review' ? selectedRating : undefined
+            };
+            
+            console.log('📤 Sending:', data);
+            console.log('📍 URL: /api/v1/feedback-simple/submit');
+            console.log('📍 Method: POST');
+            console.log('📍 Has token:', !!token);
+            
+            const response = await fetch('/api/v1/feedback-simple/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                },
+                body: JSON.stringify(data)
+            });
+            
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
+            
+            const responseText = await response.text();
+            console.log('📦 Response text:', responseText);
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                console.error('❌ Failed to parse response as JSON');
+                throw new Error('Invalid response from server');
             }
-        ];
-        localStorage.setItem('whispers', JSON.stringify(whispers));
-    }
+            
+            console.log('📦 Response data:', result);
+            
+            if (response.ok && result.success) {
+                showToast(currentMode === 'whisper' ? 'Whisper sent!' : 'Review posted!', 'success');
+                form.reset();
+                selectedRating = 5;
+                updateStars();
+            } else {
+                throw new Error(result.message || 'Submission failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error:', error);
+            showToast(error.message || 'Failed to submit', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = currentMode === 'whisper' 
+                ? '<i class="fas fa-paper-plane"></i> Send Whisper'
+                : '<i class="fas fa-star"></i> Post Review';
+        }
+    });
+    
+    console.log('✅ Setup complete');
+});
 
-    renderWhispers(whispers, grid);
+// Toast notification
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+        ${message}
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
-function renderWhispers(whispers, grid) {
-    if (whispers.length > 0) {
-        grid.innerHTML = whispers.map(item => `
-            <div class="glass-card p-6 border-l-4 border-l-emerald-500 hover:transform hover:-translate-y-1 transition-transform duration-300">
-                <h3 class="text-white font-bold text-lg mb-2">${escapeHtml(item.title || 'Anonymous Voice')}</h3>
-                <p class="text-slate-300 text-sm italic mb-4">"${escapeHtml(item.comment || item.message)}"</p>
-                <div class="flex justify-between items-center text-xs text-slate-500">
-                    <span class="flex items-center gap-1 text-emerald-400 font-semibold"><i class="fas fa-user-secret"></i> Anonymous</span>
-                    <span>${new Date(item.created_at).toLocaleDateString()}</span>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        grid.innerHTML = `
-            <div class="col-span-full text-center text-slate-500 py-12 bg-white/5 rounded-xl border border-white/5">
-                <i class="fas fa-wind text-4xl mb-4 text-slate-600"></i>
-                <p class="text-lg">The air is silent.</p>
-                <p class="text-sm">Be the first to start a whisper.</p>
-            </div>
-        `;
-    }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// Add CSS for animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeOut {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(-20px); }
-    }
-`;
-document.head.appendChild(style);
+console.log('✅ Feedback script ready');

@@ -89,14 +89,8 @@
                 <button class="cms-tab" data-tab="opportunities">
                     <i class="fas fa-briefcase"></i> Opportunities
                 </button>
-                <button class="cms-tab" data-tab="innovation">
-                    <i class="fas fa-lightbulb"></i> Innovation
-                </button>
                 <button class="cms-tab" data-tab="resources">
                     <i class="fas fa-book"></i> Resources
-                </button>
-                <button class="cms-tab" data-tab="communications">
-                    <i class="fas fa-envelope"></i> Communications
                 </button>
                 <button class="cms-tab" data-tab="members">
                     <i class="fas fa-users"></i> Members
@@ -107,8 +101,8 @@
                 <button class="cms-tab" data-tab="voting">
                     <i class="fas fa-vote-yea"></i> Voting
                 </button>
-                <button class="cms-tab" data-tab="media">
-                    <i class="fas fa-images"></i> Media
+                <button class="cms-tab" data-tab="feedback">
+                    <i class="fas fa-comments"></i> Feedback
                 </button>
             </div>
         </div>
@@ -270,21 +264,6 @@
             </div>
 
             <!-- Innovation Hub Tab -->
-            <div id="innovation-tab" class="cms-content">
-                <div class="cms-section-header">
-                    <div class="cms-section-title">
-                        <i class="fas fa-lightbulb"></i>
-                        <h2>Innovation Hub</h2>
-                    </div>
-                    <button id="create-challenge-btn" class="cms-btn cms-btn-primary">
-                        <i class="fas fa-trophy"></i> New Challenge
-                    </button>
-                </div>
-                <div id="innovation-content" class="cms-content-grid">
-                    <!-- Innovation ideas and challenges will be loaded here -->
-                </div>
-            </div>
-
             <!-- Resources & Documentation Tab -->
             <div id="resources-tab" class="cms-content">
                 <div class="cms-section-header">
@@ -324,27 +303,6 @@
 
                 <div id="resources-list" class="cms-content-grid">
                     <!-- Resources will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Communications Tab -->
-            <div id="communications-tab" class="cms-content">
-                <div class="cms-section-header">
-                    <div class="cms-section-title">
-                        <i class="fas fa-envelope"></i>
-                        <h2>Communications</h2>
-                    </div>
-                    <button id="send-announcement-btn" class="cms-btn cms-btn-primary">
-                        <i class="fas fa-paper-plane"></i> Send Announcement
-                    </button>
-                </div>
-                <div id="communications-content" class="cms-content-grid">
-                    <!-- Communications content will be loaded here -->
-                    <div style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.6);">
-                        <i class="fas fa-envelope" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                        <p>Communications features coming soon!</p>
-                        <p style="font-size: 0.875rem;">Send announcements, newsletters, and notifications to members.</p>
-                    </div>
                 </div>
             </div>
 
@@ -414,26 +372,49 @@
                 </div>
             </div>
 
-            <!-- Media Tab -->
-            <div id="media-tab" class="cms-content">
-                <div class="cms-section-header">
-                    <div class="cms-section-title">
-                        <i class="fas fa-images"></i>
-                        <h2>Media Library</h2>
-                    </div>
-                    <button id="upload-media-btn" class="cms-btn cms-btn-primary">
-                        <i class="fas fa-upload"></i> Upload
-                    </button>
-                </div>
-                <div id="media-library" class="cms-content-grid">
-                    <!-- Media files will be loaded here -->
-                </div>
-            </div>
-
             <!-- Voting Tab -->
             <div id="voting-tab" class="cms-content">
                 <div id="voting-content" class="cms-content-grid">
                     <!-- Voting content will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Feedback Tab -->
+            <div id="feedback-tab" class="cms-content">
+                <div class="cms-section-header">
+                    <div class="cms-section-title">
+                        <i class="fas fa-comments"></i>
+                        <h2>Member Feedback</h2>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="export-feedback-btn" class="cms-btn">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feedback Type Tabs -->
+                <div class="cms-filter-tabs" style="margin-bottom: 1.5rem;">
+                    <button class="cms-filter-tab active" data-feedback-type="whispers">
+                        <i class="fas fa-user-secret"></i> Anonymous Whispers
+                    </button>
+                    <button class="cms-filter-tab" data-feedback-type="reviews">
+                        <i class="fas fa-star"></i> Public Reviews
+                    </button>
+                </div>
+
+                <!-- Whispers Section -->
+                <div id="whispers-section" class="feedback-section">
+                    <div id="whispers-list" class="cms-content-grid">
+                        <!-- Whispers will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div id="reviews-section" class="feedback-section" style="display: none;">
+                    <div id="reviews-list" class="cms-content-grid">
+                        <!-- Reviews will be loaded here -->
+                    </div>
                 </div>
             </div>
             </div>
@@ -1116,8 +1097,6 @@
     <!-- JavaScript -->
     <script src="/shared/core/app.js"></script>
     <script src="/cms/cms-init.js"></script>
-    <script src="/cms/modules/cms-leadership.js"></script>
-    <script src="./modules/cms-voting.js"></script>
     <script type="module" src="/cms/cms.js"></script>
 </body>
 

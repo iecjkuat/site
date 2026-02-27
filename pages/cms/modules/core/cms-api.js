@@ -307,8 +307,14 @@ export class CMSAPI {
      */
     static async getResource(id) {
         try {
+            console.log('🌐 CMSAPI.getResource called with ID:', id);
             const data = await this.get(`/resources/${id}`);
-            return data.resource || data.data;
+            console.log('📡 API response:', data);
+            
+            // The formatResource function returns the resource directly, not wrapped
+            const resource = data.resource || data.data || data;
+            console.log('✨ Extracted resource:', resource);
+            return resource;
         } catch (error) {
             console.error(`Failed to fetch resource ${id}:`, error);
             throw error;

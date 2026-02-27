@@ -2000,6 +2000,153 @@ div#projects-list > * {
     color: rgba(255, 255, 255, 0.5);
 }
 
+/* ==================== RESOURCES GRID - 4 COLUMNS ==================== */
+#resources-list.cms-content-grid,
+#resources-list.ig-content-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Responsive adjustments for resources */
+@media (max-width: 1400px) {
+    #resources-list.cms-content-grid,
+    #resources-list.ig-content-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    #resources-list.cms-content-grid,
+    #resources-list.ig-content-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #resources-list.cms-content-grid,
+    #resources-list.ig-content-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Resource card styling */
+.cms-content-card[data-type="resource"] {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.cms-content-card[data-type="resource"]:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Improved action buttons styling */
+.cms-content-card .content-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.cms-content-card .content-actions button {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid;
+}
+
+/* View button - Blue */
+.cms-content-card .content-actions button[data-action="view"] {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.cms-content-card .content-actions button[data-action="view"]:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Edit button - Green */
+.cms-content-card .content-actions button[data-action="edit"] {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #10b981;
+}
+
+.cms-content-card .content-actions button[data-action="edit"]:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Delete button - Red */
+.cms-content-card .content-actions button[data-action="delete"] {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.cms-content-card .content-actions button[data-action="delete"]:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Download button - Purple */
+.cms-content-card .content-actions button[data-action="download"] {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #a855f7;
+}
+
+.cms-content-card .content-actions button[data-action="download"]:hover {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+/* Button icons */
+.cms-content-card .content-actions button i {
+    font-size: 0.875rem;
+}
+
+/* Disabled state */
+.cms-content-card .content-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.cms-content-card .content-actions button:disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+
 #articles-list .empty-state i {
     font-size: 48px;
     margin-bottom: 1rem;
@@ -2753,4 +2900,56 @@ div#projects-list > * {
     .modal-actions button {
         width: 100%;
     }
+}
+
+/* ==================== SELECT DROPDOWN FIX ==================== */
+/* Fix for dropdown options visibility */
+select option {
+    background: rgba(15, 23, 42, 0.95) !important;
+    color: white !important;
+    padding: 0.5rem !important;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+    background: rgba(59, 130, 246, 0.3) !important;
+    color: white !important;
+}
+
+/* Remove default white background from select dropdown */
+select {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Ensure modal form selects have proper styling */
+.modal-content select,
+.cms-form select,
+form select {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 0.75rem !important;
+    color: white !important;
+    font-size: 0.875rem !important;
+}
+
+.modal-content select option,
+.cms-form select option,
+form select option {
+    background: rgba(15, 23, 42, 0.95) !important;
+    color: white !important;
+    padding: 0.75rem !important;
+}
+
+.modal-content select option:hover,
+.cms-form select option:hover,
+form select option:hover {
+    background: rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Fix for the "Select Category" placeholder option */
+select option[value=""] {
+    color: rgba(255, 255, 255, 0.5) !important;
 }

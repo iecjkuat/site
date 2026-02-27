@@ -341,6 +341,9 @@ export class CMSUI {
             case 'opportunities':
             case 'opportunity':
                 return this.createSecureOpportunityCard(data);
+            case 'resources':
+            case 'resource':
+                return this.createSecureResourceCard(data);
             case 'media':
                 return this.createSecureMediaCard(data);
             case 'ideas':
@@ -991,6 +994,214 @@ export class CMSUI {
         oppEl.appendChild(actions);
 
         return oppEl;
+    }
+
+    /**
+     * Create resource card using secure DOM building
+     */
+    static createSecureResourceCard(resource) {
+        const id = this.safeAttr(resource.id);
+        const title = this.text(resource.title || resource.name, 'Untitled Resource');
+        const category = this.text(resource.category, 'General');
+        const description = resource.description ? 
+            (resource.description.length > 150 ? resource.description.slice(0, 150) + '...' : resource.description) : 
+            'No description available';
+
+        // Get category color
+        const getCategoryColor = (cat) => {
+            const c = String(cat).toLowerCase();
+            if (c.includes('constitution')) return '#3b82f6';
+            if (c.includes('policy') || c.includes('policies')) return '#8b5cf6';
+            if (c.includes('minute')) return '#10b981';
+            if (c.includes('guide')) return '#f59e0b';
+            if (c.includes('report')) return '#ef4444';
+            return '#6b7280';
+        };
+
+        const categoryColor = this.safeColor(getCategoryColor(category));
+
+        const resourceEl = document.createElement('div');
+        resourceEl.className = 'cms-content-card resource-minimal';
+        resourceEl.dataset.id = id;
+        resourceEl.dataset.type = 'resource';
+        resourceEl.style.cssText = `
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        `;
+
+        // Category badge
+        const categoryBadge = document.createElement('div');
+        categoryBadge.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: ${categoryColor}20;
+            border: 1px solid ${categoryColor}40;
+            color: ${categoryColor};
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            width: fit-content;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        `;
+        const categoryIcon = document.createElement('i');
+        categoryIcon.className = 'fas fa-file-alt';
+        categoryIcon.style.fontSize = '0.875rem';
+        categoryBadge.appendChild(categoryIcon);
+        categoryBadge.appendChild(document.createTextNode(' ' + category));
+
+        // Title
+        const titleEl = document.createElement('h3');
+        titleEl.style.cssText = `
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+            line-height: 1.4;
+        `;
+        titleEl.textContent = title;
+
+        // Description
+        const descEl = document.createElement('p');
+        descEl.style.cssText = `
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            margin: 0;
+            flex: 1;
+        `;
+        descEl.textContent = description;
+
+        // Action buttons container
+        const actionsContainer = document.createElement('div');
+        actionsContainer.style.cssText = `
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        `;
+
+        // View button
+        const viewBtn = document.createElement('button');
+        viewBtn.dataset.action = 'view';
+        viewBtn.dataset.id = id;
+        viewBtn.style.cssText = `
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+        viewBtn.addEventListener('mouseenter', () => {
+            viewBtn.style.background = 'rgba(59, 130, 246, 0.3)';
+            viewBtn.style.transform = 'translateY(-2px)';
+        });
+        viewBtn.addEventListener('mouseleave', () => {
+            viewBtn.style.background = 'rgba(59, 130, 246, 0.2)';
+            viewBtn.style.transform = 'translateY(0)';
+        });
+
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.dataset.action = 'edit';
+        editBtn.dataset.id = id;
+        editBtn.style.cssText = `
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+        editBtn.addEventListener('mouseenter', () => {
+            editBtn.style.background = 'rgba(16, 185, 129, 0.3)';
+            editBtn.style.transform = 'translateY(-2px)';
+        });
+        editBtn.addEventListener('mouseleave', () => {
+            editBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+            editBtn.style.transform = 'translateY(0)';
+        });
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.dataset.action = 'delete';
+        deleteBtn.dataset.id = id;
+        deleteBtn.style.cssText = `
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        deleteBtn.addEventListener('mouseenter', () => {
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.3)';
+            deleteBtn.style.transform = 'translateY(-2px)';
+        });
+        deleteBtn.addEventListener('mouseleave', () => {
+            deleteBtn.style.background = 'rgba(239, 68, 68, 0.2)';
+            deleteBtn.style.transform = 'translateY(0)';
+        });
+
+        actionsContainer.appendChild(viewBtn);
+        actionsContainer.appendChild(editBtn);
+        actionsContainer.appendChild(deleteBtn);
+
+        // Card hover effect
+        resourceEl.addEventListener('mouseenter', () => {
+            resourceEl.style.transform = 'translateY(-4px)';
+            resourceEl.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.3)';
+            resourceEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        });
+        resourceEl.addEventListener('mouseleave', () => {
+            resourceEl.style.transform = 'translateY(0)';
+            resourceEl.style.boxShadow = 'none';
+            resourceEl.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        });
+
+        resourceEl.appendChild(categoryBadge);
+        resourceEl.appendChild(titleEl);
+        resourceEl.appendChild(descEl);
+        resourceEl.appendChild(actionsContainer);
+
+        return resourceEl;
     }
 
     /**

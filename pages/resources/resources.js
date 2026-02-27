@@ -230,63 +230,19 @@ class ResourcesPage {
         }
 
         resourcesGrid.innerHTML = this.filteredResources.map(resource => `
-            <div class="glass-card resource-card" data-category="${this.escapeHtml(resource.category)}">
-                <div class="resource-header">
-                    <div class="resource-category-badge ${this.escapeHtml(resource.category.toLowerCase())}">
-                        <i class="fas ${this.escapeHtml(this.getCategoryIcon(resource.category))}"></i>
-                        ${this.escapeHtml(resource.category)}
-                    </div>
-                    <div class="resource-access-level ${this.escapeHtml((resource.accessLevel || 'public').toLowerCase())}">
-                        ${this.escapeHtml(resource.accessLevel || 'PUBLIC')}
-                    </div>
+            <div class="glass-card resource-card resource-minimal" data-category="${this.escapeHtml(resource.category)}">
+                <div class="resource-category-badge ${this.escapeHtml(resource.category.toLowerCase())}">
+                    <i class="fas fa-file-alt"></i>
+                    ${this.escapeHtml(resource.category.toUpperCase())}
                 </div>
                 
-                <div class="resource-content">
-                    <h3 class="resource-title">${this.escapeHtml(resource.title)}</h3>
-                    <p class="resource-description">${this.escapeHtml(resource.description)}</p>
-                    
-                    <div class="resource-meta">
-                        <div class="meta-item">
-                            <i class="fas fa-file-${this.escapeHtml(this.getFileIcon(resource.fileType))}"></i>
-                            <span>${this.escapeHtml((resource.fileType || 'FILE').toUpperCase())}</span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-download"></i>
-                            <span>${this.escapeHtml(resource.downloadCount || 0)} downloads</span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-weight-hanging"></i>
-                            <span>${this.escapeHtml(resource.fileSize || 'Unknown size')}</span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>${new Date(resource.createdAt).toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="resource-uploader">
-                        <i class="fas fa-user"></i>
-                        <span>Uploaded by ${this.escapeHtml(resource.uploader?.name || 'Unknown')}</span>
-                    </div>
-                    
-                    ${resource.tags && resource.tags.length > 0 ? `
-                        <div class="resource-tags">
-                            ${resource.tags.slice(0, 3).map(tag => `
-                                <span class="tag">${this.escapeHtml(tag)}</span>
-                            `).join('')}
-                            ${resource.tags.length > 3 ? `<span class="tag-more">+${resource.tags.length - 3}</span>` : ''}
-                        </div>
-                    ` : ''}
-                </div>
+                <h3 class="resource-title">${this.escapeHtml(resource.title)}</h3>
                 
-                <div class="resource-actions">
-                    <button class="btn btn-primary" data-action="download" data-resource-id="${this.escapeHtml(resource.id)}">
-                        <i class="fas fa-download"></i> Download
-                    </button>
-                    <button class="btn btn-outline" data-action="preview" data-resource-id="${this.escapeHtml(resource.id)}">
-                        <i class="fas fa-eye"></i> Preview
-                    </button>
-                </div>
+                <p class="resource-description">${this.escapeHtml(resource.description)}</p>
+                
+                <button class="btn btn-download" data-action="download" data-resource-id="${this.escapeHtml(resource.id)}">
+                    <i class="fas fa-download"></i> Download
+                </button>
             </div>
         `).join('');
 

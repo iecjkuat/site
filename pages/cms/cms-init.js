@@ -115,6 +115,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     addClickListener('upload-media-btn', () => {
         showMediaUpload();
     });
+    addClickListener('upload-resource-btn', () => {
+        if (window.cmsManager && window.cmsManager.resourcesManager) {
+            window.cmsManager.resourcesManager.showEditModal();
+        }
+    });
 
     // New tab buttons
     addClickListener('create-challenge-btn', () => {
@@ -133,7 +138,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.cmsManager) window.cmsManager.showCreateForm('announcement');
     });
     addClickListener('export-members-btn', () => {
-        if (window.cmsManager) window.cmsManager.exportContent();
+        if (window.cmsManager?.membersManager) {
+            window.cmsManager.membersManager.exportMembers();
+        }
     });
 
     // Modal close buttons

@@ -67,21 +67,265 @@ router.get('/public', async (req, res) => {
         const { limit = 6 } = req.query;
 
         // Fetch recent feedback to display on the wall
-        // We fetching only title, comment, and timestamp
+        // Note: event_feedback table only has: id, event_id, user_id, rating, suggestions
         const { data: feedback, error } = await supabase
             .from('event_feedback')
-            .select('id, title, comment, created_at, is_anonymous')
-            .order('created_at', { ascending: false })
+            .select('id, suggestions, user_id')
+            .order('id', { ascending: false }) // Use id instead of created_at
             .limit(parseInt(limit));
 
         if (error) throw error;
 
+        // Map database fields to frontend expected format
+        const mappedFeedback = (feedback || []).map(item => ({
+            id: item.id,
+            title: 'Anonymous Whisper', // Default title since table doesn't have title column
+            comment: item.suggestions, // Map suggestions to comment
+            created_at: new Date().toISOString(), // Fallback timestamp
+            is_anonymous: !item.user_id // If no user_id, it's anonymous
+        }));
+
         res.json({
-            feedback: feedback || []
+            feedback: mappedFeedback
         });
     } catch (error) {
         console.error('Error fetching public feedback:', error);
         res.status(500).json({ message: 'Failed to fetch public feedback' });
+    }
+});
+
+// Get whispers for CMS (admin only)
+router.get('/whispers', async (req, res) => {
+    try {
+        const { limit = 50 } = req.query;
+
+        console.log('📥 Fetching whispers...');
+        console.log('🔍 Query limit:', limit);
+
+        // First, let's check ALL feedback to see what's in the database
+        const { data: allFeedback, error: allError } = await supabase
+            .from('event_feedback')
+            .select('id, suggestions, user_id, event_id, rating')
+            .order('id', { ascending: false })
+            .limit(10);
+
+        console.log('📊 Total feedback in database (last 10):', allFeedback?.length || 0);
+        if (allFeedback && allFeedback.length > 0) {
+            console.log('📋 Sample feedback:', JSON.stringify(allFeedback[0], null, 2));
+            console.log('📋 User IDs:', allFeedback.map(f => f.user_id));
+        }
+
+        // Fetch anonymous feedback (whispers)
+        const { data: feedback, error } = await supabase
+            .from('event_feedback')
+            .select('id, suggestions, user_id')
+            .is('user_id', null) // Only anonymous feedback
+            .order('id', { ascending: false })
+            .limit(parseInt(limit));
+
+        if (error) {
+            console.error('❌ Supabase error fetching whispers:', error);
+            throw error;
+        }
+
+        console.log('✅ Whispers fetched (user_id IS NULL):', feedback?.length || 0);
+        if (feedback && feedback.length > 0) {
+            console.log('📋 First whisper:', JSON.stringify(feedback[0], null, 2));
+        }
+
+        // Map to expected format
+        const mappedFeedback = (feedback || []).map(item => ({
+            id: item.id,
+            comment: item.suggestions,
+            created_at: new Date().toISOString(), // Fallback timestamp
+            is_anonymous: true
+        }));
+
+        res.json({
+            feedback: mappedFeedback
+        });
+    } catch (error) {
+        console.error('❌ Error fetching whispers:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch whispers',
+            error: error.message 
+        });
+    }
+});
+
+// Get public reviews for CMS (admin only)
+router.get('/reviews', async (req, res) => {
+    try {
+        const { limit = 50 } = req.query;
+
+        console.log('📥 Fetching reviews...');
+
+        // First, check if is_featured column exists by trying to select it
+        let selectQuery = 'id, rating, suggestions, user_id';
+        
+        // Try to include is_featured if it exists
+        try {
+            const testQuery = await supabase
+                .from('event_feedback')
+                .select('is_featured')
+                .limit(1);
+            
+            if (!testQuery.error) {
+                selectQuery = 'id, rating, suggestions, user_id, is_featured';
+            }
+        } catch (e) {
+            console.log('⚠️ is_featured column not found, proceeding without it');
+        }
+
+        // Fetch non-anonymous feedback (reviews) WITHOUT user join
+        const { data: feedback, error } = await supabase
+            .from('event_feedback')
+            .select(selectQuery)
+            .not('user_id', 'is', null) // Only non-anonymous feedback
+            .order('id', { ascending: false })
+            .limit(parseInt(limit));
+
+        if (error) {
+            console.error('❌ Supabase error fetching reviews:', error);
+            throw error;
+        }
+
+        console.log('✅ Reviews fetched:', feedback?.length || 0);
+
+        // Fetch user info separately for each review
+        const mappedFeedback = await Promise.all((feedback || []).map(async (item) => {
+            let userName = 'Member';
+            let userPicture = null;
+
+            if (item.user_id) {
+                try {
+                    const { data: user } = await supabase
+                        .from('users')
+                        .select('name, profile_picture_url')
+                        .eq('id', item.user_id)
+                        .single();
+                    
+                    if (user) {
+                        userName = user.name || 'Member';
+                        userPicture = user.profile_picture_url;
+                    }
+                } catch (e) {
+                    console.log('⚠️ Could not fetch user info for', item.user_id);
+                }
+            }
+
+            return {
+                id: item.id,
+                rating: item.rating || 5,
+                comment: item.suggestions,
+                created_at: new Date().toISOString(),
+                user_id: item.user_id,
+                user_name: userName,
+                user_picture: userPicture,
+                is_featured: item.is_featured || false,
+                is_anonymous: false
+            };
+        }));
+
+        res.json({
+            feedback: mappedFeedback
+        });
+    } catch (error) {
+        console.error('❌ Error fetching reviews:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch reviews',
+            error: error.message 
+        });
+    }
+});
+
+// Get featured reviews for homepage
+router.get('/featured', async (req, res) => {
+    try {
+        const { limit = 3 } = req.query;
+
+        console.log('📥 Fetching featured reviews...');
+
+        // Check if is_featured column exists
+        let selectQuery = 'id, rating, suggestions, user_id';
+        let hasFeaturedColumn = false;
+        
+        try {
+            const testQuery = await supabase
+                .from('event_feedback')
+                .select('is_featured')
+                .limit(1);
+            
+            if (!testQuery.error) {
+                selectQuery = 'id, rating, suggestions, user_id, is_featured';
+                hasFeaturedColumn = true;
+            }
+        } catch (e) {
+            console.log('⚠️ is_featured column not found, returning recent reviews');
+        }
+
+        let query = supabase
+            .from('event_feedback')
+            .select(selectQuery)
+            .not('user_id', 'is', null)
+            .order('id', { ascending: false })
+            .limit(parseInt(limit));
+
+        // Filter by featured if column exists
+        if (hasFeaturedColumn) {
+            query = query.eq('is_featured', true);
+        }
+
+        const { data: feedback, error } = await query;
+
+        if (error) {
+            console.error('❌ Supabase error fetching featured reviews:', error);
+            throw error;
+        }
+
+        console.log('✅ Featured reviews fetched:', feedback?.length || 0);
+
+        // Fetch user info separately for each review
+        const mappedFeedback = await Promise.all((feedback || []).map(async (item) => {
+            let userName = 'Member';
+            let userPicture = null;
+
+            if (item.user_id) {
+                try {
+                    const { data: user } = await supabase
+                        .from('users')
+                        .select('name, profile_picture_url')
+                        .eq('id', item.user_id)
+                        .single();
+                    
+                    if (user) {
+                        userName = user.name || 'Member';
+                        userPicture = user.profile_picture_url;
+                    }
+                } catch (e) {
+                    console.log('⚠️ Could not fetch user info for', item.user_id);
+                }
+            }
+
+            return {
+                id: item.id,
+                rating: item.rating || 5,
+                comment: item.suggestions,
+                created_at: new Date().toISOString(),
+                user_name: userName,
+                user_picture: userPicture
+            };
+        }));
+
+        res.json({
+            feedback: mappedFeedback
+        });
+    } catch (error) {
+        console.error('❌ Error fetching featured reviews:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch featured reviews',
+            error: error.message 
+        });
     }
 });
 
@@ -181,11 +425,19 @@ router.post('/submit', [
 ], async (req, res) => {
     const fs = require('fs');
     const logFile = path.resolve(__dirname, '../feedback_debug.log');
-    const log = (msg) => { try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { } };
+    const log = (msg) => { 
+        console.log(`[FEEDBACK] ${msg}`); // Also log to console
+        try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) { } 
+    };
+    
     log('--- START REQUEST ---');
+    log(`Request body: ${JSON.stringify(req.body)}`);
+    log(`User: ${req.user?.id || 'Not authenticated'}`);
+    
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            log(`Validation errors: ${JSON.stringify(errors.array())}`);
             return res.status(400).json({ errors: errors.array() });
         }
 
@@ -274,21 +526,30 @@ router.post('/submit', [
         }
 
         // Insert main feedback
+        const insertData = {
+            event_id: finalEventId,
+            user_id: isAnonymous ? null : userId,
+            rating: overallRating || 5, // Map to 'rating'
+            suggestions: comment || suggestions || '', // Map main comment to 'suggestions'
+            // Removed fields that don't exist in live DB:
+            // overall_rating, content_rating, organization_rating, venue_rating, 
+            // title, is_anonymous, attendance_confirmed, would_recommend
+        };
+        
+        log(`Inserting feedback: ${JSON.stringify(insertData)}`);
+        
         const { data: feedback, error: feedbackError } = await supabase
             .from('event_feedback')
-            .insert({
-                event_id: finalEventId,
-                user_id: isAnonymous ? null : userId,
-                rating: overallRating || 5, // Map to 'rating'
-                suggestions: comment || suggestions || '', // Map main comment to 'suggestions'
-                // Removed fields that don't exist in live DB:
-                // overall_rating, content_rating, organization_rating, venue_rating, 
-                // title, is_anonymous, attendance_confirmed, would_recommend
-            })
+            .insert(insertData)
             .select()
             .single();
 
-        if (feedbackError) throw feedbackError;
+        if (feedbackError) {
+            log(`Insert error: ${JSON.stringify(feedbackError)}`);
+            throw feedbackError;
+        }
+        
+        log(`Insert successful: ${JSON.stringify(feedback)}`);
 
         // Insert category ratings if provided
         if (categoryRatings.length > 0) {
@@ -637,6 +898,70 @@ router.delete('/:feedbackId', [
     } catch (error) {
         console.error('Error deleting feedback:', error);
         res.status(500).json({ message: 'Failed to delete feedback' });
+    }
+});
+
+// Toggle featured status (admin only)
+router.patch('/:feedbackId/feature', [
+    param('feedbackId').isUUID().withMessage('Valid feedback ID required'),
+    body('is_featured').isBoolean().withMessage('is_featured must be boolean')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { feedbackId } = req.params;
+        const { is_featured } = req.body;
+        const userRole = req.user?.role;
+
+        // Only admins can feature reviews
+        if (userRole !== 'admin' && userRole !== 'superadmin') {
+            return res.status(403).json({ message: 'Admin access required' });
+        }
+
+        console.log(`🔄 Toggling featured status for ${feedbackId} to ${is_featured}`);
+
+        // Check if is_featured column exists
+        const { data: columns, error: columnError } = await supabase
+            .rpc('get_table_columns', { table_name: 'event_feedback' })
+            .catch(() => ({ data: null, error: null }));
+
+        // If column doesn't exist, we need to add it first
+        if (!columns || !columns.some(col => col === 'is_featured')) {
+            console.log('⚠️ is_featured column does not exist. Please add it to the database.');
+            return res.status(501).json({ 
+                message: 'Featured functionality not available. Database schema needs to be updated.',
+                note: 'Please add is_featured BOOLEAN DEFAULT FALSE column to event_feedback table'
+            });
+        }
+
+        const { data, error } = await supabase
+            .from('event_feedback')
+            .update({ is_featured })
+            .eq('id', feedbackId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Error updating featured status:', error);
+            throw error;
+        }
+
+        console.log('✅ Featured status updated');
+
+        res.json({
+            message: `Review ${is_featured ? 'featured' : 'unfeatured'} successfully`,
+            feedback: data
+        });
+
+    } catch (error) {
+        console.error('❌ Error updating featured status:', error);
+        res.status(500).json({ 
+            message: 'Failed to update featured status',
+            error: error.message 
+        });
     }
 });
 

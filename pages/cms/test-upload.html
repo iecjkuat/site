@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .log {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Resource Upload Diagnostic Tool</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Authentication</h2>
+        <button onclick="testAuth()">Test Auth Token</button>
+        <div id="authResult" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Network Connectivity</h2>
+        <button onclick="testEndpoint()">Test /api/v1/resources Endpoint</button>
+        <div id="endpointResult" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test File Upload</h2>
+        <input type="file" id="testFile">
+        <br>
+        <button onclick="testUpload()">Upload Test File</button>
+        <div id="uploadResult" class="log"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            element.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function testAuth() {
+            clearLog('authResult');
+            log('authResult', '🔍 Checking authentication...', 'info');
+            
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                log('authResult', '❌ No auth token found in storage', 'error');
+                log('authResult', '💡 Please log in first', 'info');
+                return;
+            }
+            
+            log('authResult', '✅ Token found: ' + token.substring(0, 20) + '...', 'success');
+            
+            try {
+                const decoded = JSON.parse(atob(token.split('.')[1]));
+                log('authResult', '📋 Token payload:', 'info');
+                log('authResult', JSON.stringify(decoded, null, 2), 'info');
+            } catch (e) {
+                log('authResult', '⚠️ Could not decode token: ' + e.message, 'error');
+            }
+        }
+
+        async function testEndpoint() {
+            clearLog('endpointResult');
+            log('endpointResult', '🌐 Testing endpoint connectivity...', 'info');
+            
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                log('endpointResult', '❌ No auth token - please log in first', 'error');
+                return;
+            }
+            
+            try {
+                log('endpointResult', '📡 GET /api/v1/resources', 'info');
+                const response = await fetch('/api/v1/resources', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                log('endpointResult', `✅ Response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log('endpointResult', `📦 Received ${data.resources?.length || 0} resources`, 'success');
+                
+            } catch (error) {
+                log('endpointResult', '❌ Fetch failed: ' + error.message, 'error');
+                log('endpointResult', '💡 This is the same error you\'re seeing!', 'info');
+                log('endpointResult', '🔍 Possible causes:', 'info');
+                log('endpointResult', '   - Server is not running', 'info');
+                log('endpointResult', '   - CORS issue', 'info');
+                log('endpointResult', '   - Network connectivity problem', 'info');
+                log('endpointResult', '   - Browser blocking the request', 'info');
+            }
+        }
+
+        async function testUpload() {
+            clearLog('uploadResult');
+            log('uploadResult', '📤 Testing file upload...', 'info');
+            
+            const fileInput = document.getElementById('testFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('uploadResult', '❌ Please select a file first', 'error');
+                return;
+            }
+            
+            log('uploadResult', `📁 File: ${file.name} (${file.size} bytes, ${file.type})`, 'info');
+            
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                log('uploadResult', '❌ No auth token - please log in first', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', 'Test Upload ' + Date.now());
+            formData.append('category', 'other');
+            formData.append('description', 'Test upload from diagnostic tool');
+            formData.append('access_level', 'members');
+            
+            log('uploadResult', '📋 FormData prepared:', 'info');
+            for (let [key, value] of formData.entries()) {
+                log('uploadResult', `   ${key}: ${value instanceof File ? `File(${value.name})` : value}`, 'info');
+            }
+            
+            try {
+                log('uploadResult', '🚀 Sending POST /api/v1/resources/upload', 'info');
+                
+                const response = await fetch('/api/v1/resources/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                log('uploadResult', `📡 Response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const responseText = await response.text();
+                log('uploadResult', '📦 Response body:', 'info');
+                log('uploadResult', responseText, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    log('uploadResult', '✅ Upload successful!', 'success');
+                } else {
+                    log('uploadResult', '❌ Upload failed', 'error');
+                }
+                
+            } catch (error) {
+                log('uploadResult', '❌ Fetch failed: ' + error.message, 'error');
+                log('uploadResult', '💡 Error type: ' + error.name, 'info');
+                log('uploadResult', '🔍 This is a network-level error, not a server error', 'info');
+            }
+        }
+    </script>
+</body>
+</html>
