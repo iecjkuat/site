@@ -105,48 +105,56 @@ class SettingsManager {
     // ============================================
     async loadUserData() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             
-            if (token) {
-                const response = await fetch('/api/auth/profile', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    this.currentUser = userData.user || userData;
-                    this.populateUserData();
-                    return;
-                }
+            if (!token) {
+                console.warn('⚠️ No auth token found, redirecting to login...');
+                window.location.href = '/auth/login.html';
+                return;
             }
 
-            // Fallback to mock data
-            this.currentUser = this.createFallbackUser();
-            this.populateUserData();
+            console.log('🔄 Loading user profile data...');
+            
+            const response = await fetch('/api/auth/profile', {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('📡 Profile API response status:', response.status);
+
+            if (response.ok) {
+                const userData = await response.json();
+                console.log('✅ User data loaded:', userData);
+                
+                this.currentUser = userData.user || userData;
+                this.populateUserData();
+                return;
+            } else {
+                const errorData = await response.json();
+                console.error('❌ Profile API error:', errorData);
+                
+                if (response.status === 401) {
+                    console.warn('⚠️ Unauthorized, redirecting to login...');
+                    localStorage.removeItem('authToken');
+                    sessionStorage.removeItem('authToken');
+                    window.location.href = '/auth/login.html';
+                    return;
+                }
+                
+                throw new Error(errorData.message || 'Failed to load profile');
+            }
         } catch (error) {
             console.error('❌ Error loading user data:', error);
-            this.currentUser = this.createFallbackUser();
-            this.populateUserData();
+            this.showToast('Failed to load profile data. Please refresh the page.', 'error');
         }
     }
 
-    createFallbackUser() {
-        return {
-            name: 'John Doe',
-            email: 'john.doe@student.jkuat.ac.ke',
-            phone: '+254 700 123 456',
-            dateOfBirth: '2000-05-15',
-            gender: 'male',
-            bio: 'Passionate about technology and innovation.',
-            skills: ['JavaScript', 'Python', 'React'],
-            linkedinUrl: 'https://linkedin.com/in/johndoe',
-            studentId: 'EN01-0001/2023',
-            course: 'Computer Science',
-            year: 3,
-            college: 'Engineering and Technology'
-        };
-    }
-
+    // ============================================
+    // DATA NORMALIZATION (snake_case → camelCase)
+    // ============================================
+    
     populateUserData() {
         if (!this.currentUser) return;
 
@@ -154,27 +162,38 @@ class SettingsManager {
         this.setFieldValue('fullName', this.currentUser.name);
         this.setFieldValue('email', this.currentUser.email);
         this.setFieldValue('phone', this.currentUser.phone);
-        this.setFieldValue('dateOfBirth', this.currentUser.dateOfBirth);
+        this.setFieldValue('dateOfBirth', this.currentUser.dateOfBirth || this.currentUser.date_of_birth);
         this.setFieldValue('gender', this.currentUser.gender);
         this.setFieldValue('bio', this.currentUser.bio);
         this.setFieldValue('skills', Array.isArray(this.currentUser.skills) ? this.currentUser.skills.join(', ') : '');
-        this.setFieldValue('linkedinUrl', this.currentUser.linkedinUrl);
+        this.setFieldValue('linkedinUrl', this.currentUser.linkedinUrl || this.currentUser.linkedin_url);
 
         // Academic section
-        this.setFieldValue('registrationNumber', this.currentUser.studentId);
+        this.setFieldValue('registrationNumber', this.currentUser.studentId || this.currentUser.registration_number);
         this.setFieldValue('course', this.currentUser.course);
-        this.setFieldValue('yearOfStudy', this.currentUser.year);
+        this.setFieldValue('yearOfStudy', this.currentUser.year || this.currentUser.year_of_study);
         this.setFieldValue('college', this.currentUser.college);
 
         // Display elements
         this.setTextContent('displayName', this.currentUser.name);
         this.setTextContent('displayEmail', this.currentUser.email);
 
-        // Profile initials
-        const initials = this.currentUser.name
-            ? this.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase()
-            : 'JD';
-        this.setTextContent('profileInitials', initials);
+        // Profile picture
+        const profilePicture = document.getElementById('profilePicture');
+        const profileInitials = document.getElementById('profileInitials');
+        
+        if (this.currentUser.profile_picture && profilePicture && profileInitials) {
+            profilePicture.style.backgroundImage = `url(${this.currentUser.profile_picture})`;
+            profilePicture.style.backgroundSize = 'cover';
+            profilePicture.style.backgroundPosition = 'center';
+            profileInitials.style.display = 'none';
+        } else if (profileInitials) {
+            // Profile initials
+            const initials = this.currentUser.name
+                ? this.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                : 'JD';
+            this.setTextContent('profileInitials', initials);
+        }
     }
 
     setFieldValue(id, value) {
@@ -225,11 +244,6 @@ class SettingsManager {
             profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
         }
 
-        const academicForm = document.getElementById('academicForm');
-        if (academicForm) {
-            academicForm.addEventListener('submit', (e) => this.handleAcademicUpdate(e));
-        }
-
         const passwordForm = document.getElementById('passwordForm');
         if (passwordForm) {
             passwordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
@@ -239,66 +253,67 @@ class SettingsManager {
         if (notificationForm) {
             notificationForm.addEventListener('submit', (e) => this.handleNotificationUpdate(e));
         }
-
-        const appPreferencesForm = document.getElementById('appPreferencesForm');
-        if (appPreferencesForm) {
-            appPreferencesForm.addEventListener('submit', (e) => this.handleAppPreferencesUpdate(e));
-        }
     }
 
     async handleProfileUpdate(e) {
         e.preventDefault();
 
         const formData = new FormData(e.target);
-        const rawData = Object.fromEntries(formData);
-        const profileData = this.normalizeProfileData(rawData);
+        const data = Object.fromEntries(formData);
 
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             
-            if (token) {
-                const response = await fetch('/api/auth/profile', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(profileData)
-                });
-
-                if (response.ok) {
-                    this.currentUser = { ...this.currentUser, ...profileData };
-                    this.populateUserData();
-                    this.showToast('Profile updated successfully', 'success');
-                    this.toggleEditMode(false);
-                    return;
-                }
+            if (!token) {
+                this.showToast('Please log in to update profile', 'error');
+                return;
             }
 
-            // Fallback to local update
-            this.currentUser = { ...this.currentUser, ...profileData };
-            this.populateUserData();
-            this.showToast('Profile updated (local)', 'success');
-            this.toggleEditMode(false);
+            // Update profile (name, email, phone)
+            const profileResponse = await fetch('/api/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone
+                })
+            });
+
+            if (!profileResponse.ok) {
+                const errorData = await profileResponse.json();
+                throw new Error(errorData.message || 'Failed to update profile');
+            }
+
+            // Update academic info (registration_number, course, year_of_study, college)
+            const academicResponse = await fetch('/api/auth/academic', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    registration_number: data.registration_number,
+                    course: data.course,
+                    year_of_study: parseInt(data.year_of_study),
+                    college: data.college
+                })
+            });
+
+            if (!academicResponse.ok) {
+                const errorData = await academicResponse.json();
+                throw new Error(errorData.message || 'Failed to update academic information');
+            }
+
+            // Reload user data to reflect changes
+            await this.loadUserData();
+            this.showToast('Information updated successfully', 'success');
         } catch (error) {
-            console.error('❌ Error updating profile:', error);
-            this.showToast('Error updating profile', 'error');
-        }
-    }
-
-    async handleAcademicUpdate(e) {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const rawData = Object.fromEntries(formData);
-        const academicData = this.normalizeAcademicData(rawData);
-
-        try {
-            this.currentUser = { ...this.currentUser, ...academicData };
-            this.showToast('Academic information updated', 'success');
-        } catch (error) {
-            console.error('❌ Error updating academic info:', error);
-            this.showToast('Error updating academic information', 'error');
+            console.error('❌ Error updating information:', error);
+            this.showToast(error.message || 'Error updating information', 'error');
         }
     }
 
@@ -309,6 +324,14 @@ class SettingsManager {
         const currentPassword = formData.get('currentPassword');
         const newPassword = formData.get('newPassword');
         const confirmPassword = formData.get('confirmPassword');
+
+        console.log('🔐 Password change attempt:', {
+            hasCurrentPassword: !!currentPassword,
+            hasNewPassword: !!newPassword,
+            hasConfirmPassword: !!confirmPassword,
+            currentPasswordLength: currentPassword?.length,
+            newPasswordLength: newPassword?.length
+        });
 
         if (newPassword !== confirmPassword) {
             this.showToast('Passwords do not match', 'error');
@@ -321,29 +344,51 @@ class SettingsManager {
         }
 
         try {
-            // In production, send to server
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             
-            if (token) {
-                const response = await fetch('/api/auth/password', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ currentPassword, newPassword })
-                });
-
-                if (response.ok) {
-                    this.showToast('Password changed successfully', 'success');
-                    e.target.reset();
-                    return;
-                }
+            if (!token) {
+                this.showToast('Please log in to change password', 'error');
+                return;
             }
 
-            // Fallback
-            this.showToast('Password changed (demo mode)', 'success');
-            e.target.reset();
+            const requestBody = { currentPassword, newPassword };
+            console.log('📤 Sending password change request:', {
+                url: '/api/auth/change-password',
+                method: 'POST',
+                hasToken: !!token,
+                bodyKeys: Object.keys(requestBody)
+            });
+
+            const response = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log('📥 Response status:', response.status);
+
+            const data = await response.json();
+            console.log('📥 Response data:', data);
+
+            if (response.ok) {
+                this.showToast('Password changed successfully', 'success');
+                e.target.reset();
+                return;
+            }
+
+            // Handle specific error cases
+            if (response.status === 401) {
+                this.showToast('Current password is incorrect', 'error');
+            } else if (response.status === 400 && data.errors) {
+                // Show validation errors
+                const errorMessages = data.errors.map(err => err.msg).join(', ');
+                this.showToast(`Validation error: ${errorMessages}`, 'error');
+            } else {
+                this.showToast(data.message || 'Failed to change password', 'error');
+            }
         } catch (error) {
             console.error('❌ Error changing password:', error);
             this.showToast('Error changing password', 'error');
@@ -357,58 +402,47 @@ class SettingsManager {
         const checkboxes = form.querySelectorAll('input[type="checkbox"]');
         const preferences = {};
 
-        // ✅ Capture both checked and unchecked states
+        // Capture both checked and unchecked states
         checkboxes.forEach(cb => {
             preferences[cb.name] = cb.checked;
         });
 
         try {
-            console.log('Notification preferences:', preferences);
-            this.showToast('Notification preferences updated', 'success');
+            const token = localStorage.getItem('authToken');
+            
+            if (token) {
+                const response = await fetch('/api/auth/preferences', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(preferences)
+                });
+
+                if (response.ok) {
+                    this.showToast('Notification preferences updated successfully', 'success');
+                    return;
+                }
+
+                const errorData = await response.json();
+                this.showToast(errorData.message || 'Failed to update preferences', 'error');
+                return;
+            }
+
+            // Fallback
+            console.log('Notification preferences (local):', preferences);
+            this.showToast('Notification preferences updated (local)', 'success');
         } catch (error) {
             console.error('❌ Error updating preferences:', error);
             this.showToast('Error updating preferences', 'error');
         }
     }
 
-    async handleAppPreferencesUpdate(e) {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-
-        localStorage.setItem('userLanguage', data.language);
-        localStorage.setItem('userTheme', data.theme);
-
-        this.applyTheme(data.theme);
-        this.showToast('Preferences saved', 'success');
-    }
-
-    applyTheme(theme) {
-        document.documentElement.removeAttribute('data-theme');
-        if (theme === 'dark' || theme === 'light') {
-            document.documentElement.setAttribute('data-theme', theme);
-        }
-        // 'system' means no attribute, CSS @media handles it
-    }
-
     // ============================================
     // BUTTON HANDLERS
     // ============================================
     bindButtonEvents() {
-        const editProfileBtn = document.getElementById('editProfileBtn');
-        const cancelEditBtn = document.getElementById('cancelEditBtn');
-
-        if (editProfileBtn) {
-            editProfileBtn.addEventListener('click', () => this.toggleEditMode(true));
-        }
-        if (cancelEditBtn) {
-            cancelEditBtn.addEventListener('click', () => {
-                this.toggleEditMode(false);
-                this.populateUserData(); // Reset form to original values
-            });
-        }
-
         const changePictureBtn = document.getElementById('changePictureBtn');
         const profilePictureInput = document.getElementById('profilePictureInput');
 
@@ -421,30 +455,6 @@ class SettingsManager {
         if (deleteAccountBtn) {
             deleteAccountBtn.addEventListener('click', () => this.handleDeleteAccount());
         }
-    }
-
-    toggleEditMode(enabled) {
-        const form = document.getElementById('profileForm');
-        const editBtn = document.getElementById('editProfileBtn');
-        const cancelBtn = document.getElementById('cancelEditBtn');
-        const submitBtn = form?.querySelector('button[type="submit"]');
-
-        if (form) {
-            const inputs = form.querySelectorAll('input, textarea, select');
-            const locked = new Set(['email']); // Email is identity, never editable
-
-            inputs.forEach(input => {
-                if (locked.has(input.id)) {
-                    input.disabled = true; // Always locked
-                } else {
-                    input.disabled = !enabled;
-                }
-            });
-        }
-
-        if (editBtn) editBtn.style.display = enabled ? 'none' : 'inline-flex';
-        if (cancelBtn) cancelBtn.style.display = enabled ? 'inline-flex' : 'none';
-        if (submitBtn) submitBtn.disabled = !enabled;
     }
 
     handleProfilePictureChange(e) {
@@ -463,6 +473,7 @@ class SettingsManager {
             return;
         }
 
+        // Show preview immediately
         const reader = new FileReader();
         reader.onload = (event) => {
             const profilePicture = document.getElementById('profilePicture');
@@ -474,15 +485,58 @@ class SettingsManager {
                 profilePicture.style.backgroundPosition = 'center';
                 profileInitials.style.display = 'none';
             }
-
-            this.showToast('Profile picture updated', 'success');
         };
-        
-        reader.onerror = () => {
-            this.showToast('Error reading image file', 'error');
-        };
-        
         reader.readAsDataURL(file);
+
+        // Upload to server
+        this.uploadProfilePicture(file);
+    }
+
+    async uploadProfilePicture(file) {
+        try {
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                this.showToast('Please log in to upload profile picture', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            this.showToast('Uploading profile picture...', 'info');
+
+            const response = await fetch('/api/auth/profile-picture', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update current user data
+                if (this.currentUser) {
+                    this.currentUser.profile_picture = data.profilePictureUrl;
+                }
+
+                this.showToast('Profile picture updated successfully', 'success');
+            } else {
+                const errorData = await response.json();
+                this.showToast(errorData.message || 'Failed to upload profile picture', 'error');
+                
+                // Reload original picture on error
+                await this.loadUserData();
+            }
+        } catch (error) {
+            console.error('❌ Error uploading profile picture:', error);
+            this.showToast('Error uploading profile picture', 'error');
+            
+            // Reload original picture on error
+            await this.loadUserData();
+        }
     }
 
     async handleDeleteAccount() {
@@ -497,8 +551,7 @@ class SettingsManager {
             const token = localStorage.getItem('authToken');
             
             if (token) {
-                // In production, call the API
-                const response = await fetch('/api/account/delete', {
+                const response = await fetch('/api/auth/delete-account', {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -515,16 +568,14 @@ class SettingsManager {
                     }, 2000);
                     return;
                 }
+
+                const errorData = await response.json();
+                this.showToast(errorData.message || 'Failed to delete account', 'error');
+                return;
             }
 
-            // Fallback for demo
-            this.showToast('Account deletion initiated (demo mode)', 'info');
-            
-            setTimeout(() => {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/';
-            }, 2000);
+            // Fallback
+            this.showToast('Please log in to delete account', 'error');
         } catch (error) {
             console.error('❌ Error deleting account:', error);
             this.showToast('Error deleting account. Please contact support.', 'error');

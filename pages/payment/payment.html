@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="/shared/core/base.css">
     <link rel="stylesheet" href="/shared/core/theme.css">
     <link rel="stylesheet" href="/shared/global-navbar.css">
-    <link rel="stylesheet" href="/payment/payment.css">
+    <link rel="stylesheet" href="/pages/payment/payment.css">
 
     <!-- Force Dark Theme Override -->
     <style>
@@ -206,7 +206,7 @@
                         <label for="paymentAmount">Amount (KSh)</label>
                         <input type="number" id="paymentAmount" name="amount" class="glass-input"
                             placeholder="Enter amount" min="1" max="1000000" required autocomplete="off"
-                            inputmode="numeric">
+                            inputmode="numeric" style="color: #1a1a1a !important;">
 
                         <div id="quickAmounts" class="quick-amounts">
                             <!-- Will be populated based on service -->
@@ -230,46 +230,10 @@
                     </div>
                 </div>
 
-                <!-- Payment Methods -->
+                <!-- Payment Details -->
                 <div class="payment-methods-card">
-                    <h3>Payment Method</h3>
+                    <h3>M-Pesa Payment Details</h3>
 
-                    <!-- Payment Method Selection -->
-                    <div class="payment-methods" role="radiogroup" aria-label="Payment method selection">
-                        <div class="payment-method active" data-method="mpesa" role="radio" aria-checked="true"
-                            tabindex="0">
-                            <div class="method-icon mpesa">
-                                <i class="fas fa-mobile-alt"></i>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">M-Pesa</div>
-                                <div class="method-desc">Pay with M-Pesa mobile money</div>
-                            </div>
-                            <div class="method-badge recommended">Recommended</div>
-                        </div>
-
-                        <div class="payment-method" data-method="card" role="radio" aria-checked="false" tabindex="0">
-                            <div class="method-icon card">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">Credit/Debit Card</div>
-                                <div class="method-desc">Visa, Mastercard accepted</div>
-                            </div>
-                        </div>
-
-                        <div class="payment-method" data-method="bank" role="radio" aria-checked="false" tabindex="0">
-                            <div class="method-icon bank">
-                                <i class="fas fa-university"></i>
-                            </div>
-                            <div class="method-info">
-                                <div class="method-name">Bank Transfer</div>
-                                <div class="method-desc">Direct bank transfer</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Forms -->
                     <!-- Progress Indicator -->
                     <div class="payment-progress">
                         <div class="progress-step completed" data-step="1">
@@ -303,55 +267,10 @@
                             <div class="form-group">
                                 <label for="phoneNumber">M-Pesa Phone Number</label>
                                 <input type="tel" id="phoneNumber" name="phone" class="glass-input"
-                                    placeholder="0XXXXXXXXX or 254XXXXXXXXX" required autocomplete="tel" maxlength="15">
+                                    placeholder="0XXXXXXXXX or 254XXXXXXXXX" required autocomplete="tel" maxlength="15"
+                                    style="color: #1a1a1a !important;">
                                 <small>Enter your M-Pesa registered phone number (e.g., 0712345678 or
                                     254712345678)</small>
-                            </div>
-                        </div>
-
-                        <!-- Card Form -->
-                        <div id="cardForm" class="payment-form hidden">
-                            <div class="form-group">
-                                <label for="cardNumber">Card Number</label>
-                                <input type="text" id="cardNumber" name="cardNumber" class="glass-input"
-                                    placeholder="1234 5678 9012 3456" autocomplete="cc-number" maxlength="19">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="expiryDate">Expiry Date</label>
-                                    <input type="text" id="expiryDate" name="expiry" class="glass-input"
-                                        placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
-                                </div>
-                                <div class="form-group">
-                                    <label for="cvv">CVV</label>
-                                    <input type="text" id="cvv" name="cvv" class="glass-input" placeholder="123"
-                                        autocomplete="cc-csc" maxlength="4">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bank Form -->
-                        <div id="bankForm" class="payment-form hidden">
-                            <div class="bank-details">
-                                <h4>Bank Transfer Details</h4>
-                                <div class="bank-info">
-                                    <div class="info-row">
-                                        <span class="label">Account Name:</span>
-                                        <span class="value">JKUAT Innovation Club</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="label">Bank:</span>
-                                        <span class="value">KCB Bank Kenya</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="label">Account Number:</span>
-                                        <span class="value">1234567890</span>
-                                    </div>
-                                    <div class="info-row">
-                                        <span class="label">Reference:</span>
-                                        <span class="value">Your Name + Phone Number</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
@@ -466,7 +385,7 @@
         crossorigin="anonymous"></script>
     <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
-    <script src="/payment/payment.js"></script>
+    <script src="/pages/payment/payment.js"></script>
 
 </body>
 

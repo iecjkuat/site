@@ -62,12 +62,7 @@
                         <button class="nav-tab active" data-tab="profile" role="tab" aria-selected="true"
                             aria-controls="profile">
                             <i class="fas fa-user"></i>
-                            <span>Personal Info</span>
-                        </button>
-                        <button class="nav-tab" data-tab="academic" role="tab" aria-selected="false"
-                            aria-controls="academic">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span>Academic Details</span>
+                            <span>My Information</span>
                         </button>
                         <button class="nav-tab" data-tab="security" role="tab" aria-selected="false"
                             aria-controls="security">
@@ -78,11 +73,6 @@
                             aria-controls="notifications">
                             <i class="fas fa-bell"></i>
                             <span>Notifications</span>
-                        </button>
-                        <button class="nav-tab" data-tab="preferences" role="tab" aria-selected="false"
-                            aria-controls="preferences">
-                            <i class="fas fa-cog"></i>
-                            <span>Preferences</span>
                         </button>
                         <button class="nav-tab" data-tab="danger" role="tab" aria-selected="false"
                             aria-controls="danger">
@@ -100,12 +90,9 @@
                         <div class="panel-card">
                             <div class="card-header">
                                 <div>
-                                    <h2>Personal Information</h2>
-                                    <p>Update your personal details and contact information</p>
+                                    <h2>My Information</h2>
+                                    <p>Update your contact and academic information</p>
                                 </div>
-                                <button id="editProfileBtn" class="btn btn-outline btn-sm">
-                                    <i class="fas fa-edit"></i>Edit Profile
-                                </button>
                             </div>
 
                             <!-- Profile Picture -->
@@ -120,9 +107,9 @@
                                     <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
                                 </div>
                                 <div class="profile-info">
-                                    <h3 id="displayName">John Doe</h3>
-                                    <p id="displayEmail">john.doe@student.jkuat.ac.ke</p>
-                                    <span id="displayRole" class="role-badge">Active Member</span>
+                                    <h3 id="displayName">Loading...</h3>
+                                    <p id="displayEmail">Loading...</p>
+                                    <span id="displayRole" class="role-badge">Member</span>
                                 </div>
                             </div>
 
@@ -132,12 +119,12 @@
                                     <div class="form-group">
                                         <label for="fullName">Full Name *</label>
                                         <input type="text" id="fullName" name="name" class="form-input"
-                                            placeholder="Enter your full name" required disabled>
+                                            placeholder="Enter your full name" required>
                                     </div>
                                     <div class="form-group">
                                         <label for="email">Email Address *</label>
                                         <input type="email" id="email" name="email" class="form-input"
-                                            placeholder="Enter your email" required disabled>
+                                            placeholder="Enter your email" required>
                                     </div>
                                 </div>
 
@@ -145,84 +132,21 @@
                                     <div class="form-group">
                                         <label for="phone">Phone Number</label>
                                         <input type="tel" id="phone" name="phone" class="form-input"
-                                            placeholder="Enter your phone number" disabled>
+                                            placeholder="Enter your phone number">
                                     </div>
-                                    <div class="form-group">
-                                        <label for="dateOfBirth">Date of Birth</label>
-                                        <input type="date" id="dateOfBirth" name="date_of_birth" class="form-input"
-                                            disabled>
-                                    </div>
-                                </div>
-
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="gender">Gender</label>
-                                        <select id="gender" name="gender" class="form-input" disabled>
-                                            <option value="">Select gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                            <option value="prefer_not_to_say">Prefer not to say</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="linkedinUrl">LinkedIn Profile</label>
-                                        <input type="url" id="linkedinUrl" name="linkedin_url" class="form-input"
-                                            placeholder="https://linkedin.com/in/yourprofile" disabled>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="bio">Bio</label>
-                                    <textarea id="bio" name="bio" class="form-input" rows="3"
-                                        placeholder="Tell us about yourself" disabled></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="skills">Skills & Interests</label>
-                                    <input type="text" id="skills" name="skills" class="form-input"
-                                        placeholder="e.g., Web Development, AI, Entrepreneurship" disabled>
-                                    <small>Separate multiple skills with commas</small>
-                                </div>
-
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i>Save Changes
-                                    </button>
-                                    <button type="button" id="cancelEditBtn" class="btn btn-outline"
-                                        style="display: none;">
-                                        <i class="fas fa-times"></i>Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-
-                    <!-- Academic Section -->
-                    <section id="academic" class="tab-panel" role="tabpanel" aria-hidden="true">
-                        <div class="panel-card">
-                            <div class="card-header">
-                                <div>
-                                    <h2>Academic Information</h2>
-                                    <p>Your academic details and JKUAT student information</p>
-                                </div>
-                            </div>
-
-                            <form id="academicForm" class="settings-form">
-                                <div class="form-row">
                                     <div class="form-group">
                                         <label for="registrationNumber">Registration Number *</label>
                                         <input type="text" id="registrationNumber" name="registration_number"
                                             class="form-input" placeholder="e.g., EN111-0001/2021" required>
                                     </div>
+                                </div>
+
+                                <div class="form-row">
                                     <div class="form-group">
                                         <label for="course">Course of Study *</label>
                                         <input type="text" id="course" name="course" class="form-input"
                                             placeholder="e.g., Computer Science" required>
                                     </div>
-                                </div>
-
-                                <div class="form-row">
                                     <div class="form-group">
                                         <label for="yearOfStudy">Year of Study *</label>
                                         <select id="yearOfStudy" name="year_of_study" class="form-input" required>
@@ -234,24 +158,23 @@
                                             <option value="5">Year 5</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="college">College/School *</label>
-                                        <select id="college" name="college" class="form-input" required>
-                                            <option value="">Select college</option>
-                                            <option value="Engineering and Technology">Engineering and Technology
-                                            </option>
-                                            <option value="Agriculture and Natural Resources">Agriculture and Natural
-                                                Resources</option>
-                                            <option value="Health Sciences">Health Sciences</option>
-                                            <option value="Human Resource Development">Human Resource Development
-                                            </option>
-                                        </select>
-                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="college">College/School *</label>
+                                    <select id="college" name="college" class="form-input" required>
+                                        <option value="">Select college</option>
+                                        <option value="COETEC">College of Engineering and Technology (COETEC)</option>
+                                        <option value="CAES">College of Agriculture and Environmental Sciences (CAES)</option>
+                                        <option value="COHES">College of Health Sciences (COHES)</option>
+                                        <option value="CONAS">College of Pure and Applied Sciences (CONAS)</option>
+                                        <option value="CODEHS">College of Human Resource Development (CODEHS)</option>
+                                    </select>
                                 </div>
 
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i>Update Academic Info
+                                        <i class="fas fa-save"></i>Save Changes
                                     </button>
                                 </div>
                             </form>
@@ -349,44 +272,6 @@
                                             <div class="checkbox-desc">Monthly newsletter with club updates</div>
                                         </div>
                                     </label>
-                                </div>
-
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i>Save Preferences
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-
-                    <!-- Preferences Section -->
-                    <section id="preferences" class="tab-panel" role="tabpanel" aria-hidden="true">
-                        <div class="panel-card">
-                            <div class="card-header">
-                                <div>
-                                    <h2>App Preferences</h2>
-                                    <p>Customize your app experience</p>
-                                </div>
-                            </div>
-
-                            <form id="appPreferencesForm" class="settings-form">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="language">Language</label>
-                                        <select id="language" name="language" class="form-input">
-                                            <option value="en">English (US)</option>
-                                            <option value="sw">Kiswahili</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="theme">Appearance</label>
-                                        <select id="theme" name="theme" class="form-input">
-                                            <option value="dark">Dark Mode</option>
-                                            <option value="light">Light Mode</option>
-                                            <option value="system">System Default</option>
-                                        </select>
-                                    </div>
                                 </div>
 
                                 <div class="form-actions">

@@ -154,6 +154,7 @@ class GlobalNavbar {
                     <div class="dropdown-section">
                         <div class="dropdown-section-title">Services</div>
                         ${this.getNavLink('/payment', '💳 Payments', true)}
+                        ${this.getNavLink('/support', '🆘 Support', true)}
                         ${this.getNavLink('/feedback', '💬 Feedback', true)}
                         ${this.getNavLink('/settings', '⚙️ Settings', true)}
                     </div>
@@ -189,6 +190,7 @@ class GlobalNavbar {
                 '/leadership': '/leadership',
                 '/voting': '/voting',
                 '/payment': '/payment',
+                '/support': '/support',
                 '/feedback': '/feedback',
                 '/settings': '/settings',
                 '/cms': '/cms',

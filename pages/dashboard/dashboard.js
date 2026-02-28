@@ -38,7 +38,7 @@ class DashboardPage {
 
     cacheDOMElements() {
         const ids = [
-            'userName', 'userName2', 'userEmail', 'userRole', 'memberSince',
+            'userName', 'userName2', 'userEmail', 'userRole',
             'myProjectsGrid', 'myIdeasGrid', 'paymentHistory', 'currentTime',
             'userInitials', 'userInitials2', 'ideasCount', 'projectsCount',
             'notificationsList', 'notifBadge', 'markAllReadBtn'
@@ -289,14 +289,6 @@ class DashboardPage {
             this.dom.userRole.textContent = user.role || 'Member';
         }
 
-        if (this.dom.memberSince && user.created_at) {
-            const joinDate = new Date(user.created_at);
-            this.dom.memberSince.textContent = joinDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short'
-            });
-        }
-
         // Set initials in avatar circles
         if (this.dom.userInitials) {
             this.dom.userInitials.textContent = initials;
@@ -500,246 +492,438 @@ class DashboardPage {
     }
 
     // ======= Load mock/demo data =======
-    loadMockData() {
-        this.loadMyProjects();
-        this.loadMyIdeas();
-        this.loadPaymentHistory();
-        this.loadNotificationsList();
+    async loadMockData() {
+        console.log('📊 Loading dashboard data from API...');
+        await Promise.all([
+            this.loadMyProjects(),
+            this.loadMyIdeas(),
+            this.loadPaymentHistory(),
+            this.loadNotificationsList()
+        ]);
     }
 
-    loadMyProjects() {
+    async loadMyProjects() {
         const container = this.dom.myProjectsGrid;
         if (!container) return;
 
-        const projects = DashboardMockData.getActiveProjects();
-        container.innerHTML = '';
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                console.warn('⚠️ No auth token, showing empty state');
+                this.showEmptyProjects(container);
+                return;
+            }
 
-        if (projects.length === 0) {
+            const response = await fetch('/api/dashboard/overview', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            const data = await response.json();
+            const projects = data.projects || [];
+
+            console.log('✅ Projects loaded:', projects.length);
+
+            container.innerHTML = '';
+
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
+                        <p>No projects yet</p>
+                        <a href="/projects" class="btn btn-primary btn-sm mt-3">
+                            <i class="fas fa-plus"></i> Create Your First Project
+                        </a>
+                    </div>
+                `;
+                if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
+                return;
+            }
+
+            if (this.dom.projectsCount) this.dom.projectsCount.textContent = projects.length;
+
+            projects.forEach(project => {
+                const projectCard = document.createElement('div');
+                projectCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
+                
+                const statusColor = project.status === 'Active' ? 'green' : 
+                                  project.status === 'Completed' ? 'blue' : 'yellow';
+                
+                projectCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-white font-semibold flex-1">${this.escapeHtml(project.title)}</h4>
+                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-500/20 text-${statusColor}-400 ml-2">
+                            ${this.escapeHtml(project.status || 'Planning')}
+                        </span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(project.description || '')}</p>
+                    ${project.progress_percentage !== null && project.progress_percentage !== undefined ? `
+                        <div class="mb-3">
+                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                <span>Progress</span>
+                                <span>${project.progress_percentage}%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: ${project.progress_percentage}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-tag"></i> ${this.escapeHtml(project.category || 'General')}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-clock"></i> ${this.getTimeAgo(new Date(project.created_at))}
+                        </span>
+                    </div>
+                `;
+                
+                projectCard.addEventListener('click', () => {
+                    window.location.href = `/projects#${project.id}`;
+                });
+                
+                container.appendChild(projectCard);
+            });
+        } catch (error) {
+            console.error('❌ Error loading projects:', error);
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
-                    <p>No projects yet</p>
-                    <a href="/projects/create" class="btn btn-primary btn-sm mt-3">
-                        <i class="fas fa-plus"></i> Create Your First Project
-                    </a>
+                    <i class="fas fa-exclamation-triangle text-3xl mb-2 opacity-50"></i>
+                    <p>Failed to load projects</p>
                 </div>
             `;
-            if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
-            return;
         }
-
-        if (this.dom.projectsCount) this.dom.projectsCount.textContent = projects.length;
-
-        projects.forEach(project => {
-            const deadline = new Date(project.deadline);
-            const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
-
-            const projectCard = document.createElement('div');
-            projectCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
-            projectCard.innerHTML = `
-                <div class="flex justify-between items-start mb-3">
-                    <h4 class="text-white font-semibold flex-1">${this.escapeHtml(project.title)}</h4>
-                    <span class="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400 ml-2">
-                        ${this.escapeHtml(project.status)}
-                    </span>
-                </div>
-                <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(project.description)}</p>
-                <div class="mb-3">
-                    <div class="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Progress</span>
-                        <span>${project.progress}%</span>
-                    </div>
-                    <div class="w-full bg-gray-700 rounded-full h-2">
-                        <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: ${project.progress}%"></div>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center text-xs text-gray-400">
-                    <span class="flex items-center gap-1">
-                        <i class="fas fa-users"></i> ${project.team_size} members
-                    </span>
-                    <span class="flex items-center gap-1">
-                        <i class="fas fa-clock"></i> ${daysLeft} days left
-                    </span>
-                </div>
-            `;
-            container.appendChild(projectCard);
-        });
     }
 
-    loadMyIdeas() {
+    async loadMyIdeas() {
         const container = this.dom.myIdeasGrid;
         if (!container) return;
 
-        // Mock ideas data
-        const ideas = [
-            {
-                id: 1,
-                title: 'Smart Campus Parking System',
-                description: 'IoT-based solution to help students find available parking spots',
-                status: 'Under Review',
-                votes: 24,
-                date: '2025-01-05T10:00:00Z'
-            },
-            {
-                id: 2,
-                title: 'Student Mentorship Platform',
-                description: 'Connect senior students with freshmen for academic guidance',
-                status: 'Approved',
-                votes: 45,
-                date: '2024-12-20T14:30:00Z'
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                console.warn('⚠️ No auth token, showing empty state');
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
+                        <p>No ideas submitted yet</p>
+                        <a href="/ideas" class="btn btn-primary btn-sm mt-3">
+                            <i class="fas fa-plus"></i> Submit Your First Idea
+                        </a>
+                    </div>
+                `;
+                return;
             }
-        ];
 
-        container.innerHTML = '';
+            const response = await fetch('/api/dashboard/overview', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        if (ideas.length === 0) {
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            const data = await response.json();
+            const ideas = data.ideas || [];
+
+            console.log('✅ Ideas loaded:', ideas.length);
+
+            container.innerHTML = '';
+
+            if (ideas.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
+                        <p>No ideas submitted yet</p>
+                        <a href="/ideas" class="btn btn-primary btn-sm mt-3">
+                            <i class="fas fa-plus"></i> Submit Your First Idea
+                        </a>
+                    </div>
+                `;
+                if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
+                return;
+            }
+
+            if (this.dom.ideasCount) this.dom.ideasCount.textContent = ideas.length;
+
+            ideas.forEach(idea => {
+                const ideaDate = new Date(idea.created_at);
+                const timeAgo = this.getTimeAgo(ideaDate);
+
+                const statusColor = idea.status === 'approved' ? 'green' : 
+                                  idea.status === 'pending' ? 'yellow' : 'gray';
+
+                const ideaCard = document.createElement('div');
+                ideaCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
+                ideaCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="text-white font-semibold flex-1">${this.escapeHtml(idea.title)}</h4>
+                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-500/20 text-${statusColor}-400 ml-2">
+                            ${this.escapeHtml(idea.status || 'pending')}
+                        </span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(idea.description || '')}</p>
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-thumbs-up"></i> ${idea.votes_count || 0} votes
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <i class="fas fa-comment"></i> ${idea.comments_count || 0} comments
+                        </span>
+                        <span>${timeAgo}</span>
+                    </div>
+                `;
+                
+                ideaCard.addEventListener('click', () => {
+                    window.location.href = `/ideas#${idea.id}`;
+                });
+                
+                container.appendChild(ideaCard);
+            });
+        } catch (error) {
+            console.error('❌ Error loading ideas:', error);
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
-                    <p>No ideas submitted yet</p>
-                    <a href="/ideas/submit" class="btn btn-primary btn-sm mt-3">
-                        <i class="fas fa-plus"></i> Submit Your First Idea
-                    </a>
+                    <i class="fas fa-exclamation-triangle text-3xl mb-2 opacity-50"></i>
+                    <p>Failed to load ideas</p>
                 </div>
             `;
-            if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
-            return;
         }
-
-        if (this.dom.ideasCount) this.dom.ideasCount.textContent = ideas.length;
-
-        ideas.forEach(idea => {
-            const ideaDate = new Date(idea.date);
-            const timeAgo = this.getTimeAgo(ideaDate);
-
-            const ideaCard = document.createElement('div');
-            ideaCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
-            ideaCard.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="text-white font-semibold flex-1">${this.escapeHtml(idea.title)}</h4>
-                    <span class="px-2 py-1 text-xs rounded-full ${idea.status === 'Approved' ? 'bg-green-500/20 text-green-400' :
-                    idea.status === 'Under Review' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-400'
-                } ml-2">
-                        ${this.escapeHtml(idea.status)}
-                    </span>
-                </div>
-                <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(idea.description)}</p>
-                <div class="flex justify-between items-center text-xs text-gray-400">
-                    <span class="flex items-center gap-1">
-                        <i class="fas fa-thumbs-up"></i> ${idea.votes} votes
-                    </span>
-                    <span>${timeAgo}</span>
-                </div>
-            `;
-            container.appendChild(ideaCard);
-        });
     }
 
-    loadPaymentHistory() {
+    async loadPaymentHistory() {
         const container = document.getElementById('paymentHistory');
         if (!container) return;
 
-        const payments = DashboardMockData.getPaymentHistory().slice(0, 3);
-        container.innerHTML = '';
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                console.warn('⚠️ No auth token, showing empty state');
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
+                        <p>No payment history</p>
+                    </div>
+                `;
+                return;
+            }
 
-        if (payments.length === 0) {
+            const response = await fetch('/api/dashboard/overview', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            const data = await response.json();
+            const payments = (data.payments || []).slice(0, 3);
+
+            console.log('✅ Payments loaded:', payments.length);
+
+            container.innerHTML = '';
+
+            if (payments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
+                        <p>No payment history</p>
+                    </div>
+                `;
+                return;
+            }
+
+            payments.forEach(payment => {
+                const paymentDate = new Date(payment.created_at);
+                const paymentItem = document.createElement('div');
+                paymentItem.className = 'p-3 bg-white/5 rounded-lg border border-white/10';
+                
+                const statusColor = payment.status === 'completed' ? 'green' : 
+                                  payment.status === 'pending' ? 'yellow' : 'red';
+                
+                paymentItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-white text-sm font-medium">${this.escapeHtml(payment.description || payment.payment_type || 'Payment')}</span>
+                        <span class="text-${statusColor}-400 font-semibold">${payment.currency || 'KSh'} ${parseFloat(payment.amount || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <span>${paymentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span class="flex items-center gap-1">
+                            <i class="fas ${payment.status === 'completed' ? 'fa-check-circle text-green-500' : 'fa-clock text-yellow-500'}"></i>
+                            ${this.escapeHtml(payment.payment_method || 'N/A')}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(paymentItem);
+            });
+        } catch (error) {
+            console.error('❌ Error loading payments:', error);
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
-                    <p>No payment history</p>
+                    <i class="fas fa-exclamation-triangle text-3xl mb-2 opacity-50"></i>
+                    <p>Failed to load payment history</p>
                 </div>
             `;
-            return;
         }
-
-        payments.forEach(payment => {
-            const paymentDate = new Date(payment.date);
-            const paymentItem = document.createElement('div');
-            paymentItem.className = 'p-3 bg-white/5 rounded-lg border border-white/10';
-            paymentItem.innerHTML = `
-                <div class="flex justify-between items-start mb-1">
-                    <span class="text-white text-sm font-medium">${this.escapeHtml(payment.description)}</span>
-                    <span class="text-green-400 font-semibold">KSh ${payment.amount.toLocaleString()}</span>
-                </div>
-                <div class="flex justify-between items-center text-xs text-gray-400">
-                    <span>${paymentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    <span class="flex items-center gap-1">
-                        <i class="fas fa-check-circle text-green-500"></i>
-                        ${this.escapeHtml(payment.method)}
-                    </span>
-                </div>
-            `;
-            container.appendChild(paymentItem);
-        });
     }
 
-    loadNotificationsList() {
+    async loadNotificationsList() {
         const container = document.getElementById('notificationsList');
         if (!container) return;
 
-        const notifications = DashboardMockData.getNotifications().slice(0, 5);
-        container.innerHTML = '';
-
-        if (notifications.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-4 text-gray-400 text-sm">
-                    <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
-                    <p>No new notifications</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Update badge count
-        const unreadCount = notifications.filter(n => !n.read).length;
-        if (this.dom.notifBadge) {
-            if (unreadCount > 0) {
-                this.dom.notifBadge.textContent = unreadCount;
-                this.dom.notifBadge.classList.remove('hidden');
-            } else {
-                this.dom.notifBadge.classList.add('hidden');
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                console.warn('⚠️ No auth token, showing empty state');
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-400 text-sm">
+                        <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                        <p>No new notifications</p>
+                    </div>
+                `;
+                return;
             }
-        }
 
-        notifications.forEach(notif => {
-            const notifDate = new Date(notif.date);
-            const timeAgo = this.getTimeAgo(notifDate);
+            const response = await fetch('/api/dashboard/overview', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            const notifItem = document.createElement('div');
-            notifItem.className = `p-3 rounded-lg border transition-all cursor-pointer ${notif.read
-                ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
-                }`;
-            notifItem.innerHTML = `
-                <div class="flex gap-3">
-                    <div class="w-8 h-8 rounded-full bg-${notif.color}-500/20 flex items-center justify-center flex-shrink-0">
-                        <i class="${notif.icon} text-${notif.color}-400 text-sm"></i>
+            if (!response.ok) {
+                throw new Error('Failed to fetch dashboard data');
+            }
+
+            const data = await response.json();
+            const notifications = (data.notifications || []).slice(0, 5);
+
+            console.log('✅ Notifications loaded:', notifications.length);
+
+            container.innerHTML = '';
+
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-400 text-sm">
+                        <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                        <p>No new notifications</p>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="text-white font-medium text-sm">${this.escapeHtml(notif.title)}</h4>
-                        <p class="text-gray-400 text-xs mt-1">${this.escapeHtml(notif.message)}</p>
-                        <span class="text-xs text-gray-500 mt-1 inline-block">${timeAgo}</span>
-                    </div>
-                    ${!notif.read ? '<div class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>' : ''}
-                </div>
-            `;
-            container.appendChild(notifItem);
-        });
-
-        // Add mark all read functionality
-        if (this.dom.markAllReadBtn) {
-            this.dom.markAllReadBtn.onclick = () => {
-                // Mark all as read (in real app, this would call API)
-                container.querySelectorAll('.bg-blue-500\\/10').forEach(el => {
-                    el.className = 'p-3 rounded-lg border transition-all cursor-pointer bg-white/5 border-white/10 hover:bg-white/10';
-                    const dot = el.querySelector('.bg-blue-500');
-                    if (dot) dot.remove();
-                });
+                `;
                 if (this.dom.notifBadge) {
                     this.dom.notifBadge.classList.add('hidden');
                 }
-            };
+                return;
+            }
+
+            // Update badge count
+            const unreadCount = notifications.filter(n => !n.read_at).length;
+            if (this.dom.notifBadge) {
+                if (unreadCount > 0) {
+                    this.dom.notifBadge.textContent = unreadCount;
+                    this.dom.notifBadge.classList.remove('hidden');
+                } else {
+                    this.dom.notifBadge.classList.add('hidden');
+                }
+            }
+
+            notifications.forEach(notif => {
+                const notifDate = new Date(notif.created_at);
+                const timeAgo = this.getTimeAgo(notifDate);
+
+                const typeColors = {
+                    'event': 'blue',
+                    'project': 'green',
+                    'payment': 'yellow',
+                    'admin': 'purple',
+                    'system': 'gray'
+                };
+                
+                const typeIcons = {
+                    'event': 'fa-calendar-alt',
+                    'project': 'fa-project-diagram',
+                    'payment': 'fa-credit-card',
+                    'admin': 'fa-bullhorn',
+                    'system': 'fa-bell'
+                };
+
+                const color = typeColors[notif.type] || 'blue';
+                const icon = typeIcons[notif.type] || 'fa-bell';
+
+                const notifItem = document.createElement('div');
+                notifItem.className = `p-3 rounded-lg border transition-all cursor-pointer ${!notif.read_at
+                    ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`;
+                notifItem.innerHTML = `
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-${color}-500/20 flex items-center justify-center flex-shrink-0">
+                            <i class="fas ${icon} text-${color}-400 text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-white font-medium text-sm">${this.escapeHtml(notif.title)}</h4>
+                            <p class="text-gray-400 text-xs mt-1">${this.escapeHtml(notif.message)}</p>
+                            <span class="text-xs text-gray-500 mt-1 inline-block">${timeAgo}</span>
+                        </div>
+                        ${!notif.read_at ? '<div class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>' : ''}
+                    </div>
+                `;
+                
+                if (notif.action_url) {
+                    notifItem.addEventListener('click', () => {
+                        window.location.href = notif.action_url;
+                    });
+                }
+                
+                container.appendChild(notifItem);
+            });
+
+            // Add mark all read functionality
+            if (this.dom.markAllReadBtn && unreadCount > 0) {
+                this.dom.markAllReadBtn.onclick = async () => {
+                    try {
+                        const response = await fetch(`/api/notifications/user/${this.currentUser.id}/read-all`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            // Update UI
+                            container.querySelectorAll('.bg-blue-500\\/10').forEach(el => {
+                                el.className = 'p-3 rounded-lg border transition-all cursor-pointer bg-white/5 border-white/10 hover:bg-white/10';
+                                const dot = el.querySelector('.bg-blue-500');
+                                if (dot) dot.remove();
+                            });
+                            if (this.dom.notifBadge) {
+                                this.dom.notifBadge.classList.add('hidden');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error marking notifications as read:', error);
+                    }
+                };
+            }
+        } catch (error) {
+            console.error('❌ Error loading notifications:', error);
+            container.innerHTML = `
+                <div class="text-center py-4 text-gray-400 text-sm">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-2 opacity-50"></i>
+                    <p>Failed to load notifications</p>
+                </div>
+            `;
         }
     }
 

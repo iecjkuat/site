@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Button Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 8px;
+        }
+        .service-card {
+            padding: 20px;
+            background: #3a3a3a;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .select-service-btn {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .select-service-btn:hover {
+            background: #45a049;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Payment Button Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Simple Button Click</h2>
+        <div class="service-card" data-service="membership">
+            <h3>Membership Fee</h3>
+            <button class="select-service-btn" type="button">
+                Select
+            </button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results:</h2>
+        <div id="output">Waiting for button click...</div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += message + '<br>';
+            console.log(message);
+        }
+
+        // Test 1: Check if button exists
+        const buttons = document.querySelectorAll('.select-service-btn');
+        log(`✅ Found ${buttons.length} button(s)`);
+
+        // Test 2: Add event listener
+        buttons.forEach((btn, index) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const card = e.currentTarget.closest('.service-card');
+                const service = card ? card.dataset.service : 'unknown';
+                
+                log(`✅ Button ${index + 1} clicked!`);
+                log(`✅ Service: ${service}`);
+                log(`✅ Event target: ${e.target.tagName}`);
+                log(`✅ Current target: ${e.currentTarget.tagName}`);
+                
+                alert(`Button clicked! Service: ${service}`);
+            });
+            
+            log(`✅ Event listener attached to button ${index + 1}`);
+        });
+
+        // Test 3: Check button properties
+        if (buttons.length > 0) {
+            const btn = buttons[0];
+            const styles = window.getComputedStyle(btn);
+            log(`✅ Button display: ${styles.display}`);
+            log(`✅ Button pointer-events: ${styles.pointerEvents}`);
+            log(`✅ Button cursor: ${styles.cursor}`);
+        }
+
+        log('✅ Test page loaded successfully');
+    </script>
+</body>
+</html>

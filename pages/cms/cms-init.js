@@ -142,6 +142,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.cmsManager.membersManager.exportMembers();
         }
     });
+    addClickListener('refresh-members-btn', () => {
+        if (window.cmsManager?.membersManager) {
+            console.log('🔄 Manual refresh triggered');
+            const btn = document.getElementById('refresh-members-btn');
+            const icon = btn?.querySelector('i');
+            
+            // Add spinning animation
+            if (icon) {
+                icon.classList.add('fa-spin');
+            }
+            
+            // Clear cache and reload
+            CMSData.clearCache('members');
+            window.cmsManager.membersManager.load().then(() => {
+                // Remove spinning animation
+                if (icon) {
+                    icon.classList.remove('fa-spin');
+                }
+            });
+        }
+    });
 
     // Modal close buttons
     addClickListener('close-event-modal', () => {

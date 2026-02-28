@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const jkuatPortal = require('../utils/jkuatPortal');
@@ -672,44 +673,159 @@ router.post('/change-password', authenticateToken, [
   body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
 ], async (req, res) => {
   try {
+    console.log('🔐 Password change request received');
+    console.log('📥 Request body keys:', Object.keys(req.body));
+    console.log('📥 Has currentPassword:', !!req.body.currentPassword);
+    console.log('📥 Has newPassword:', !!req.body.newPassword);
+    console.log('📥 User ID from token:', req.user?.id);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
-    // Update password using Supabase Auth Admin API (service role)
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(
-      userId,
-      { password: newPassword }
-    );
+    // First, get the user's current password hash from database
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('password_hash')
+      .eq('id', userId)
+      .single();
 
-    if (error) {
-      console.error('Password update error:', error);
+    if (userError || !user) {
+      console.error('❌ User fetch error:', userError);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    
+    if (!isPasswordValid) {
+      console.log('❌ Current password is incorrect');
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Hash the new password
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ 
+        password_hash: newPasswordHash,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ Password update error:', updateError);
       return res.status(400).json({ message: 'Failed to update password' });
     }
 
+    console.log(`✅ Password changed successfully for user ${userId}`);
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error('❌ Change password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Profile picture upload placeholder
-router.post('/profile-picture', authenticateToken, async (req, res) => {
+// Profile picture upload
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const profilePictureUpload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for profile pictures
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+router.post('/profile-picture', authenticateToken, profilePictureUpload.single('file'), async (req, res) => {
   try {
-    // This would handle file upload using multer
-    // For now, we'll return a placeholder response
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user.id;
+    const file = req.file;
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `profile-pictures/${userId}/${timestamp}-${sanitizedName}`;
+
+    console.log('📤 Uploading profile picture:', fileName);
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseAdmin.storage
+      .from('avatars')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) {
+      console.error('❌ Upload error:', error);
+      return res.status(500).json({ 
+        message: 'Failed to upload profile picture',
+        error: error.message 
+      });
+    }
+
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    const publicUrl = urlData.publicUrl;
+
+    // Update user profile with new picture URL
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ 
+        profile_picture: publicUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ Profile update error:', updateError);
+      return res.status(500).json({ 
+        message: 'Failed to update profile',
+        error: updateError.message 
+      });
+    }
+
+    console.log('✅ Profile picture uploaded successfully:', publicUrl);
+
     res.json({
-      message: 'Profile picture upload endpoint ready',
-      profilePictureUrl: '/images/default-avatar.png'
+      success: true,
+      profilePictureUrl: publicUrl,
+      message: 'Profile picture updated successfully'
     });
+
   } catch (error) {
-    console.error('Profile picture upload error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Profile picture upload error:', error);
+    res.status(500).json({ 
+      message: 'Server error during upload',
+      error: error.message 
+    });
   }
 });
 

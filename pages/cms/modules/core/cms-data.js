@@ -11,7 +11,7 @@ export class CMSData {
 
     // Cache
     static cache = new Map();
-    static cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    static cacheTimeout = 30 * 1000; // 30 seconds (reduced from 5 minutes)
 
     // ---------- Cache helpers ----------
     static getCacheKey(type, filters = {}) {

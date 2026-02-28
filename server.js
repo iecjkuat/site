@@ -28,6 +28,7 @@ const supportRoutes = require('./routes/support');
 const contentRoutes = require('./routes/content');
 const emailServiceRoutes = require('./routes/email-service');
 const paymentServiceRoutes = require('./routes/payment-service');
+const paymentLipanaRoutes = require('./routes/payment-lipana');
 const feedbackRoutes = require('./routes/feedback');
 const feedbackSimpleRoutes = require('./routes/feedback-simple');
 const notificationsRoutes = require('./routes/notifications');
@@ -39,6 +40,7 @@ const testimonialsRoutes = require('./routes/testimonials');
 const activityFeedRoutes = require('./routes/activity-feed');
 const adminRoutes = require('./routes/admin');
 const uploadRoutes = require('./routes/upload');
+const dashboardRoutes = require('./routes/dashboard');
 
 // Import validation middleware
 const { rateLimits, sanitizeInput } = require('./middleware/validation');
@@ -310,6 +312,8 @@ app.use(`${apiVersion}/support`, supportRoutes);
 app.use(`${apiVersion}/content`, contentRoutes);
 app.use(`${apiVersion}/email`, emailServiceRoutes);
 app.use(`${apiVersion}/payment-service`, paymentServiceRoutes);
+app.use(`${apiVersion}/payment-lipana`, paymentLipanaRoutes);
+app.use('/api/payment-lipana', paymentLipanaRoutes); // Compatibility route for frontend
 app.use(`${apiVersion}/feedback`, feedbackRoutes);
 app.use(`${apiVersion}/feedback-simple`, feedbackSimpleRoutes);
 app.use(`${apiVersion}/notifications`, notificationsRoutes);
@@ -321,6 +325,8 @@ app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
 app.use(`${apiVersion}/activity-feed`, activityFeedRoutes);
 app.use(`${apiVersion}/admin`, adminRoutes);
 app.use(`${apiVersion}/upload`, uploadRoutes);
+app.use(`${apiVersion}/dashboard`, dashboardRoutes);
+app.use('/api/dashboard', dashboardRoutes); // Compatibility route for frontend
 
 // Compatibility redirects for API v1
 app.get('/api/stats', (req, res) => res.redirect(`${apiVersion}/stats`));
@@ -369,7 +375,7 @@ app.get('/opportunities', (req, res) => {
 });
 
 app.get('/support', (req, res) => {
-  res.sendFile(path.join(__dirname, 'pages', 'support', 'support.html'));
+  res.sendFile(path.join(__dirname, 'pages', 'support', 'support-modern.html'));
 });
 
 app.get('/settings', (req, res) => {

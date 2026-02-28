@@ -1,6 +1,8 @@
 // JKUAT Innovation Club - Enhanced Payments & Billing Page
 // Incorporating Security & Performance Best Practices
 
+console.log('📄 Payment.js file loaded');
+
 class PaymentPage {
     constructor() {
         this.selectedService = null;
@@ -143,23 +145,6 @@ class PaymentPage {
                 this.showServiceSelection();
             });
         }
-
-        // Payment method selection with keyboard support
-        document.querySelectorAll('.payment-method').forEach(method => {
-            method.addEventListener('click', (e) => {
-                const methodType = e.currentTarget.dataset.method;
-                this.selectPaymentMethod(methodType);
-            });
-            
-            // Keyboard support for accessibility
-            method.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const methodType = e.currentTarget.dataset.method;
-                    this.selectPaymentMethod(methodType);
-                }
-            });
-        });
 
         // Amount input
         const amountInput = document.getElementById('paymentAmount');
@@ -583,24 +568,13 @@ class PaymentPage {
             nextInstructions.push('Enter the payment amount');
         }
 
-        // Step 4: Payment details (check based on selected method)
+        // Step 4: Payment details (M-Pesa phone number only)
         let paymentDetailsComplete = false;
-        if (this.selectedPaymentMethod === 'mpesa') {
-            const phoneInput = document.getElementById('phoneNumber');
-            try {
-                paymentDetailsComplete = !!phoneInput?.value && this.sanitizePhoneNumber(phoneInput.value).length === 12;
-            } catch {
-                paymentDetailsComplete = false;
-            }
-        } else if (this.selectedPaymentMethod === 'card') {
-            const cardNumber = document.getElementById('cardNumber');
-            const expiry = document.getElementById('expiryDate');
-            const cvv = document.getElementById('cvv');
-            paymentDetailsComplete = cardNumber?.value.length >= 16 &&
-                expiry?.value.length >= 5 &&
-                cvv?.value.length >= 3;
-        } else if (this.selectedPaymentMethod === 'bank') {
-            paymentDetailsComplete = true; // Bank transfer doesn't require form input
+        const phoneInput = document.getElementById('phoneNumber');
+        try {
+            paymentDetailsComplete = !!phoneInput?.value && this.sanitizePhoneNumber(phoneInput.value).length === 12;
+        } catch {
+            paymentDetailsComplete = false;
         }
 
         if (paymentDetailsComplete && this.currentAmount > 0 && this.selectedServiceData) {
@@ -608,11 +582,7 @@ class PaymentPage {
             currentStep = 5;
         } else if (this.currentAmount > 0 && this.selectedServiceData) {
             if (steps[3]) steps[3].classList.add('active');
-            if (this.selectedPaymentMethod === 'mpesa') {
-                nextInstructions.push('Enter your M-Pesa phone number');
-            } else if (this.selectedPaymentMethod === 'card') {
-                nextInstructions.push('Fill in your card details');
-            }
+            nextInstructions.push('Enter your M-Pesa phone number');
         }
 
         // Step 5: Ready for payment
@@ -649,26 +619,6 @@ class PaymentPage {
         }
     }
 
-    selectPaymentMethod(method) {
-        this.selectedPaymentMethod = method;
-
-        // Update UI and accessibility attributes
-        document.querySelectorAll('.payment-method').forEach(m => {
-            const isSelected = m.dataset.method === method;
-            m.classList.toggle('active', isSelected);
-            m.setAttribute('aria-checked', isSelected.toString());
-        });
-
-        // Show/hide payment forms
-        document.querySelectorAll('.payment-form').forEach(form => {
-            form.classList.add('hidden');
-        });
-        document.getElementById(`${method}Form`).classList.remove('hidden');
-
-        // Update progress
-        this.updateProgress();
-    }
-
     // ===== PAYMENT PROCESSING =====
     async handlePayment(e) {
         e.preventDefault();
@@ -687,22 +637,19 @@ class PaymentPage {
 
             const formData = new FormData(e.target);
 
-            // Validate based on selected payment method
-            let phoneNumber = '';
-            if (this.selectedPaymentMethod === 'mpesa') {
-                const phoneInput = formData.get('phone');
-                if (!phoneInput || phoneInput.trim() === '') {
-                    throw new Error('Please enter your M-Pesa phone number');
-                }
-                phoneNumber = this.sanitizePhoneNumber(phoneInput);
+            // Get M-Pesa phone number
+            const phoneInput = formData.get('phone');
+            if (!phoneInput || phoneInput.trim() === '') {
+                throw new Error('Please enter your M-Pesa phone number');
             }
+            const phoneNumber = this.sanitizePhoneNumber(phoneInput);
 
             const amount = this.validateAmount(this.currentAmount);
 
             const paymentData = {
                 service: this.selectedService,
                 serviceData: this.selectedServiceData,
-                method: this.selectedPaymentMethod,
+                method: 'mpesa',
                 amount: amount,
                 phoneNumber: phoneNumber,
                 userId: this.getCurrentUserId(),
@@ -718,21 +665,12 @@ class PaymentPage {
             // Show loading state
             this.setPaymentButtonLoading(true);
 
-            let response;
-
-            if (this.selectedPaymentMethod === 'mpesa') {
-                response = await this.processMpesaPayment(paymentData);
-            } else {
-                response = await this.processOtherPayment(paymentData);
-            }
+            // Process M-Pesa payment
+            const response = await this.processMpesaPayment(paymentData);
 
             if (response.success) {
-                if (this.selectedPaymentMethod === 'mpesa') {
-                    this.showProcessingSection(response.data);
-                    this.pollPaymentStatus(response.data.paymentId);
-                } else {
-                    this.showSuccessSection(response);
-                }
+                this.showProcessingSection(response.data);
+                this.pollPaymentStatus(response.data.paymentId);
             } else {
                 throw new Error(response.message || 'Payment failed');
             }
@@ -749,13 +687,22 @@ class PaymentPage {
         const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
         try {
-            const response = await fetch('/api/payment-service/lipana/initiate', {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            const response = await fetch('/api/payment-lipana/initiate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(paymentData),
+                body: JSON.stringify({
+                    phoneNumber: paymentData.phoneNumber,
+                    amount: paymentData.amount,
+                    paymentType: paymentData.service,
+                    eventId: paymentData.eventId || null,
+                    description: paymentData.description,
+                    serviceData: paymentData.serviceData
+                }),
                 signal: controller.signal
             });
 
@@ -812,8 +759,12 @@ class PaymentPage {
             try {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 10000);
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
-                const response = await fetch(`/api/payment-service/status/${paymentId}`, {
+                const response = await fetch(`/api/payment-lipana/status/${paymentId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     signal: controller.signal
                 });
                 clearTimeout(timeout);

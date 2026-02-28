@@ -24,6 +24,7 @@ import { CMSMediaManager } from './managers/cms-media-manager.js';
 import { CMSLeadershipManager } from './managers/cms-leadership-manager.js';
 import { CMSFeedbackManager } from './managers/cms-feedback-manager.js';
 import { CMSFeedbackSimple } from './managers/cms-feedback-simple.js';
+import { CMSMessagesManager } from './managers/cms-messages-manager-simple.js';
 
 export class SecureCMSManager {
     constructor() {
@@ -67,6 +68,7 @@ export class SecureCMSManager {
         this.mediaManager = new CMSMediaManager(this);
         this.leadershipManager = new CMSLeadershipManager(this);
         this.feedbackManager = new CMSFeedbackSimple(this); // Use simple version
+        this.messagesManager = new CMSMessagesManager(this);
         
         this.init();
     }
@@ -141,6 +143,9 @@ export class SecureCMSManager {
         
         console.log(`🔄 Switching from ${this.currentTab} to ${tabName}`);
         
+        // Clean up previous tab (stop auto-refresh, etc.)
+        this.cleanupCurrentTab();
+        
         // Update UI
         const tabs = document.querySelectorAll('.cms-tab');
         console.log(`  Found ${tabs.length} tab buttons`);
@@ -162,6 +167,18 @@ export class SecureCMSManager {
         
         // Load tab content
         await this.loadTabContent(tabName);
+    }
+
+    cleanupCurrentTab() {
+        // Stop auto-refresh for members tab
+        if (this.currentTab === 'members' && this.membersManager) {
+            this.membersManager.stopAutoRefresh();
+        }
+        // Stop auto-refresh for messages tab
+        if (this.currentTab === 'messages' && this.messagesManager) {
+            this.messagesManager.cleanup();
+        }
+        // Add cleanup for other tabs as needed
     }
 
     async loadTabContent(tabName) {
@@ -212,6 +229,9 @@ export class SecureCMSManager {
                     break;
                 case 'feedback':
                     await this.feedbackManager.load();
+                    break;
+                case 'messages':
+                    await this.messagesManager.load();
                     break;
                 default:
                     console.warn(`Unknown tab: ${tabName}`);

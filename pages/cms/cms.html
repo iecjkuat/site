@@ -104,6 +104,9 @@
                 <button class="cms-tab" data-tab="feedback">
                     <i class="fas fa-comments"></i> Feedback
                 </button>
+                <button class="cms-tab" data-tab="messages">
+                    <i class="fas fa-envelope"></i> Messages
+                </button>
             </div>
         </div>
 
@@ -313,9 +316,14 @@
                         <i class="fas fa-users"></i>
                         <h2>Members</h2>
                     </div>
-                    <button id="export-members-btn" class="cms-btn">
-                        <i class="fas fa-download"></i> Export
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="refresh-members-btn" class="cms-btn" title="Refresh members data">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="export-members-btn" class="cms-btn">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
                 </div>
                 <div id="members-content" class="cms-content-grid">
                     <!-- Members list will be loaded here -->
@@ -415,6 +423,13 @@
                     <div id="reviews-list" class="cms-content-grid">
                         <!-- Reviews will be loaded here -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Messages Tab -->
+            <div id="messages-tab" class="cms-content">
+                <div id="cms-content">
+                    <!-- Messages content will be loaded here by CMSMessagesManager -->
                 </div>
             </div>
             </div>

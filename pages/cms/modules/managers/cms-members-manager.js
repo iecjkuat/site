@@ -7,6 +7,8 @@ export class CMSMembersManager {
     constructor(cmsManager) {
         this.cms = cmsManager;
         this.apiBase = '/api/v1';
+        this.autoRefreshInterval = null;
+        this.autoRefreshEnabled = true;
     }
 
     async load() {
@@ -23,11 +25,49 @@ export class CMSMembersManager {
             const members = await CMSData.getMembers();
             this.render(members);
             this.updateStats(members);
+            
+            // Start auto-refresh when members tab is loaded
+            this.startAutoRefresh();
         } catch (error) {
             console.error('Error loading members:', error);
             container.replaceChildren();
             container.appendChild(CMSUI.createEmptyState('Failed to load members. Please try again.'));
         }
+    }
+
+    startAutoRefresh() {
+        // Clear any existing interval
+        this.stopAutoRefresh();
+        
+        // Refresh every 30 seconds when tab is active
+        this.autoRefreshInterval = setInterval(async () => {
+            if (this.autoRefreshEnabled && document.visibilityState === 'visible') {
+                console.log('🔄 Auto-refreshing members data...');
+                
+                // Clear cache to force fresh data
+                CMSData.clearCache('members');
+                
+                try {
+                    const members = await CMSData.getMembers();
+                    this.render(members);
+                    this.updateStats(members);
+                } catch (error) {
+                    console.error('Auto-refresh error:', error);
+                }
+            }
+        }, 30000); // 30 seconds
+    }
+
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+        }
+    }
+
+    destroy() {
+        // Clean up when switching tabs
+        this.stopAutoRefresh();
     }
 
     render(members) {
