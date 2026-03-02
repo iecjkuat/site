@@ -58,7 +58,7 @@ body.voting-page .global-bg {
 
 /* Glass morphism - no forced padding */
 .voting-page .glass-card {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -70,7 +70,7 @@ body.voting-page .global-bg {
 .voting-page .glass-card:hover {
     transform: translateY(-2px);
     border-color: rgba(16, 185, 129, 0.4);
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(15, 23, 42, 0.95);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
@@ -179,7 +179,7 @@ body.voting-page .global-bg {
 .voting-page .committee-candidate,
 .voting-page .clickable-candidate,
 .voting-page .clickable-project {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
@@ -199,7 +199,7 @@ body.voting-page .global-bg {
 .voting-page .committee-candidate:hover,
 .voting-page .clickable-candidate:hover,
 .voting-page .clickable-project:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
+    background: rgba(15, 23, 42, 0.95) !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     border-color: rgba(16, 185, 129, 0.3) !important;
@@ -294,7 +294,7 @@ body.voting-page .global-bg {
 }
 
 .voting-page .skeleton-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
@@ -971,7 +971,7 @@ body.voting-page .global-bg {
     justify-content: center;
     margin-bottom: 2rem;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     border-radius: 1rem;
     backdrop-filter: blur(10px);
 }
@@ -1025,7 +1025,7 @@ body.voting-page .global-bg {
 }
 
 .voting-page .skeleton-card {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1.25rem;
@@ -1485,7 +1485,7 @@ body.voting-page .global-bg {
    ========================= */
 
 .skeleton-card {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1.25rem;
@@ -1671,7 +1671,7 @@ body.voting-page .global-bg {
 }
 
 .voting-page .candidate-option {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 1rem;
@@ -1680,7 +1680,7 @@ body.voting-page .global-bg {
 }
 
 .voting-page .candidate-option:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -1816,7 +1816,7 @@ body.voting-page .global-bg {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 0.75rem 1rem;
@@ -1825,7 +1825,7 @@ body.voting-page .global-bg {
 }
 
 .voting-page .project-mini-option:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -2077,7 +2077,7 @@ body.voting-page .global-bg {
     align-items: center;
     gap: 1rem;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -2358,7 +2358,7 @@ body.voting-page .global-bg {
 }
 
 .position-section {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
     padding: 1.5rem;
@@ -2417,7 +2417,8 @@ body.voting-page .global-bg {
 }
 
 .vote-option {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
@@ -2427,7 +2428,7 @@ body.voting-page .global-bg {
 }
 
 .vote-option:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.95);
     border-color: rgba(16, 185, 129, 0.3);
 }
 
