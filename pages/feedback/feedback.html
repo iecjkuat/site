@@ -156,6 +156,27 @@
         .error {
             background: #ef4444;
         }
+        
+        body {
+            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            position: relative !important;
+        }
+        
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
+        }
     </style>
 </head>
 <body>
@@ -207,5 +228,9 @@
             </form>
         </div>
     </div>
+
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js"></script>
 </body>
 </html>

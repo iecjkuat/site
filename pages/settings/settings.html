@@ -32,6 +32,34 @@
 
     <meta name="description"
         content="Manage your JKUAT Innovation Club account settings, preferences, and profile information.">
+    
+    <style>
+        body {
+            background: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            position: relative !important;
+        }
+        
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Hide global background to prevent triple overlay */
+        body.settings-page .global-bg {
+            display: none !important;
+        }
+    </style>
 </head>
 
 <body class="settings-page">

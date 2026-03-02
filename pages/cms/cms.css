@@ -73,6 +73,11 @@ body.cms-page {
     padding-top: 80px !important;
 }
 
+/* Hide global background for clean admin interface */
+body.cms-page .global-bg {
+    display: none !important;
+}
+
 /* ==================== MAIN CONTAINER ==================== */
 .cms-main-container {
     max-width: 1400px;

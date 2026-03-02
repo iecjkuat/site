@@ -64,7 +64,7 @@ router.get('/hackathons', async (req, res) => {
       .from('hackathons')
       .select(`
         *,
-        organizer:users!hackathons_organizer_id_fkey(id, name, email)
+        organizer:users(id, name, email)
       `)
       .order('start_date', { ascending: true })
       .range(offset, offset + limit - 1);
@@ -617,7 +617,7 @@ router.get('/hackathons/:id', async (req, res) => {
       .from('hackathons')
       .select(`
         *,
-        organizer:users!hackathons_organizer_id_fkey(id, name, email, profile_picture)
+        organizer:users(id, name, email, profile_picture)
       `)
       .eq('id', id)
       .single();

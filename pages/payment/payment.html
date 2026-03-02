@@ -33,24 +33,30 @@
 
         /* Override base.css styles */
         body.payment-page {
-            background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+            background: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
             background-attachment: fixed !important;
             background-size: cover !important;
             background-position: center !important;
             color: #f9fafb !important;
             padding-top: var(--nav-height, 140px) !important;
+            position: relative !important;
         }
 
         body.payment-page::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1;
-            pointer-events: none;
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            pointer-events: none !important;
+        }
+
+        /* Hide global background to prevent triple overlay */
+        body.payment-page .global-bg {
+            display: none !important;
         }
 
         /* Raise main content sections above overlay */
@@ -377,15 +383,16 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <div id="footer-placeholder"></div>
-
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"
         crossorigin="anonymous"></script>
     <script src="/shared/auth.js"></script>
     <script src="/shared/global-navbar.js"></script>
     <script src="/pages/payment/payment.js"></script>
+
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js"></script>
 
 </body>
 

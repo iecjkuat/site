@@ -6,10 +6,7 @@
 
 /* IMMEDIATE OVERRIDE - Apply dark theme instantly */
 body {
-    background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
-    background-attachment: fixed !important;
-    background-size: cover !important;
-    background-position: center !important;
+    background: transparent !important;
     color: #f9fafb !important;
 }
 
@@ -30,7 +27,7 @@ body.events-page.bg-pattern {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     line-height: 1.6 !important;
     color: #f9fafb !important;
-    background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+    background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
     background-attachment: fixed !important;
     background-size: cover !important;
     background-position: center !important;
@@ -40,6 +37,23 @@ body.events-page.bg-pattern {
     overflow-x: hidden !important;
     overflow-y: auto !important;
     padding-top: 140px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Add dark overlay to background */
+body.events-page::after,
+body.events-page.bg-pattern::after {
+    content: '' !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(15, 23, 42, 0.5) !important;
+    z-index: -1 !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
 }
 
 /* Enhanced background with subtle overlay */
@@ -93,24 +107,18 @@ body.events-page main.events-page {
     margin: 0 auto !important;
     background: transparent !important;
     color: #f9fafb !important;
-    min-height: calc(100vh - 140px) !important;
+    min-height: auto !important;
     position: relative !important;
     z-index: 10 !important;
     padding: 0 2rem !important;
+    flex: 1 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
 /* Header */
 body.events-page .header {
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 16px !important;
-    padding: 2rem !important;
-    margin-bottom: 2rem !important;
-    position: sticky !important;
-    top: 100px !important;
-    z-index: 100 !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    display: none !important;
 }
 
 body.events-page .header-content {
@@ -157,16 +165,7 @@ body.events-page .header-btn:hover {
 
 /* Stats Bar */
 body.events-page .stats-bar {
-    background: rgba(255, 255, 255, 0.05) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 20px !important;
-    padding: 2rem 1rem !important;
-    margin-bottom: 2rem !important;
-    display: flex !important;
-    justify-content: space-around !important;
-    text-align: center !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    display: none !important;
 }
 
 body.events-page .stat-item {
@@ -212,6 +211,12 @@ body.events-page .filter-tabs {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 16px !important;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+body.events-page .filter-tabs::-webkit-scrollbar {
+    display: none !important; /* Chrome/Safari */
 }
 
 body.events-page .filter-tab {
@@ -228,6 +233,8 @@ body.events-page .filter-tab {
     display: inline-flex !important;
     align-items: center !important;
     gap: 0.5rem !important;
+    flex-shrink: 0 !important;
+    min-width: fit-content !important;
 }
 
 body.events-page .filter-tab.active {
@@ -265,6 +272,16 @@ body.events-page div {
 /* Events Container */
 body.events-page .events-container {
     padding: 0 !important;
+    margin-bottom: 0 !important;
+    flex: 1 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Remove footer top margin on events page */
+body.events-page .minimal-footer {
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
 }
 
 body.events-page .loading-skeleton {
@@ -354,7 +371,8 @@ body.events-page .loading-skeleton p {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 2rem;
-    margin-bottom: 3rem;
+    margin-bottom: 0;
+    flex: 1 0 auto;
 }
 
 .event-card.instagram-style {
@@ -1133,6 +1151,33 @@ body.events-page .loading-skeleton p {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Prevent horizontal overflow */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    
+    body.events-page,
+    body.events-page.bg-pattern {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        padding: 0 1rem !important;
+        padding-top: 80px !important; /* Reduced padding for mobile navbar */
+    }
+    
+    body.events-page main.events-page {
+        padding: 0 1rem !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    
+    body.events-page .container,
+    .events-container {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        padding: 0 !important;
+    }
+    
     .events-page {
         padding: 0 1rem;
     }
@@ -1140,10 +1185,14 @@ body.events-page .loading-skeleton p {
     #eventsGrid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
     .event-card.instagram-style {
         margin-bottom: 1.5rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
     .event-details {
@@ -1153,6 +1202,7 @@ body.events-page .loading-skeleton p {
     
     .interaction-stats {
         gap: 1rem;
+        flex-wrap: wrap;
     }
     
     .interaction-stat {
@@ -1160,41 +1210,89 @@ body.events-page .loading-skeleton p {
         padding: 0.4rem 0.8rem;
     }
     
-    .header {
-        padding: 1.5rem;
+    body.events-page .header {
+        padding: 1.5rem 1rem !important;
         margin-bottom: 1.5rem;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
-    .header-title {
+    body.events-page .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    body.events-page .header-title {
         font-size: 1.5rem;
+        word-wrap: break-word;
+        max-width: 100%;
     }
     
-    .stats-bar {
+    body.events-page .stats-bar {
         padding: 1.5rem 1rem;
         margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     
-    .stat-item {
+    body.events-page .stat-item {
         padding: 0.75rem;
+        min-width: 0;
+        flex: 1 1 calc(50% - 0.5rem);
     }
     
-    .stat-value {
+    body.events-page .stat-value {
         font-size: 1.5rem;
     }
     
-    .filter-tabs {
+    body.events-page .filter-tabs {
         padding: 0.75rem;
         gap: 0.5rem;
         margin-bottom: 1.5rem;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .filter-tab {
+    body.events-page .filter-tab {
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
+        flex-shrink: 0;
+        min-width: fit-content;
+    }
+    
+    .event-title {
+        font-size: 1.1rem;
+        word-wrap: break-word;
+    }
+    
+    .event-description {
+        word-wrap: break-word;
     }
 }
 
 @media (max-width: 480px) {
+    /* Prevent horizontal overflow on small screens */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    
+    body.events-page,
+    body.events-page.bg-pattern {
+        padding: 0 0.5rem !important;
+        padding-top: 80px !important; /* Reduced padding for mobile navbar */
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+    
+    body.events-page main.events-page {
+        padding: 0 0.5rem !important;
+        max-width: 100vw !important;
+    }
+    
     .events-page {
         padding: 0 0.5rem;
     }
@@ -1215,22 +1313,50 @@ body.events-page .loading-skeleton p {
         padding: 1rem;
     }
     
-    .stats-bar {
+    body.events-page .stats-bar {
         flex-direction: column;
         gap: 1rem;
+        padding: 1rem 0.5rem;
     }
     
-    .stat-item {
+    body.events-page .stat-item {
         padding: 1rem;
+        flex: 1 1 100%;
     }
     
     .interaction-stats {
         flex-wrap: wrap;
         gap: 0.5rem;
+        justify-content: center;
     }
     
-    .header-title {
+    .interaction-stat {
+        flex: 0 1 auto;
+    }
+    
+    body.events-page .header {
+        padding: 1rem 0.5rem !important;
+    }
+    
+    body.events-page .header-title {
         font-size: 1.25rem;
+    }
+    
+    body.events-page .filter-tabs {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+    
+    .event-title {
+        font-size: 1rem;
+    }
+    
+    .event-description {
+        font-size: 0.8rem;
+    }
+    
+    .detail-item {
+        font-size: 0.75rem;
     }
 }
 

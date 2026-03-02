@@ -36,6 +36,25 @@
     <style>
         body {
             padding-top: 140px !important;
+            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            position: relative !important;
+        }
+        
+        /* Add dark overlay to background */
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
         }
     </style>
 
@@ -71,19 +90,6 @@
                 collaboration, feedback, and community support.
             </p>
 
-            <!-- Quick Actions -->
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 3rem;">
-                <button id="submitIdeaBtn" class="btn btn-primary btn-lg">
-                    <i class="fas fa-lightbulb"></i>Submit Your Idea
-                </button>
-                <button id="browseIdeasBtn" class="btn btn-outline btn-lg">
-                    <i class="fas fa-search"></i>Browse Ideas
-                </button>
-                <button id="collaborateBtn" class="btn btn-outline btn-lg">
-                    <i class="fas fa-users"></i>Find Collaborators
-                </button>
-            </div>
-
             <!-- Stats -->
             <div class="stats-container">
                 <div>
@@ -107,7 +113,7 @@
     </section>
 
     <!-- Ideas Content Section -->
-    <section style="padding: 0 0 4rem 0; position: relative; z-index: 10;">
+    <section style="padding: 0; position: relative; z-index: 10;">
         <div class="container">
             <!-- Tab Buttons Section -->
             <div class="tab-buttons-section">
@@ -310,9 +316,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <div id="footer-placeholder"></div>
-
     <!-- Submit Idea Modal -->
     <div id="submitModal" class="modal-backdrop" style="display: none;">
         <div class="modal-content">
@@ -439,8 +442,11 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="/ideas/footer.js"></script>
     <script src="/ideas/ideas.js"></script>
+
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js?v=2026022801"></script>
 </body>
 
 </html>

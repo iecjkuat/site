@@ -105,8 +105,15 @@ class GlobalNavbar {
                         <div class="nav-club-title">JKUAT Innovation & Entrepreneurship Club</div>
                     </div>
 
+                    <!-- Hamburger Menu Button (Mobile Only) -->
+                    <button class="hamburger-menu" id="hamburger-btn" aria-label="Toggle navigation menu">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+
                     <!-- Navigation Links Container -->
-                    <div class="nav-links-container">
+                    <div class="nav-links-container" id="nav-links-container">
                         <!-- Navigation Links -->
                         <div class="nav-center">
                             ${this.getNavLink('/', '🏠 Home')}
@@ -115,13 +122,29 @@ class GlobalNavbar {
                             ${this.getNavLink('/projects', '🚀 Projects')}
                             ${this.getNavLink('/ideas', '💡 Ideas')}
                             ${this.getNavLink('/news', '📰 News')}
-                            ${this.getDropdownMenu()}
+                            
+                            <!-- Desktop: Dropdown Menu, Mobile: Direct Links -->
+                            <div class="nav-dropdown desktop-only">
+                                ${this.getDropdownMenu()}
+                            </div>
+                            
+                            <!-- Mobile: All Links Directly -->
+                            <div class="mobile-nav-links">
+                                ${this.getNavLink('/opportunities', '💼 Opportunities')}
+                                ${this.getNavLink('/resources', '📚 Resources')}
+                                ${this.getNavLink('/leadership', '👥 Leadership')}
+                                ${this.getNavLink('/voting', '🗳️ Voting')}
+                                ${this.getNavLink('/payment', '💳 Payments')}
+                                ${this.getNavLink('/support', '🆘 Support')}
+                                ${this.getNavLink('/feedback', '💬 Feedback')}
+                                ${this.getNavLink('/settings', '⚙️ Settings')}
+                                ${this.getNavLink('/cms', '📝 Content Hub')}
+                                ${this.getNavLink('/admin', '🔧 Admin Dashboard')}
+                            </div>
                         </div>
 
                         <!-- Auth Section -->
                         <div class="nav-auth">
-                            ${this.options.showNotifications ? this.getNotificationButton() : ''}
-                            
                             <!-- Login Button (always visible) -->
                             <button id="navbar-login-btn" class="glass-button">
                                 <i class="fas fa-user"></i> Login
@@ -258,6 +281,9 @@ class GlobalNavbar {
     setupEventListeners() {
         // Use setTimeout to ensure DOM elements are fully rendered
         setTimeout(() => {
+            // Setup hamburger menu
+            this.setupHamburgerMenu();
+            
             // Setup dropdown listeners
             this.setupDropdownListeners();
             
@@ -288,6 +314,36 @@ class GlobalNavbar {
                 });
             }
         }, 100); // Small delay to ensure DOM is ready
+    }
+
+    setupHamburgerMenu() {
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const navLinksContainer = document.getElementById('nav-links-container');
+        
+        if (hamburgerBtn && navLinksContainer) {
+            hamburgerBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hamburgerBtn.classList.toggle('active');
+                navLinksContainer.classList.toggle('active');
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!navLinksContainer.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                    hamburgerBtn.classList.remove('active');
+                    navLinksContainer.classList.remove('active');
+                }
+            });
+            
+            // Close menu when clicking on a link
+            const navLinks = navLinksContainer.querySelectorAll('a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburgerBtn.classList.remove('active');
+                    navLinksContainer.classList.remove('active');
+                });
+            });
+        }
     }
 
     openDropdown() {

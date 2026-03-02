@@ -70,11 +70,12 @@
 }
 
 /* Club title styling */
-#global-navbar div[style*="text-align: center"] {
-    margin-bottom: 0.75rem !important;
+.nav-club-header {
+    text-align: center;
+    margin-bottom: 0.75rem;
 }
 
-#global-navbar div[style*="color: white"] {
+.nav-club-title {
     color: white !important;
     font-size: 1.25rem !important;
     font-weight: 700 !important;
@@ -454,6 +455,76 @@
     justify-content: center;
 }
 
+/* Hamburger Menu Button (Mobile Only) */
+.hamburger-menu {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 25px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1002;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Add background when active */
+.hamburger-menu.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    padding: 10px;
+    right: 0.75rem;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 4px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Make X more visible when active */
+.hamburger-menu.active .hamburger-line {
+    height: 4px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.hamburger-menu.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(8px, 8px);
+}
+
+.hamburger-menu.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* Mobile Nav Links - Hidden on Desktop */
+.mobile-nav-links {
+    display: none;
+}
+
+/* Desktop Only - Hidden on Mobile */
+.desktop-only {
+    display: block;
+}
+
 /* Responsive design */
 @media (min-width: 769px) {
     #global-navbar > div:first-child {
@@ -470,61 +541,114 @@
 }
 
 @media (max-width: 768px) {
-    #global-navbar div[style*="justify-content: space-between"] {
-        flex-direction: row !important;
-        justify-content: space-between !important;
-    }
-    
-    #global-navbar div[style*="text-align: center"] {
-        margin-bottom: 0 !important;
-    }
-    
-    #global-navbar div[style*="color: white"] {
-        font-size: 1.125rem !important;
-    }
-    
-    #global-navbar .navbar-btn,
-    #global-navbar a:not(.navbar-dropdown-menu a) {
-        padding: 0.375rem 0.75rem !important;
-        font-size: 0.8125rem !important;
-    }
-    
-    /* Hide some main nav links on mobile to prevent overcrowding */
-    .nav-center a:nth-child(n+4) {
+    /* Hide club header on mobile */
+    .nav-club-header {
         display: none !important;
     }
     
-    /* Make dropdown menu wider on mobile and ensure all sections are visible */
-    .dropdown-menu {
-        min-width: 250px !important;
-        max-width: 90vw !important;
-        left: 50% !important;
-        transform: translateX(-50%) translateY(-10px) !important;
-        max-height: 70vh !important;
-        overflow-y: auto !important;
-    }
-    
-    .dropdown-menu.show {
-        transform: translateX(-50%) translateY(0) !important;
-    }
-    
-    /* Ensure all dropdown sections are visible on mobile */
-    .dropdown-section {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        padding: 0.5rem 0 !important;
-    }
-    
-    .dropdown-section-title {
-        display: block !important;
-        visibility: visible !important;
-    }
-    
-    .dropdown-item {
+    /* Show hamburger menu */
+    .hamburger-menu {
         display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+    }
+    
+    /* Hide desktop dropdown, show mobile direct links */
+    .desktop-only {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    
+    /* Ensure dropdown menu itself is hidden */
+    .nav-dropdown {
+        display: none !important;
+    }
+    
+    .dropdown-toggle,
+    .dropdown-menu {
+        display: none !important;
+    }
+    
+    .mobile-nav-links {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.5rem !important;
+        margin-top: 0.5rem !important;
+        padding-top: 0.5rem !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .mobile-nav-links a {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+    
+    /* Make navbar inner relative for hamburger positioning */
+    .global-navbar-inner {
+        position: relative;
+    }
+    
+    /* Hide nav links container by default on mobile */
+    .nav-links-container {
+        position: fixed !important;
+        top: 0 !important;
+        right: -100% !important;
+        width: 280px !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        padding: 5rem 1.5rem 2rem !important;
+        transition: right 0.3s ease !important;
+        z-index: 1001 !important;
+        overflow-y: auto !important;
+        box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Show nav links when active */
+    .nav-links-container.active {
+        right: 0 !important;
+    }
+    
+    /* Stack nav links vertically */
+    .nav-center {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.5rem !important;
+    }
+    
+    /* Make nav links full width */
+    .nav-center a,
+    .nav-center .glass-button {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 0.75rem 1rem !important;
+    }
+    
+    /* Stack auth section vertically */
+    .nav-auth {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.5rem !important;
+        margin-top: 1rem !important;
+        padding-top: 1rem !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    /* Make auth buttons full width */
+    .nav-auth button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    
+    /* Adjust club title for mobile */
+    .nav-club-title {
+        font-size: 1rem !important;
+        padding-right: 50px !important;
     }
 }
 

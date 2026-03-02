@@ -1,5 +1,10 @@
 /* Voting Portal Specific Styles - Properly Scoped */
 
+/* Hide global background to prevent double overlay */
+body.voting-page .global-bg {
+    display: none !important;
+}
+
 /* Scope everything to voting page to avoid breaking shared UI */
 .voting-page {
     padding-top: var(--nav-height, 80px);

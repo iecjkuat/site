@@ -24,7 +24,7 @@ import { CMSMediaManager } from './managers/cms-media-manager.js';
 import { CMSLeadershipManager } from './managers/cms-leadership-manager.js';
 import { CMSFeedbackManager } from './managers/cms-feedback-manager.js';
 import { CMSFeedbackSimple } from './managers/cms-feedback-simple.js';
-import { CMSMessagesManager } from './managers/cms-messages-manager-simple.js';
+import { CMSMessagesManager } from './managers/cms-messages-manager-chat.js';
 
 export class SecureCMSManager {
     constructor() {

@@ -21,24 +21,39 @@
     <link rel="stylesheet" href="/shared/core/base.css">
     <link rel="stylesheet" href="/shared/core/theme.css">
     <link rel="stylesheet" href="/shared/global-navbar.css">
-    <link rel="stylesheet" href="events.css">
+    <link rel="stylesheet" href="events.css?v=2.0">
     
     <!-- Force Dark Theme Override -->
     <style>
-        /* Immediate CSS test */
+        /* Page-specific styles */
         body {
-            background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
             background-attachment: fixed !important;
             background-size: cover !important;
             background-position: center !important;
             color: #f9fafb !important;
             padding-top: 140px !important;
+            position: relative !important;
         }
+        
+        /* Add dark overlay to background */
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
+        }
+        
         .global-bg {
             display: none !important;
         }
         
-        /* Embed critical CSS directly */
         .events-page {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             line-height: 1.6 !important;
@@ -46,237 +61,6 @@
             min-height: 100vh !important;
             position: relative !important;
             overflow-x: hidden !important;
-        }
-        
-        /* Complete Navbar Styling - Match Ideas Page */
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.1) !important;
-            backdrop-filter: blur(20px) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            z-index: 1000 !important;
-            padding: 1rem 0 !important;
-        }
-        
-        .glass-nav .container {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            max-width: 1200px !important;
-            margin: 0 auto !important;
-            padding: 0 2rem !important;
-        }
-        
-        .nav-club-header {
-            text-align: center !important;
-            margin-bottom: 1rem !important;
-        }
-        
-        .nav-club-title {
-            color: white !important;
-            font-size: 1.25rem !important;
-            font-weight: 700 !important;
-            margin: 0 !important;
-        }
-        
-        .nav-links-container {
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            width: 100% !important;
-            gap: 2rem !important;
-        }
-        
-        .nav-center {
-            display: flex !important;
-            gap: 0.5rem !important;
-            flex-wrap: wrap !important;
-            justify-content: center !important;
-        }
-        
-        .nav-auth {
-            display: flex !important;
-            gap: 0.5rem !important;
-            align-items: center !important;
-        }
-        
-        /* Glass Buttons for Navigation */
-        .glass-button {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px !important;
-            padding: 0.5rem 1rem !important;
-            color: white !important;
-            text-decoration: none !important;
-            font-size: 0.875rem !important;
-            font-weight: 500 !important;
-            transition: all 0.3s ease !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 0.5rem !important;
-            white-space: nowrap !important;
-            cursor: pointer !important;
-        }
-        
-        .glass-button:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-            transform: translateY(-1px) !important;
-            color: white !important;
-            text-decoration: none !important;
-        }
-        
-        .notification-bell {
-            position: relative !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px !important;
-            padding: 0.5rem !important;
-            color: white !important;
-            cursor: pointer !important;
-            transition: all 0.3s ease !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 40px !important;
-            height: 40px !important;
-        }
-        
-        .notification-bell:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-            transform: translateY(-1px) !important;
-        }
-        
-        /* Dropdown Styles */
-        .nav-dropdown {
-            position: relative !important;
-            display: inline-block !important;
-        }
-        
-        .dropdown-toggle {
-            position: relative !important;
-            cursor: pointer !important;
-        }
-        
-        .dropdown-toggle.active {
-            background: rgba(59, 130, 246, 0.3) !important;
-            border-color: rgba(59, 130, 246, 0.5) !important;
-        }
-        
-        .dropdown-arrow {
-            margin-left: 0.25rem !important;
-            font-size: 0.75rem !important;
-            transition: transform 0.3s ease !important;
-        }
-        
-        .dropdown-toggle.active .dropdown-arrow {
-            transform: rotate(180deg) !important;
-        }
-        
-        .dropdown-menu {
-            position: absolute !important;
-            top: calc(100% + 0.5rem) !important;
-            left: 0 !important;
-            background: rgba(0, 0, 0, 0.9) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px !important;
-            min-width: 200px !important;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            transform: translateY(-10px) !important;
-            transition: all 0.3s ease !important;
-            z-index: 9999 !important;
-        }
-        
-        .dropdown-menu.show {
-            opacity: 1 !important;
-            visibility: visible !important;
-            transform: translateY(0) !important;
-        }
-        
-        .dropdown-item {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 0.75rem !important;
-            padding: 0.75rem 1rem !important;
-            color: white !important;
-            text-decoration: none !important;
-            font-size: 0.875rem !important;
-            font-weight: 500 !important;
-            transition: all 0.3s ease !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-        
-        .dropdown-item:last-child {
-            border-bottom: none !important;
-        }
-        
-        .dropdown-item:hover {
-            background: rgba(59, 130, 246, 0.2) !important;
-            color: white !important;
-            text-decoration: none !important;
-            transform: translateX(5px) !important;
-        }
-        
-        .dropdown-item i {
-            width: 16px !important;
-            text-align: center !important;
-            color: #3b82f6 !important;
-        }
-        
-        /* Responsive Navigation */
-        @media (max-width: 768px) {
-            .nav-links-container {
-                flex-direction: column !important;
-                gap: 1rem !important;
-            }
-            
-            .nav-center {
-                order: 2 !important;
-                width: 100% !important;
-                justify-content: center !important;
-            }
-            
-            .nav-auth {
-                order: 1 !important;
-                justify-content: center !important;
-            }
-            
-            .nav-club-title {
-                font-size: 1.125rem !important;
-            }
-            
-            .glass-nav {
-                padding: 0.75rem 0 !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .nav-center {
-                gap: 0.25rem !important;
-            }
-            
-            .glass-button {
-                padding: 0.375rem 0.5rem !important;
-                font-size: 0.75rem !important;
-            }
-            
-            .glass-button i {
-                display: none !important;
-            }
-            
-            .nav-club-title {
-                font-size: 1rem !important;
-            }
-            
-            .glass-nav .container {
-                padding: 0 1rem !important;
-            }
         }
         
         .header {
@@ -324,15 +108,39 @@
         }
         
         .filter-tabs {
-            background: rgba(255, 255, 255, 0.05) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 16px !important;
-            padding: 1rem !important;
-            margin: 2rem !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 0.5rem 0 !important;
+            margin: 1rem auto !important;
             display: flex !important;
             gap: 0.75rem !important;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: none !important;
+            overflow-x: auto !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent !important;
+            max-width: 1200px !important;
+        }
+        
+        .filter-tabs::-webkit-scrollbar {
+            height: 6px !important;
+        }
+        
+        .filter-tabs::-webkit-scrollbar-track {
+            background: transparent !important;
+        }
+        
+        .filter-tabs::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3) !important;
+            border-radius: 3px !important;
+        }
+        
+        .filter-tabs::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5) !important;
         }
         
         .filter-tab {
@@ -345,6 +153,8 @@
             cursor: pointer !important;
             color: rgba(255, 255, 255, 0.8) !important;
             transition: all 0.3s ease !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
         }
         
         .filter-tab.active {
@@ -627,40 +437,6 @@
     
     <!-- Main Events Page -->
     <main id="eventsPage" class="events-page">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="header-title">Events</h1>
-                <div class="header-actions">
-                    <button class="header-btn" title="Search">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    <button class="header-btn" title="Notifications">
-                        <i class="fas fa-bell"></i>
-                    </button>
-                    <button class="header-btn" title="Menu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Stats Bar -->
-        <section class="stats-bar">
-            <div class="stat-item">
-                <span class="stat-value" id="totalEventsCount">0</span>
-                <div class="stat-label">Total Events</div>
-            </div>
-            <div class="stat-item">
-                <span class="stat-value" id="upcomingEventsCount">0</span>
-                <div class="stat-label">Upcoming</div>
-            </div>
-            <div class="stat-item">
-                <span class="stat-value" id="totalAttendeesCount">0</span>
-                <div class="stat-label">Attendees</div>
-            </div>
-        </section>
-
         <!-- Filter Tabs -->
         <nav class="filter-tabs">
             <button class="filter-tab active" data-filter="all">All</button>
@@ -682,12 +458,7 @@
 
             <!-- Events Grid -->
             <div id="eventsGrid">
-                <!-- Fallback content for debugging -->
-                <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 16px; color: white; text-align: center; margin: 2rem 0;">
-                    <h3>🔧 Debug Mode</h3>
-                    <p>If you see this, JavaScript hasn't loaded yet.</p>
-                    <p>Check the browser console for errors.</p>
-                </div>
+                <!-- Events will be loaded here by JavaScript -->
             </div>
 
             <!-- No Events State -->
@@ -2644,5 +2415,9 @@
             }
         });
     </script>
+
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js"></script>
 </body>
 </html>

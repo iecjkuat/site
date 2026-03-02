@@ -109,7 +109,7 @@ class SettingsManager {
             
             if (!token) {
                 console.warn('⚠️ No auth token found, redirecting to login...');
-                window.location.href = '/auth/login.html';
+                window.location.href = '/auth/signin.html';
                 return;
             }
 
@@ -139,7 +139,7 @@ class SettingsManager {
                     console.warn('⚠️ Unauthorized, redirecting to login...');
                     localStorage.removeItem('authToken');
                     sessionStorage.removeItem('authToken');
-                    window.location.href = '/auth/login.html';
+                    window.location.href = '/auth/signin.html';
                     return;
                 }
                 

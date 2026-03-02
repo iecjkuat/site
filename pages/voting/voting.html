@@ -42,7 +42,24 @@
         body {
             padding-top: 100px !important;
             margin: 0;
-            background: #0f172a;
+            background: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            position: relative !important;
+        }
+        
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
         }
 
         .hidden {
@@ -184,9 +201,6 @@
         </section>
     </main>
 
-    <!-- Footer Area -->
-    <div id="footer-placeholder"></div>
-
     <script>
         // Immediately show a simple loading message
         setTimeout(() => {
@@ -204,6 +218,10 @@
     </script>
     <script src="/voting/mock-data.js"></script>
     <script src="/voting/voting.js"></script>
+
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js"></script>
 </body>
 
 </html>

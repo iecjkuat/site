@@ -18,7 +18,7 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    background-image: url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+    background-image: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

@@ -32,7 +32,7 @@ html {
 html,
 body {
     background-color: #000000 !important;
-    background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+    background-image: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') !important;
     background-attachment: fixed !important;
     background-size: cover !important;
     background-position: center !important;
@@ -41,7 +41,7 @@ body {
 
 body.settings-page {
     background-color: #000000 !important;
-    background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2072&q=80') !important;
+    background-image: url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') !important;
     background-attachment: fixed !important;
     background-size: cover !important;
     background-position: center !important;
@@ -49,12 +49,25 @@ body.settings-page {
     color: #f9fafb !important;
     padding-top: var(--nav-height, 140px) !important;
     min-height: 100vh !important;
+    position: relative !important;
 }
 
-/* Remove all overlays */
-body.settings-page::before,
+/* Add dark overlay for consistency with other pages */
+body.settings-page::before {
+    content: '' !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(15, 23, 42, 0.5) !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    display: block !important;
+}
+
+/* Remove other overlays */
 body.settings-page::after,
-body::before,
 body::after {
     display: none !important;
 }

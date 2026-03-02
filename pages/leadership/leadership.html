@@ -33,9 +33,26 @@
     <style>
         /* Match other pages - dark background with subtle image */
         body {
-            background: #0f172a !important;
+            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
             min-height: 100vh;
             color: white !important;
+            position: relative !important;
+        }
+        
+        body::before {
+            content: '' !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(15, 23, 42, 0.5) !important;
+            z-index: -1 !important;
+            opacity: 1 !important;
+            pointer-events: none !important;
         }
         
         /* Ensure container content is visible */
@@ -78,7 +95,7 @@
     
     <!-- Override conflicting navbar styles -->
     <style>
-        body { padding-top: 140px !important; }
+        body { padding-top: 40px !important; }
     </style>
 
     <!-- Meta Tags -->
@@ -224,21 +241,13 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="leadership-footer">
-        <div class="container">
-            <div class="footer-content">
-                <p class="footer-text">
-                    © 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.
-                </p>
-            </div>
-        </div>
-    </footer>
-
     <!-- JavaScript -->
     <script src="/pages/leadership/leadership.js"></script>
     <script src="/pages/leadership/leadership-init.js"></script>
 
+    <!-- Minimal Footer -->
+    <div id="footer-placeholder"></div>
+    <script src="/shared/minimal-footer.js"></script>
 
 </body>
 
