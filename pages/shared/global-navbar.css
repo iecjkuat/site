@@ -457,7 +457,7 @@
 
 /* Hamburger Menu Button (Mobile Only) */
 .hamburger-menu {
-    display: none;
+    display: none !important;
     flex-direction: column;
     justify-content: space-around;
     width: 30px;
@@ -474,6 +474,9 @@
     transform: translateY(-50%);
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Add background when active */
@@ -549,6 +552,9 @@
     /* Show hamburger menu */
     .hamburger-menu {
         display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
     
     /* Hide desktop dropdown, show mobile direct links */

@@ -96,7 +96,7 @@ signinForm.addEventListener('submit', async (e) => {
             throw new Error(data.message || 'Login failed');
         }
         
-        console.log('✅ Login successful');
+        console.log('✅ Backend login successful');
         
         // Store token
         if (data.token) {
@@ -114,9 +114,30 @@ signinForm.addEventListener('submit', async (e) => {
         
         showMessage('Login successful! Redirecting...', 'success');
         
-        // Get the page to redirect to (from URL parameter or default to dashboard)
+        // Check for stored redirect URL
+        const storedRedirect = sessionStorage.getItem('redirectAfterLogin');
+        if (storedRedirect) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            setTimeout(() => {
+                window.location.href = storedRedirect;
+            }, 1000);
+            return;
+        }
+        
+        // Get the page to redirect to (from URL parameter or based on role)
         const urlParams = new URLSearchParams(window.location.search);
-        const redirectTo = urlParams.get('redirect') || '/dashboard';
+        let redirectTo = urlParams.get('redirect');
+        
+        // If no redirect specified, check user role
+        if (!redirectTo && data.user) {
+            if (data.user.role === 'admin') {
+                redirectTo = '/pages/admin/admin.html';
+            } else {
+                redirectTo = '/pages/dashboard/dashboard.html';
+            }
+        } else if (!redirectTo) {
+            redirectTo = '/pages/dashboard/dashboard.html';
+        }
         
         // Redirect after 1 second
         setTimeout(() => {
