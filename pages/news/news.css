@@ -25,7 +25,7 @@ html {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
-    padding-top: 140px;
+    /* padding-top handled by body inline style in HTML */
 }
 
 .news-page::before {
@@ -1109,3 +1109,4 @@ html {
         font-size: 15px;
     }
 }
+

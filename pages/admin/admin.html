@@ -20,6 +20,7 @@
 
     <!-- Global Systems -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"></script>
+    <script src="/pages/shared/config.js"></script>
     <script src="/pages/shared/supabase-client.js"></script>
     <script src="/pages/shared/auth.js"></script>
     <script src="/pages/shared/global-navbar.js"></script>
@@ -27,8 +28,9 @@
     <style>
         body {
             background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
-            padding-top: 140px !important;
+            padding-top: 110px !important;
         }
+        @media (max-width: 768px) { body { padding-top: 65px !important; } }
         
         body::before {
             content: '';
@@ -77,6 +79,9 @@
             </button>
             <button class="admin-tab" data-tab="users">
                 <i class="fas fa-users"></i> Users
+            </button>
+            <button class="admin-tab" data-tab="notifications">
+                <i class="fas fa-bell"></i> Notifications
             </button>
             <button class="admin-tab" data-tab="database">
                 <i class="fas fa-database"></i> Database
@@ -243,6 +248,11 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <!-- Notifications Tab -->
+            <div id="notifications-tab" class="tab-pane">
+                <div id="notificationContent"></div>
             </div>
 
             <!-- Database Tab -->
@@ -511,6 +521,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="/pages/admin/modules/notifications-management.js"></script>
     <script src="/pages/admin/admin-dashboard.js"></script>
     
     <!-- Minimal Footer -->

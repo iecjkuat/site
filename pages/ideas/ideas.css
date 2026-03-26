@@ -19,15 +19,17 @@ html {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
     color: #f9fafb;
-    background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed;
-    background-attachment: fixed;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
-    padding-top: 140px !important;
+    padding-top: 110px !important;
+    background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+}
+
+@media (max-width: 768px) {
+    .ideas-page {
+        padding-top: 65px !important;
+    }
 }
 
 /* Add dark overlay to background */
@@ -38,7 +40,7 @@ html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.85);
     z-index: -1;
     opacity: 1;
     pointer-events: none;
@@ -74,20 +76,7 @@ html {
     pointer-events: none;
 }
 
-/* Enhanced background with subtle overlay */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background:
-        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
-    z-index: -1;
-    opacity: 0.3;
-}
+/* body::before handled by inline style in HTML */
 
 /* Container */
 .container {
@@ -601,7 +590,7 @@ body::before {
     cursor: pointer;
     box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
     transition: all 0.3s ease;
-    z-index: 1000;
+    z-index: 999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -621,7 +610,7 @@ body::before {
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    z-index: 1000;
+    z-index: 999;
     display: none;
     /* Hidden by default */
     align-items: center;
@@ -879,8 +868,9 @@ body::before {
     .ideas-page {
         overflow-x: hidden !important;
         max-width: 100vw !important;
-        padding: 0 1rem !important;
-        padding-top: 80px !important; /* Reduced padding for mobile navbar */
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        /* padding-top handled by body in HTML inline style */
     }
     
     .container {
@@ -968,8 +958,9 @@ body::before {
     }
     
     .ideas-page {
-        padding: 0 0.5rem !important;
-        padding-top: 80px !important; /* Reduced padding for mobile navbar */
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        /* padding-top handled by body in HTML inline style */
         max-width: 100vw !important;
         overflow-x: hidden !important;
     }
@@ -1271,7 +1262,7 @@ body::before {
     cursor: pointer;
     box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
     transition: all 0.3s ease;
-    z-index: 1000;
+    z-index: 999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1772,7 +1763,7 @@ body::before {
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    z-index: 1000;
+    z-index: 999;
     display: none;
     align-items: center;
     justify-content: center;
@@ -3234,3 +3225,4 @@ body::before {
         max-height: 300px;
     }
 }
+

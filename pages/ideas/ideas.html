@@ -15,11 +15,10 @@
         content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
 
     <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"
-        defer></script>
-    <script src="/shared/auth.js" defer></script>
-    <script src="/shared/global-navbar.js" defer></script>
-    <script src="/shared/supabase-client.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="/shared/auth.js"></script>
+    <script src="/shared/global-navbar.js"></script>
+    <script src="/shared/supabase-client.js"></script>
 
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,32 +28,26 @@
     <link href="/shared/core/base.css" rel="stylesheet">
     <link href="/shared/core/theme.css" rel="stylesheet">
     <link href="/shared/global-navbar.css" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    <link href="/ideas/ideas.css?v=2025010803" rel="stylesheet">
+    <link href="/ideas/ideas.css?v=1.0.0" rel="stylesheet">
 
-    <!-- Override conflicting navbar styles -->
+    <!-- Page layout styles -->
     <style>
         body {
-            padding-top: 140px !important;
+            padding-top: 110px !important;
             background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
             background-attachment: fixed !important;
             background-size: cover !important;
             background-position: center !important;
             position: relative !important;
         }
-        
-        /* Add dark overlay to background */
+        @media (max-width: 768px) { body { padding-top: 65px !important; } }
         body::before {
             content: '' !important;
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
             background: rgba(15, 23, 42, 0.5) !important;
-            z-index: -1 !important;
-            opacity: 1 !important;
-            pointer-events: none !important;
+            z-index: -1 !important; pointer-events: none !important;
         }
     </style>
 
@@ -65,8 +58,7 @@
 </head>
 
 <body class="ideas-page bg-pattern">
-    <!-- Navigation -->
-    <div id="navigation-placeholder"></div>
+    <!-- Global navbar auto-inserted at body top by global-navbar.js -->
 
     <!-- Hero Section -->
     <section style="padding: 2rem 0 4rem 0; position: relative; z-index: 10;">
@@ -93,19 +85,19 @@
             <!-- Stats -->
             <div class="stats-container">
                 <div>
-                    <div id="totalIdeasCount" class="stat-number" style="color: #8b5cf6;">0</div>
+                    <div id="totalIdeasCount" class="stat-number" style="color: #8b5cf6;">&mdash;</div>
                     <div class="stat-label">Total Ideas</div>
                 </div>
                 <div>
-                    <div id="activeIdeasCount" class="stat-number" style="color: #10b981;">0</div>
+                    <div id="activeIdeasCount" class="stat-number" style="color: #10b981;">&mdash;</div>
                     <div class="stat-label">Active Ideas</div>
                 </div>
                 <div>
-                    <div id="collaborationsCount" class="stat-number" style="color: #f59e0b;">0</div>
+                    <div id="collaborationsCount" class="stat-number" style="color: #f59e0b;">&mdash;</div>
                     <div class="stat-label">Collaborations</div>
                 </div>
                 <div>
-                    <div id="implementedCount" class="stat-number" style="color: #3b82f6;">0</div>
+                    <div id="implementedCount" class="stat-number" style="color: #3b82f6;">&mdash;</div>
                     <div class="stat-label">Implemented</div>
                 </div>
             </div>
@@ -135,14 +127,18 @@
             <div class="tab-content-container">
                 <!-- Browse Ideas Tab -->
                 <div id="browseTab" class="tab-content active">
-                    <!-- Filters -->
-                    <div class="filter-buttons-container">
-                        <button class="filter-btn active" data-filter="all">All Ideas</button>
-                        <button class="filter-btn" data-filter="mobile-app">Mobile App</button>
-                        <button class="filter-btn" data-filter="web-platform">Web Platform</button>
-                        <button class="filter-btn" data-filter="iot">IoT</button>
-                        <button class="filter-btn" data-filter="ai-ml">AI/ML</button>
-                        <button class="filter-btn" data-filter="e-commerce">E-commerce</button>
+                    <!-- Search & Filters -->
+                    <div class="filters-container">
+                        <div style="margin-bottom: 1.5rem;">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search ideas by keyword...">
+                        </div>
+                        <div id="categoryFilters" class="category-filters">
+                            <!-- Categories will be dynamically loaded here -->
+                            <button class="filter-chip active" data-category="all">
+                                <i class="fas fa-th"></i>
+                                <span>All Ideas</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Ideas Grid -->
@@ -176,22 +172,22 @@
                             <p style="color: rgba(255, 255, 255, 0.8); text-align: center; margin-bottom: 2rem;">Share
                                 your innovative idea with the community and find collaborators to bring it to life.</p>
 
-                            <form id="submitIdeaForm">
+                            <form id="inlineSubmitForm" novalidate>
                                 <div class="form-row"
                                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                                     <div class="form-group">
-                                        <label class="form-label"
+                                        <label class="form-label" for="ideaTitle"
                                             style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Idea
                                             Title *</label>
-                                        <input type="text" name="title" required class="glass-input"
+                                        <input type="text" name="title" id="ideaTitle" required class="glass-input"
                                             style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem;"
                                             placeholder="Enter your innovative idea title">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label"
+                                        <label class="form-label" for="inlineIdeaCategory"
                                             style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Category
                                             *</label>
-                                        <select name="category" required class="glass-input" id="ideaCategory"
+                                        <select name="category" required class="glass-input" id="inlineIdeaCategory"
                                             style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem;">
                                             <option value="" style="background: #1f2937; color: white;">Select Category
                                             </option>
@@ -212,19 +208,19 @@
                                 </div>
 
                                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                                    <label class="form-label"
+                                    <label class="form-label" for="ideaDescription"
                                         style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Description
                                         *</label>
-                                    <textarea name="description" required rows="4" class="glass-input"
+                                    <textarea name="description" id="ideaDescription" required rows="4" class="glass-input"
                                         style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; resize: vertical;"
                                         placeholder="Describe your idea in detail..."></textarea>
                                 </div>
 
                                 <div class="form-group" style="margin-bottom: 1.5rem;">
-                                    <label class="form-label"
+                                    <label class="form-label" for="ideaProblem"
                                         style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Problem
                                         Statement</label>
-                                    <textarea name="problemStatement" rows="3" class="glass-input"
+                                    <textarea name="problemStatement" id="ideaProblem" rows="3" class="glass-input"
                                         style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem; resize: vertical;"
                                         placeholder="What problem does this idea solve?"></textarea>
                                 </div>
@@ -232,10 +228,10 @@
                                 <div class="form-row"
                                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
                                     <div class="form-group">
-                                        <label class="form-label"
+                                        <label class="form-label" for="ideaStage"
                                             style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Development
                                             Stage</label>
-                                        <select name="stage" class="glass-input"
+                                        <select name="stage" id="ideaStage" class="glass-input"
                                             style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem;">
                                             <option value="concept" style="background: #1f2937; color: white;">Concept
                                             </option>
@@ -248,10 +244,10 @@
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label"
+                                        <label class="form-label" for="ideaComplexity"
                                             style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Complexity
                                             Level</label>
-                                        <select name="complexityLevel" class="glass-input"
+                                        <select name="complexityLevel" id="ideaComplexity" class="glass-input"
                                             style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem;">
                                             <option value="low" style="background: #1f2937; color: white;">Low</option>
                                             <option value="medium" style="background: #1f2937; color: white;">Medium
@@ -263,10 +259,10 @@
                                 </div>
 
                                 <div class="form-group" style="margin-bottom: 2rem;">
-                                    <label class="form-label"
+                                    <label class="form-label" for="ideaSkills"
                                         style="display: block; color: white; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Required
                                         Skills (comma-separated)</label>
-                                    <input type="text" name="requiredSkills" class="glass-input"
+                                    <input type="text" name="requiredSkills" id="ideaSkills" class="glass-input"
                                         style="width: 100%; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: white; font-size: 1rem;"
                                         placeholder="e.g., JavaScript, Design, Marketing">
                                 </div>
@@ -297,156 +293,17 @@
                 </div>
 
             </div>
-
-            <!-- No Ideas Message -->
-            <div id="noIdeasMessage" style="display: none; text-align: center; padding: 3rem;">
-                <div class="glass-card">
-                    <div
-                        style="width: 80px; height: 80px; background: rgba(139, 92, 246, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                        <i class="fas fa-lightbulb" style="font-size: 2rem; color: #8b5cf6;"></i>
-                    </div>
-                    <h3 style="color: white; margin-bottom: 1rem;">No Ideas Found</h3>
-                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 1.5rem;">No ideas match your current
-                        filter. Try selecting a different category or check back later for new innovations.</p>
-                    <button data-action="reset-filters" class="btn btn-primary">
-                        <i class="fas fa-refresh"></i>Show All Ideas
-                    </button>
-                </div>
-            </div>
         </div>
     </section>
 
-    <!-- Submit Idea Modal -->
-    <div id="submitModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Submit Your Idea</h2>
-                <button class="modal-close" data-action="close-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <form id="submitIdeaForm">
-                <div class="form-group">
-                    <label class="form-label">Idea Title *</label>
-                    <input type="text" name="title" required maxlength="200" class="glass-input"
-                        placeholder="Enter your innovative idea title">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Category *</label>
-                    <select name="category" required class="glass-input" id="ideaCategory">
-                        <option value="">Select a category</option>
-                        <option value="Technology">Technology</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Education">Education</option>
-                        <option value="Environment">Environment</option>
-                        <option value="Business">Business</option>
-                        <option value="Social Impact">Social Impact</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Description *</label>
-                    <textarea name="description" required class="glass-input" rows="4"
-                        placeholder="Describe your idea in detail..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Problem Statement</label>
-                    <textarea name="problemStatement" class="glass-input" rows="3"
-                        placeholder="What problem does this idea solve?"></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Development Stage</label>
-                        <select name="stage" class="glass-input">
-                            <option value="concept">Concept</option>
-                            <option value="prototype">Prototype</option>
-                            <option value="testing">Testing</option>
-                            <option value="implementation">Implementation</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Complexity Level</label>
-                        <select name="complexityLevel" class="glass-input">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Required Skills (comma-separated)</label>
-                    <input type="text" name="requiredSkills" class="glass-input"
-                        placeholder="e.g., JavaScript, Design, Marketing">
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-outline" data-action="close-modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit Idea</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Idea Details Modal -->
-    <div id="ideaModal" class="modal-backdrop" style="display: none;">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2 id="ideaModalTitle">Idea Details</h2>
-                <button class="modal-close" data-action="close-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="ideaModalContent">
-                <!-- Idea details will be loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Comments Modal - Authentic TikTok Style -->
-    <div id="commentsModal" class="comments-modal-backdrop">
-        <div class="comments-modal-container">
-            <!-- Handle Bar -->
-            <div class="modal-handle-bar"></div>
-
-            <!-- Header -->
-            <div class="comments-header">
-                <h3 id="commentModalIdeaTitle">Idea Title</h3>
-                <span id="commentsCount" class="comments-count">0 comments</span>
-            </div>
-
-            <!-- Comments List -->
-            <div id="commentsList" class="comments-scroll-area">
-                <!-- Comments will be loaded here -->
-            </div>
-
-            <!-- Replying to banner -->
-            <div id="replyingToBanner" class="replying-to-banner">
-                <span id="replyingToText">Replying to username</span>
-                <span class="cancel-reply-btn" id="cancelReplyBtn">&times;</span>
-            </div>
-
-            <!-- Comment Input - TikTok Style -->
-            <div class="comment-input-area">
-                <form id="addCommentForm" class="comment-input-form">
-                    <input type="text" name="commentText" placeholder="Add a comment..." class="comment-input-field"
-                        required autocomplete="off" />
-                    <button type="submit" class="post-comment-btn">Post</button>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- Modals are handled dynamically by ideas.js -->
 
     <!-- JavaScript -->
     <script src="/ideas/ideas.js"></script>
 
     <!-- Minimal Footer -->
     <div id="footer-placeholder"></div>
-    <script src="/shared/minimal-footer.js?v=2026022801"></script>
+    <script src="/shared/minimal-footer.js?v=1.0.0"></script>
 </body>
 
 </html>

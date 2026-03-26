@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .test-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .test-card h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .test-card h3 i {
+            color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #2563eb;
+        }
+
+        .status {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .log-container {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+        }
+
+        .log-success { color: #10b981; }
+        .log-error { color: #ef4444; }
+        .log-warn { color: #f59e0b; }
+        .log-info { color: #3b82f6; }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-vial"></i> Notification System Test Suite</h1>
+            <p>Comprehensive testing for admin notification functionality</p>
+        </div>
+
+        <div class="test-grid">
+            <!-- Authentication Test -->
+            <div class="test-card">
+                <h3><i class="fas fa-key"></i> Authentication</h3>
+                <button class="btn btn-info" id="testAuthBtn">
+                    <i class="fas fa-check-circle"></i> Test Auth
+                </button>
+                <div id="authStatus"></div>
+            </div>
+
+            <!-- API Endpoints Test -->
+            <div class="test-card">
+                <h3><i class="fas fa-plug"></i> API Endpoints</h3>
+                <button class="btn btn-info" id="testEndpointsBtn">
+                    <i class="fas fa-network-wired"></i> Test All Endpoints
+                </button>
+                <div id="apiStatus"></div>
+            </div>
+
+            <!-- Database Test -->
+            <div class="test-card">
+                <h3><i class="fas fa-database"></i> Database</h3>
+                <button class="btn btn-info" id="testDatabaseBtn">
+                    <i class="fas fa-table"></i> Test Tables
+                </button>
+                <div id="dbStatus"></div>
+            </div>
+        </div>
+
+        <!-- Send Test Notification -->
+        <div class="test-card" style="margin-bottom: 2rem;">
+            <h3><i class="fas fa-paper-plane"></i> Send Test Notification</h3>
+            <div class="form-group">
+                <label>Recipient Email</label>
+                <input type="email" id="testEmail" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="testTitle" value="Test Notification">
+            </div>
+            <div class="form-group">
+                <label>Message</label>
+                <textarea id="testMessage" rows="3">This is a test notification from the test suite.</textarea>
+            </div>
+            <button class="btn btn-primary" id="sendTestNotificationBtn">
+                <i class="fas fa-paper-plane"></i> Send Test Notification
+            </button>
+            <div id="sendStatus"></div>
+        </div>
+
+        <!-- Create Test Campaign -->
+        <div class="test-card" style="margin-bottom: 2rem;">
+            <h3><i class="fas fa-bullhorn"></i> Create Test Campaign</h3>
+            <div class="form-group">
+                <label>Campaign Name</label>
+                <input type="text" id="campaignName" value="Test Campaign">
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="campaignTitle" value="Welcome Campaign">
+            </div>
+            <div class="form-group">
+                <label>Message</label>
+                <textarea id="campaignMessage" rows="3">Welcome to the JKUAT Innovation Club!</textarea>
+            </div>
+            <button class="btn btn-success" id="sendTestCampaignBtn">
+                <i class="fas fa-bullhorn"></i> Create & Send Campaign
+            </button>
+            <div id="campaignStatus"></div>
+        </div>
+
+        <!-- Console Log -->
+        <div class="test-card">
+            <h3><i class="fas fa-terminal"></i> Test Log</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry log-info">Ready to run tests...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const authToken = localStorage.getItem('authToken');
+        const logContainer = document.getElementById('logContainer');
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = `status status-${type}`;
+            element.textContent = message;
+        }
+
+        async function testAuth() {
+            log('Testing authentication...', 'info');
+            
+            if (!authToken) {
+                showStatus('authStatus', '❌ No auth token found', 'error');
+                log('No auth token in localStorage', 'error');
+                return false;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus('authStatus', `✅ Authenticated as ${data.user?.email}`, 'success');
+                    log(`Auth valid: ${data.user?.email}`, 'success');
+                    return true;
+                } else {
+                    showStatus('authStatus', `❌ Auth failed: ${response.status}`, 'error');
+                    log(`Auth failed: ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (e) {
+                showStatus('authStatus', `❌ Error: ${e.message}`, 'error');
+                log(`Auth error: ${e.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testEndpoints() {
+            log('Testing API endpoints...', 'info');
+            
+            if (!authToken) {
+                showStatus('apiStatus', '❌ No auth token', 'error');
+                return;
+            }
+
+            const endpoints = [
+                { url: '/api/admin/notifications/stats', name: 'Stats' },
+                { url: '/api/admin/notifications', name: 'List' },
+                { url: '/api/admin/notifications/campaigns', name: 'Campaigns' }
+            ];
+
+            let passed = 0;
+            let failed = 0;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint.url, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    if (response.ok) {
+                        log(`✅ ${endpoint.name} endpoint working`, 'success');
+                        passed++;
+                    } else {
+                        log(`❌ ${endpoint.name} failed: ${response.status}`, 'error');
+                        failed++;
+                    }
+                } catch (e) {
+                    log(`❌ ${endpoint.name} error: ${e.message}`, 'error');
+                    failed++;
+                }
+            }
+
+            showStatus('apiStatus', `${passed} passed, ${failed} failed`, passed === endpoints.length ? 'success' : 'error');
+        }
+
+        async function testDatabase() {
+            log('Testing database tables...', 'info');
+            
+            const tables = ['notifications', 'notification_campaigns', 'users'];
+            let results = [];
+
+            for (const table of tables) {
+                try {
+                    const response = await fetch(`/api/admin/notifications?limit=1`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    if (response.ok) {
+                        log(`✅ Table ${table} accessible`, 'success');
+                        results.push(true);
+                    } else {
+                        log(`❌ Table ${table} error`, 'error');
+                        results.push(false);
+                    }
+                } catch (e) {
+                    log(`❌ Table ${table}: ${e.message}`, 'error');
+                    results.push(false);
+                }
+            }
+
+            const passed = results.filter(r => r).length;
+            showStatus('dbStatus', `${passed}/${tables.length} tables OK`, passed === tables.length ? 'success' : 'error');
+        }
+
+        async function sendTestNotification() {
+            log('Sending test notification...', 'info');
+            
+            const email = document.getElementById('testEmail').value;
+            const title = document.getElementById('testTitle').value;
+            const message = document.getElementById('testMessage').value;
+
+            if (!email) {
+                showStatus('sendStatus', '❌ Please enter recipient email', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/notifications/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        type: 'announcement',
+                        title: title,
+                        message: message,
+                        priority: 'medium',
+                        recipient_type: 'single',
+                        recipient_email: email
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('sendStatus', `✅ Sent to ${result.count} user(s)`, 'success');
+                    log(`Notification sent successfully to ${result.count} user(s)`, 'success');
+                } else {
+                    const error = await response.json();
+                    showStatus('sendStatus', `❌ Failed: ${error.error}`, 'error');
+                    log(`Send failed: ${error.error}`, 'error');
+                }
+            } catch (e) {
+                showStatus('sendStatus', `❌ Error: ${e.message}`, 'error');
+                log(`Send error: ${e.message}`, 'error');
+            }
+        }
+
+        async function sendTestCampaign() {
+            log('Creating test campaign...', 'info');
+            
+            const name = document.getElementById('campaignName').value;
+            const title = document.getElementById('campaignTitle').value;
+            const message = document.getElementById('campaignMessage').value;
+
+            try {
+                // Create campaign
+                const createResponse = await fetch('/api/admin/notifications/campaigns', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        type: 'announcement',
+                        title: title,
+                        message: message,
+                        target_audience: {}
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    const error = await createResponse.json();
+                    throw new Error(error.error || 'Failed to create campaign');
+                }
+
+                const campaign = await createResponse.json();
+                log(`Campaign created: ${campaign.id}`, 'success');
+
+                // Send campaign
+                const sendResponse = await fetch(`/api/admin/notifications/campaigns/${campaign.id}/send`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (sendResponse.ok) {
+                    const result = await sendResponse.json();
+                    showStatus('campaignStatus', `✅ Sent to ${result.recipients} users`, 'success');
+                    log(`Campaign sent to ${result.recipients} users`, 'success');
+                } else {
+                    const error = await sendResponse.json();
+                    throw new Error(error.error || 'Failed to send campaign');
+                }
+            } catch (e) {
+                showStatus('campaignStatus', `❌ Error: ${e.message}`, 'error');
+                log(`Campaign error: ${e.message}`, 'error');
+            }
+        }
+
+        // Auto-populate email from localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    document.getElementById('testEmail').value = user.email;
+                    log(`Loaded user: ${user.email}`, 'info');
+                } catch (e) {
+                    log('Could not load user data', 'warn');
+                }
+            }
+
+            // Attach event listeners
+            document.getElementById('testAuthBtn').addEventListener('click', testAuth);
+            document.getElementById('testEndpointsBtn').addEventListener('click', testEndpoints);
+            document.getElementById('testDatabaseBtn').addEventListener('click', testDatabase);
+            document.getElementById('sendTestNotificationBtn').addEventListener('click', sendTestNotification);
+            document.getElementById('sendTestCampaignBtn').addEventListener('click', sendTestCampaign);
+        });
+    </script>
+</body>
+</html>

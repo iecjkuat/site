@@ -26,16 +26,22 @@
     integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
     crossorigin="anonymous" rel="stylesheet">
   <link href="/shared/global-navbar.css" rel="stylesheet">
-  <link href="/home/home.css" rel="stylesheet">
-  <link href="/dashboard/dashboard.css?v=2026010201" rel="stylesheet">
+  <link href="/dashboard/dashboard.css?v=2026030304" rel="stylesheet">
   
   <style>
+    /* Background */
     body {
       background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
       background-attachment: fixed !important;
       background-size: cover !important;
       background-position: center !important;
       position: relative !important;
+      padding-top: 110px !important;
+    }
+
+    /* Mobile padding */
+    @media (max-width: 768px) {
+      body { padding-top: 65px !important; }
     }
     
     body::before {
@@ -47,8 +53,23 @@
       height: 100% !important;
       background: rgba(15, 23, 42, 0.5) !important;
       z-index: -1 !important;
-      opacity: 1 !important;
       pointer-events: none !important;
+    }
+
+    /* Neutralise any old navbar classes that may come from other CSS files */
+    .glass-nav,
+    .nav-club-header,
+    .nav-club-title,
+    .nav-links-container,
+    .nav-center,
+    .nav-auth,
+    .nav-dropdown,
+    .dropdown-toggle,
+    .dropdown-menu,
+    .dropdown-item,
+    .glass-button,
+    .notification-bell {
+      /* reset handled by global-navbar.css — no override needed here */
     }
   </style>
 
@@ -68,180 +89,93 @@
   <!-- Dashboard Content -->
   <section class="dashboard-section container mx-auto px-4">
 
-    <!-- Welcome Header - Fitness App Style -->
-    <div class="flex justify-between items-start mb-8">
+    <!-- Welcome Header -->
+    <div class="dashboard-welcome">
       <div>
         <h1 class="text-white text-4xl font-bold mb-2">
           Hi, <span id="userName">Member</span>!
         </h1>
         <p class="text-gray-300 text-lg">Let's take a look at your activity today</p>
       </div>
-      <div class="flex items-center gap-4">
-        <div class="relative">
+      <div class="dashboard-welcome-actions">
+        <div class="relative search-wrapper">
           <input type="text" placeholder="Search for activities..." 
-                 class="bg-white/10 border border-white/20 rounded-full px-6 py-3 text-white placeholder-gray-400 w-80 focus:outline-none focus:border-white/40">
+                 class="bg-white/10 border border-white/20 rounded-full px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-white/40 search-input">
           <i class="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
         </div>
-        <a href="/settings" class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all">
+        <a href="/settings" class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-full font-semibold transition-all settings-btn">
           Settings
         </a>
       </div>
     </div>
 
-    <!-- Main Dashboard Grid -->
-    <div class="main-grid">
+    <!-- Main Dashboard - Horizontal Cards Row -->
+    <div class="horizontal-cards-grid">
 
-      <!-- Left Column -->
-      <div class="content-grid">
-
-        <!-- My Projects -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white flex items-center gap-2">
-              <i class="fas fa-folder-open text-purple-400"></i>
-              My Projects
-              <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-xs rounded-full"
-                id="projectsCount">0</span>
-            </h2>
-            <div class="flex gap-2">
-              <a href="/projects" class="btn btn-outline btn-sm">
-                <i class="fas fa-list"></i> View All
-              </a>
-              <button id="createProjectBtn" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> New
-              </button>
-            </div>
+      <!-- My Projects -->
+      <div class="glass-card compact-card">
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-folder-open text-3xl text-purple-400"></i>
           </div>
-          <div id="myProjectsGrid" class="space-y-3">
-            <!-- JS Loaded -->
-            <div class="text-center py-8 text-gray-400">
-              <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
-              <p>No projects yet</p>
-              <button class="btn btn-primary btn-sm mt-3">
-                <i class="fas fa-plus"></i> Create Your First Project
-              </button>
-            </div>
-          </div>
+          <p class="text-white text-2xl font-bold mb-1" id="projectsCountDisplay">0</p>
+          <p class="text-gray-400 text-sm mb-3">Projects</p>
+          <button id="viewAllProjectsBtn" class="btn btn-primary btn-sm w-full">
+            <i class="fas fa-eye"></i> View
+          </button>
         </div>
-
-        <!-- My Ideas -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white flex items-center gap-2">
-              <i class="fas fa-lightbulb text-yellow-400"></i>
-              My Ideas
-              <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 text-xs rounded-full" id="ideasCount">0</span>
-            </h2>
-            <div class="flex gap-2">
-              <a href="/ideas" class="btn btn-outline btn-sm">
-                <i class="fas fa-list"></i> View All
-              </a>
-              <a href="/ideas/submit" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Submit
-              </a>
-            </div>
-          </div>
-          <div id="myIdeasGrid" class="space-y-3">
-            <!-- JS Loaded -->
-            <div class="text-center py-8 text-gray-400">
-              <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
-              <p>No ideas submitted yet</p>
-              <a href="/ideas/submit" class="btn btn-primary btn-sm mt-3">
-                <i class="fas fa-plus"></i> Submit Your First Idea
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Payment History -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white flex items-center gap-2">
-              <i class="fas fa-receipt text-green-400"></i>
-              Payment History
-            </h2>
-            <div class="flex gap-2">
-              <a href="/payment" class="btn btn-outline btn-sm">
-                <i class="fas fa-history"></i> View All
-              </a>
-              <a href="/payment" class="btn btn-primary btn-sm">
-                <i class="fas fa-credit-card"></i> Pay Now
-              </a>
-            </div>
-          </div>
-          <div id="paymentHistory" class="space-y-2">
-            <!-- JS Loaded -->
-            <div class="text-center py-8 text-gray-400">
-              <i class="fas fa-receipt text-3xl mb-2 opacity-50"></i>
-              <p>No payment history</p>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <!-- Right Column -->
-      <div class="sidebar-grid">
-
-        <!-- Profile Summary -->
-        <div class="glass-card text-center">
-          <div class="relative inline-block mb-4">
-            <div
-              class="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg mx-auto">
-              <span id="userInitials2">JD</span>
-            </div>
-            <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-gray-900"></div>
+      <!-- My Ideas -->
+      <div class="glass-card compact-card">
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-lightbulb text-3xl text-yellow-400"></i>
           </div>
-          <h4 id="userName2" class="text-white text-lg font-semibold mb-1">Loading...</h4>
-          <p id="userRole" class="text-green-400 text-sm mb-4">Member</p>
-          <div class="space-y-2 mb-4 text-sm text-left">
-            <div class="flex items-center gap-2 text-gray-300">
-              <i class="fas fa-envelope w-4"></i>
-              <span id="userEmail" class="text-white truncate text-xs">-</span>
-            </div>
-            <div class="flex items-center gap-2 text-gray-300">
-              <i class="fas fa-id-card w-4"></i>
-              <span class="text-xs">Status: <span
-                  class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">Active</span></span>
-            </div>
-          </div>
-          <a href="/settings" class="btn btn-outline btn-full">
-            <i class="fas fa-cog"></i> Settings
-          </a>
+          <p class="text-white text-2xl font-bold mb-1" id="ideasCountDisplay">0</p>
+          <p class="text-gray-400 text-sm mb-3">Ideas</p>
+          <button id="viewAllIdeasBtn" class="btn btn-primary btn-sm w-full">
+            <i class="fas fa-eye"></i> View
+          </button>
         </div>
-
-        <!-- Notifications -->
-        <div class="glass-card">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-white flex items-center gap-2">
-              <i class="fas fa-bell text-blue-400"></i>
-              Notifications
-              <span id="notifBadge" class="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full hidden">0</span>
-            </h3>
-            <button id="markAllReadBtn" class="text-xs text-blue-400 hover:text-blue-300">
-              Mark all read
-            </button>
-          </div>
-          <div id="notificationsList" class="space-y-2 max-h-64 overflow-y-auto">
-            <!-- JS Loaded -->
-            <div class="text-center py-4 text-gray-400 text-sm">
-              <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
-              <p>No new notifications</p>
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      <!-- Payment History -->
+      <div class="glass-card compact-card">
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-receipt text-3xl text-green-400"></i>
+          </div>
+          <p class="text-white text-2xl font-bold mb-1" id="paymentsCountDisplay">0</p>
+          <p class="text-gray-400 text-sm mb-3">Payments</p>
+          <button id="viewAllPaymentsBtn" class="btn btn-primary btn-sm w-full">
+            <i class="fas fa-eye"></i> View
+          </button>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="glass-card compact-card">
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-bell text-3xl text-blue-400"></i>
+          </div>
+          <p class="text-white text-2xl font-bold mb-1" id="notificationsCountDisplay">0</p>
+          <p class="text-gray-400 text-sm mb-3">Notifications</p>
+          <button id="viewAllNotificationsBtn" class="btn btn-primary btn-sm w-full">
+            <i class="fas fa-eye"></i> View
+          </button>
+        </div>
+      </div>
+
     </div>
 
   </section>
 
   <!-- JS -->
-  <script src="modules/notifications.js"></script>
-  <script src="modules/projects.js"></script>
-  <script src="mock-data.js"></script>
-  <script src="/dashboard/navigation.js"></script>
-  <script src="/dashboard/dashboard.js"></script>
+  <script src="/dashboard/modules/notifications.js"></script>
+  <script src="/dashboard/modules/projects.js"></script>
+  <script src="/dashboard/dashboard.js?v=2026030310"></script>
 
   <!-- Minimal Footer -->
   <div id="footer-placeholder"></div>

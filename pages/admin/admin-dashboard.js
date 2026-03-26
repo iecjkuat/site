@@ -40,6 +40,9 @@ class AdminDashboard {
         // Setup event listeners
         this.setupEventListeners();
 
+        // Initialize notification management globally
+        this.initNotificationManagement();
+
         // Test database connection
         await this.testConnection();
 
@@ -147,13 +150,15 @@ class AdminDashboard {
                     console.log('Final check - window.supabase.from:', window.supabase ? typeof window.supabase.from : 'N/A');
                     console.log('Attempting to create Supabase client manually...');
                     
-                    // Try to create Supabase client manually
+                    // Try to create Supabase client manually using config
                     if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
-                        const SUPABASE_URL = 'https://gakuuxwhlczhlgngcdrv.supabase.co';
-                        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdha3V1eHdobGN6aGxnbmdjZHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzUyODksImV4cCI6MjA4MTY1MTI4OX0.wbgJik7A6qasB8FMEWZqZka8CEpZyUrSw-Ma2oLZZwM';
+                        const config = window.APP_CONFIG?.supabase || {
+                            url: 'https://gakuuxwhlczhlgngcdrv.supabase.co',
+                            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdha3V1eHdobGN6aGxnbmdjZHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzUyODksImV4cCI6MjA4MTY1MTI4OX0.wbgJik7A6qasB8FMEWZqZka8CEpZyUrSw-Ma2oLZZwM'
+                        };
                         
                         try {
-                            this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                            this.supabase = supabase.createClient(config.url, config.anonKey);
                             window.supabase = this.supabase;
                             console.log('✅ Supabase client created manually');
                             console.log('Has .from method:', typeof this.supabase.from === 'function');
@@ -234,8 +239,9 @@ class AdminDashboard {
             if (this.supabase && typeof this.supabase.from === 'function') {
                 console.log('Fetching profile from database...');
                 try {
+                    // Query users table (standardized)
                     const { data: profile, error: profileError } = await this.supabase
-                        .from('profiles')
+                        .from('users')
                         .select('*')
                         .eq('id', userData.id)
                         .single();
@@ -244,7 +250,13 @@ class AdminDashboard {
                         console.error('Profile fetch error:', profileError);
                         console.log('Using stored user data as fallback');
                     } else if (profile) {
-                        userProfile = profile;
+                        userProfile = {
+                            id: profile.id,
+                            email: profile.email,
+                            full_name: profile.name || profile.full_name,
+                            role: profile.role,
+                            profile_completed: profile.email_verified || profile.profile_completed
+                        };
                     }
                 } catch (dbError) {
                     console.error('Database query error:', dbError);
@@ -373,12 +385,102 @@ class AdminDashboard {
             case 'users':
                 await this.loadUsers();
                 break;
+            case 'notifications':
+                await this.loadNotifications();
+                break;
             case 'database':
                 await this.loadDatabaseInfo();
                 break;
             case 'logs':
                 await this.loadLogs();
                 break;
+        }
+    }
+
+    async loadNotifications() {
+        if (!window.notificationMgmt) {
+            window.notificationMgmt = new NotificationManagement(this);
+        }
+        await window.notificationMgmt.init();
+    }
+
+    // Initialize notification management on page load
+    initNotificationManagement() {
+        console.log('🔧 Attempting to initialize notification management...');
+        console.log('   - NotificationManagement type:', typeof NotificationManagement);
+        console.log('   - window.notificationMgmt exists:', !!window.notificationMgmt);
+        
+        if (typeof NotificationManagement !== 'undefined') {
+            if (!window.notificationMgmt) {
+                window.notificationMgmt = new NotificationManagement(this);
+                console.log('✅ Notification management initialized globally');
+                console.log('   - Instance created:', !!window.notificationMgmt);
+                console.log('   - Has showCreateNotificationModal:', typeof window.notificationMgmt.showCreateNotificationModal);
+            } else {
+                console.log('ℹ️ Notification management already initialized');
+            }
+        } else {
+            console.error('❌ NotificationManagement class not found! Script may not be loaded yet.');
+            // Try again after a delay
+            setTimeout(() => {
+                console.log('🔄 Retrying notification management initialization...');
+                if (typeof NotificationManagement !== 'undefined' && !window.notificationMgmt) {
+                    window.notificationMgmt = new NotificationManagement(this);
+                    console.log('✅ Notification management initialized on retry');
+                }
+            }, 1000);
+        }
+    }
+
+    async calculateDatabaseSize() {
+        const dbSizeElement = document.getElementById('dbSize');
+        if (!dbSizeElement) return;
+
+        try {
+            if (!this.supabase || typeof this.supabase.from !== 'function') {
+                dbSizeElement.textContent = 'Not Available';
+                return;
+            }
+
+            // Get approximate size by counting rows in major tables
+            const tables = ['users', 'events', 'projects', 'ideas', 'notifications', 'news_articles'];
+            let totalRows = 0;
+            let successfulTables = 0;
+
+            for (const table of tables) {
+                try {
+                    const { count, error } = await this.supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (!error && count !== null) {
+                        totalRows += count;
+                        successfulTables++;
+                        console.log(`✅ ${table}: ${count} rows`);
+                    } else if (error) {
+                        console.log(`⚠️ ${table}: ${error.message}`);
+                    }
+                } catch (e) {
+                    // Table might not exist, skip it
+                    console.log(`⚠️ Table ${table} not accessible:`, e.message);
+                }
+            }
+
+            if (successfulTables === 0) {
+                dbSizeElement.textContent = 'Not Available';
+                return;
+            }
+
+            // Rough estimate: assume average 2KB per row
+            const estimatedSizeMB = (totalRows * 2) / 1024;
+            dbSizeElement.textContent = estimatedSizeMB > 0 
+                ? `~${estimatedSizeMB.toFixed(1)} MB` 
+                : '< 0.1 MB';
+            
+            console.log(`📊 Database size estimate: ${estimatedSizeMB.toFixed(1)} MB (${totalRows} total rows from ${successfulTables} tables)`);
+        } catch (error) {
+            console.error('Failed to calculate database size:', error);
+            dbSizeElement.textContent = 'Error';
         }
     }
 
@@ -415,18 +517,34 @@ class AdminDashboard {
             
             console.log('Querying active users since:', thirtyDaysAgoISO);
             
-            const { count: activeUsers, error: activeError } = await this.supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .gte('last_login', thirtyDaysAgoISO);
+            // Try with last_login, fallback to updated_at if column doesn't exist
+            let activeUsers = 0;
+            try {
+                const { count, error } = await this.supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('last_login', thirtyDaysAgoISO);
 
-            if (activeError) {
-                console.error('Active users query error:', activeError);
-                // Don't throw, just set to 0
-                document.getElementById('activeUsers').textContent = '0';
-            } else {
-                document.getElementById('activeUsers').textContent = activeUsers || 0;
+                if (error) {
+                    console.log('last_login column not found, trying updated_at...');
+                    // Fallback to updated_at
+                    const { count: fallbackCount, error: fallbackError } = await this.supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true })
+                        .gte('updated_at', thirtyDaysAgoISO);
+                    
+                    if (!fallbackError) {
+                        activeUsers = fallbackCount || 0;
+                    }
+                } else {
+                    activeUsers = count || 0;
+                }
+            } catch (e) {
+                console.error('Active users query error:', e);
+                activeUsers = 0;
             }
+
+            document.getElementById('activeUsers').textContent = activeUsers;
 
             // Get pending users (email_verified = false)
             const { count: pendingUsers, error: pendingError } = await this.supabase
@@ -442,8 +560,8 @@ class AdminDashboard {
             }
 
             // Update UI
-            // Database size - this would need a custom function in Supabase
-            document.getElementById('dbSize').textContent = 'N/A';
+            // Try to get database size
+            await this.calculateDatabaseSize();
             
             // Last backup - would need to track this in a separate table
             document.getElementById('lastBackup').textContent = 'N/A';
@@ -492,10 +610,11 @@ class AdminDashboard {
                 const joinedDate = new Date(user.created_at).toLocaleDateString();
                 const status = user.email_verified ? 'Active' : 'Pending';
                 const role = user.role || 'member';
+                const userName = user.name || user.full_name || 'N/A';
                 
                 return `
                     <tr>
-                        <td>${user.name || 'N/A'}</td>
+                        <td>${userName}</td>
                         <td>${user.email || 'N/A'}</td>
                         <td><span class="badge badge-${role}">${role}</span></td>
                         <td><span class="badge badge-${status.toLowerCase()}">${status}</span></td>
@@ -795,14 +914,14 @@ class AdminDashboard {
         try {
             // Get user info before deleting
             const { data: user } = await this.supabase
-                .from('profiles')
+                .from('users')
                 .select('email')
                 .eq('id', userId)
                 .single();
 
-            // Delete from profiles table
+            // Delete from users table
             const { error } = await this.supabase
-                .from('profiles')
+                .from('users')
                 .delete()
                 .eq('id', userId);
 
@@ -971,7 +1090,7 @@ class AdminDashboard {
 
         try {
             let query = this.supabase
-                .from('profiles')
+                .from('users')
                 .select('*')
                 .order('created_at', { ascending: false });
 
@@ -983,9 +1102,9 @@ class AdminDashboard {
             // Apply status filter
             if (statusFilter) {
                 if (statusFilter === 'active') {
-                    query = query.eq('profile_completed', true);
+                    query = query.eq('email_verified', true);
                 } else if (statusFilter === 'pending') {
-                    query = query.eq('profile_completed', false);
+                    query = query.eq('email_verified', false);
                 }
             }
 
@@ -996,10 +1115,11 @@ class AdminDashboard {
             // Apply search filter on client side
             let filteredUsers = users;
             if (searchTerm) {
-                filteredUsers = users.filter(user => 
-                    (user.full_name?.toLowerCase().includes(searchTerm)) ||
-                    (user.email?.toLowerCase().includes(searchTerm))
-                );
+                filteredUsers = users.filter(user => {
+                    const userName = user.name || user.full_name || '';
+                    return (userName.toLowerCase().includes(searchTerm)) ||
+                           (user.email?.toLowerCase().includes(searchTerm));
+                });
             }
 
             // Update table
@@ -1013,12 +1133,13 @@ class AdminDashboard {
 
             tbody.innerHTML = filteredUsers.map(user => {
                 const joinedDate = new Date(user.created_at).toLocaleDateString();
-                const status = user.profile_completed ? 'Active' : 'Pending';
+                const status = user.email_verified ? 'Active' : 'Pending';
                 const role = user.role || 'member';
+                const userName = user.name || user.full_name || 'N/A';
                 
                 return `
                     <tr>
-                        <td>${user.full_name || 'N/A'}</td>
+                        <td>${userName}</td>
                         <td>${user.email || 'N/A'}</td>
                         <td><span class="badge badge-${role}">${role}</span></td>
                         <td><span class="badge badge-${status.toLowerCase()}">${status}</span></td>

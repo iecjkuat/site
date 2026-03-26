@@ -25,7 +25,7 @@ router.get('/overview', authenticateToken, async (req, res) => {
     // Fetch user's projects
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
-      .select('id, title, description, category, status, progress_percentage, created_at')
+      .select('id, title, description, category, status, progress_percentage, created_at, project_lead_id')
       .eq('project_lead_id', userId)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -33,6 +33,8 @@ router.get('/overview', authenticateToken, async (req, res) => {
     if (projectsError) {
       console.error('Error fetching projects:', projectsError);
     }
+    
+    console.log(`📊 Found ${projects?.length || 0} projects for user ${userId}`);
 
     // Fetch user's ideas
     const { data: ideas, error: ideasError } = await supabase

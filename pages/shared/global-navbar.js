@@ -88,10 +88,20 @@ class GlobalNavbar {
         // Insert at the beginning of body
         document.body.insertBefore(navContainer, document.body.firstChild);
         
-        // Add body padding to account for fixed navbar - match home page
+        // Add body padding to account for fixed navbar
         if (!document.body.style.paddingTop) {
-            document.body.style.paddingTop = '140px';
+            document.body.style.paddingTop = '110px';
         }
+        
+        // Adjust padding on mobile
+        const adjustPadding = () => {
+            const isMobile = window.innerWidth <= 768;
+            if (!document.body.dataset.customPadding) {
+                document.body.style.paddingTop = isMobile ? '65px' : '110px';
+            }
+        };
+        adjustPadding();
+        window.addEventListener('resize', adjustPadding);
         
         console.log('✅ Global navbar created and inserted');
     }
@@ -112,7 +122,7 @@ class GlobalNavbar {
                         <span class="hamburger-line"></span>
                     </button>
 
-                    <!-- Navigation Links Container -->
+                    <!-- Navigation Links Container (Drawer on mobile) -->
                     <div class="nav-links-container" id="nav-links-container">
                         <!-- Navigation Links -->
                         <div class="nav-center">
@@ -123,21 +133,24 @@ class GlobalNavbar {
                             ${this.getNavLink('/ideas', '💡 Ideas')}
                             ${this.getNavLink('/news', '📰 News')}
                             
-                            <!-- Desktop: Dropdown Menu, Mobile: Direct Links -->
+                            <!-- Desktop: Dropdown Menu -->
                             <div class="nav-dropdown desktop-only">
                                 ${this.getDropdownMenu()}
                             </div>
                             
-                            <!-- Mobile: All Links Directly -->
+                            <!-- Mobile: All Links Directly in Drawer -->
                             <div class="mobile-nav-links">
+                                <span class="mobile-section-label">Community</span>
                                 ${this.getNavLink('/opportunities', '💼 Opportunities')}
                                 ${this.getNavLink('/resources', '📚 Resources')}
                                 ${this.getNavLink('/leadership', '👥 Leadership')}
                                 ${this.getNavLink('/voting', '🗳️ Voting')}
+                                <span class="mobile-section-label">Services</span>
                                 ${this.getNavLink('/payment', '💳 Payments')}
                                 ${this.getNavLink('/support', '🆘 Support')}
                                 ${this.getNavLink('/feedback', '💬 Feedback')}
                                 ${this.getNavLink('/settings', '⚙️ Settings')}
+                                <span class="mobile-section-label">Management</span>
                                 ${this.getNavLink('/cms', '📝 Content Hub')}
                                 ${this.getNavLink('/admin', '🔧 Admin Dashboard')}
                             </div>
@@ -145,7 +158,6 @@ class GlobalNavbar {
 
                         <!-- Auth Section -->
                         <div class="nav-auth">
-                            <!-- Login Button (always visible) -->
                             <button id="navbar-login-btn" class="glass-button">
                                 <i class="fas fa-user"></i> Login
                             </button>
@@ -342,6 +354,23 @@ class GlobalNavbar {
                     hamburgerBtn.classList.remove('active');
                     navLinksContainer.classList.remove('active');
                 });
+            });
+        }
+    }
+
+    setupDropdownListeners() {
+        const dropdownToggle = document.getElementById('navbar-more-menu');
+        if (dropdownToggle) {
+            dropdownToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const dropdownMenu = document.getElementById('navbar-more-dropdown');
+                if (dropdownMenu && dropdownMenu.classList.contains('show')) {
+                    this.closeDropdown();
+                } else {
+                    this.openDropdown();
+                }
             });
         }
     }

@@ -1,4 +1,4 @@
-﻿/* ===== CSP UTILITY CLASSES ===== */
+/* ===== CSP UTILITY CLASSES ===== */
 .hidden {
     display: none !important;
 }
@@ -1134,21 +1134,7 @@ body.payment-page {
         max-width: 300px;
     }
 
-    .nav-links-container {
-        flex-direction: column !important;
-        gap: var(--spacing-md) !important;
-    }
 
-    .nav-center {
-        order: 2 !important;
-        width: 100% !important;
-        justify-content: center !important;
-    }
-
-    .nav-auth {
-        order: 1 !important;
-        justify-content: center !important;
-    }
 
     .payment-progress {
         display: grid;
@@ -1201,14 +1187,7 @@ body.payment-page {
         font-size: var(--font-size-2xl);
     }
 
-    .nav-center {
-        gap: var(--spacing-xs) !important;
-    }
 
-    .glass-button {
-        padding: var(--spacing-xs) var(--spacing-sm) !important;
-        font-size: var(--font-size-xs) !important;
-    }
 
     .payment-progress {
         grid-template-columns: 1fr;

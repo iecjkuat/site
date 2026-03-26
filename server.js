@@ -39,6 +39,7 @@ const statsRoutes = require('./routes/stats');
 const testimonialsRoutes = require('./routes/testimonials');
 const activityFeedRoutes = require('./routes/activity-feed');
 const adminRoutes = require('./routes/admin');
+const adminNotificationsRoutes = require('./routes/admin-notifications');
 const uploadRoutes = require('./routes/upload');
 const dashboardRoutes = require('./routes/dashboard');
 
@@ -324,6 +325,8 @@ app.use(`${apiVersion}/stats`, statsRoutes);
 app.use(`${apiVersion}/testimonials`, testimonialsRoutes);
 app.use(`${apiVersion}/activity-feed`, activityFeedRoutes);
 app.use(`${apiVersion}/admin`, adminRoutes);
+app.use(`${apiVersion}/admin/notifications`, adminNotificationsRoutes);
+app.use('/api/admin/notifications', adminNotificationsRoutes); // Compatibility route
 app.use(`${apiVersion}/upload`, uploadRoutes);
 app.use(`${apiVersion}/dashboard`, dashboardRoutes);
 app.use('/api/dashboard', dashboardRoutes); // Compatibility route for frontend

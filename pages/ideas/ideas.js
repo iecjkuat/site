@@ -181,6 +181,12 @@ class IdeasPage {
 
             // Setup event listeners first (synchronous)
             this.setupEventListeners();
+            
+            // Check URL hash for direct tab navigation
+            const hash = window.location.hash.substring(1); // Remove the #
+            if (hash && ['browse', 'submit', 'trending'].includes(hash)) {
+                this.switchTab(hash);
+            }
 
             // PERFORMANCE IMPROVEMENT 8: Parallel loading
             const startTime = performance.now();
@@ -310,6 +316,17 @@ class IdeasPage {
                 }
             }
         });
+        
+        // Submit idea form
+        const submitIdeaForm = document.getElementById('inlineSubmitForm');
+        if (submitIdeaForm) {
+            const submitHandler = (e) => {
+                e.preventDefault();
+                this.submitIdea(e.target);
+            };
+            submitIdeaForm.addEventListener('submit', submitHandler);
+            this.eventHandlers.set(submitIdeaForm, ['submit', submitHandler]);
+        }
     }
 
     async loadCategories() {
@@ -348,12 +365,12 @@ class IdeasPage {
         if (!container) return;
 
         const html = `
-            <button class="category-filter active" data-category="all">
+            <button class="filter-chip active" data-category="all">
                 <i class="fas fa-th"></i>
                 <span>All Ideas</span>
             </button>
             ${categories.map(cat => `
-                <button class="category-filter" data-category="${cat.id}">
+                <button class="filter-chip" data-category="${cat.id}">
                     <i class="fas ${cat.icon || 'fa-lightbulb'}"></i>
                     <span>${this.escapeHtml(cat.name)}</span>
                 </button>
@@ -364,13 +381,13 @@ class IdeasPage {
     }
 
     populateCategorySelect(categories) {
-        const select = document.getElementById('categorySelect');
+        const select = document.getElementById('inlineIdeaCategory');
         if (!select) return;
 
         const html = `
             <option value="">Select Category</option>
             ${categories.map(cat => `
-                <option value="${cat.id}">${this.escapeHtml(cat.name)}</option>
+                <option value="${cat.name}" style="background: #1f2937; color: white;">${this.escapeHtml(cat.name)}</option>
             `).join('')}
         `;
 
@@ -822,6 +839,16 @@ class IdeasPage {
     }
 
     switchTab(tabName) {
+        if (tabName === 'submit') {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            if (!token) {
+                if (confirm('Please log in to submit an idea. Do you want to log in now?')) {
+                    window.location.href = '/pages/auth/signin.html';
+                }
+                return;
+            }
+        }
+
         this.currentTab = tabName;
 
         // Update tab buttons
@@ -829,9 +856,15 @@ class IdeasPage {
             tab.classList.toggle('active', tab.dataset.tab === tabName);
         });
 
-        // Update tab content
+        // Update tab content - use display style instead of class
         document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tabName}Tab`);
+            if (content.id === `${tabName}Tab`) {
+                content.style.display = 'block';
+                content.classList.add('active');
+            } else {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            }
         });
 
         // Load data for the tab
@@ -1101,6 +1134,29 @@ class IdeasPage {
             
             document.body.appendChild(modal);
             document.body.style.overflow = 'hidden';
+            
+            // Trap Focus within Modal
+            modal.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    if (focusableElements.length === 0) return;
+                    
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+
+                    if (e.shiftKey) { // Shift + Tab
+                        if (document.activeElement === firstElement) {
+                            lastElement.focus();
+                            e.preventDefault();
+                        }
+                    } else { // Tab
+                        if (document.activeElement === lastElement) {
+                            firstElement.focus();
+                            e.preventDefault();
+                        }
+                    }
+                }
+            });
             
             // Focus first focusable element
             const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -1697,6 +1753,81 @@ class IdeasPage {
     async submitComment(ideaId) {
         // Redirect to postInlineComment
         return await this.postInlineComment(ideaId);
+    }
+    
+    async submitIdea(form) {
+        try {
+            const formData = new FormData(form);
+            const ideaData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                tags: formData.get('tags')?.split(',').map(t => t.trim()).filter(Boolean) || [],
+                lookingForCollaborators: formData.get('lookingForCollaborators') === 'on'
+            };
+            
+            // Validation
+            if (!ideaData.title || ideaData.title.trim().length < 5) {
+                alert('Please enter a title (at least 5 characters)');
+                return;
+            }
+            
+            if (!ideaData.description || ideaData.description.trim().length < 20) {
+                alert('Please enter a description (at least 20 characters)');
+                return;
+            }
+            
+            if (!ideaData.category || ideaData.category === '') {
+                alert('Please select a category');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            // Submit to API
+            const response = await fetch('/api/v1/ideas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ideaData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to submit idea');
+            }
+            
+            const result = await response.json();
+            
+            // Success!
+            alert('Idea submitted successfully!');
+            form.reset();
+            
+            // Switch to browse tab and reload ideas
+            this.switchTab('browse');
+            this.currentPage = 1;
+            await this.loadIdeas();
+            
+            // Restore button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            
+        } catch (error) {
+            console.error('Error submitting idea:', error);
+            alert('Failed to submit idea: ' + error.message);
+            
+            // Restore button
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Idea';
+            }
+        }
     }
 }
 

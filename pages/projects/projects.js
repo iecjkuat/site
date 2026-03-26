@@ -1,4 +1,4 @@
-﻿/**
+/**
  * JKUAT Innovation Club - Projects & Innovation Page
  * Handles project showcase, submissions, hackathons, and incubation program
  */
@@ -40,6 +40,12 @@ class ProjectsManager {
     }
 
     async init() {
+        // Check URL hash for direct navigation
+        const hash = window.location.hash.substring(1); // Remove the #
+        if (hash === 'create' || hash === 'submit') {
+            this.switchTab('submit');
+        }
+        
         // stats updated after data is loaded in init()
         await this.loadInitialData();
         this.updateStats();
@@ -370,7 +376,7 @@ class ProjectsManager {
                 <div class="project-stats">
                     <div class="project-stat team">
                         <i class="fas fa-user"></i>
-                        <span>${this.escapeHTML(project.project_lead?.name || 'Team Lead')}</span>
+                        <span>${this.escapeHTML(project.project_lead?.name || 'No Lead Assigned')}</span>
                     </div>
                     <div class="project-stat timeline">
                         <i class="fas fa-clock"></i>
@@ -425,13 +431,13 @@ class ProjectsManager {
         return `
             <div class="glass-card p-8">
                 <div class="hackathon-card-header">
-                    <h3 class="hackathon-title-main">${this.escapeHtml(hackathon.title)}</h3>
+                    <h3 class="hackathon-title-main">${this.escapeHTML(hackathon.title)}</h3>
                     <span class="status-badge ${isRegistrationOpen ? 'open' : 'closed'}">
                         ${isRegistrationOpen ? 'Registration Open' : 'Registration Closed'}
                     </span>
                 </div>
                 
-                <p class="hackathon-desc">${this.escapeHtml(hackathon.description)}</p>
+                <p class="hackathon-desc">${this.escapeHTML(hackathon.description)}</p>
                 
                 <div class="hackathon-stats-grid">
                     <div>
@@ -444,18 +450,18 @@ class ProjectsManager {
                     </div>
                     <div>
                         <div class="stat-label">Participants</div>
-                        <div class="stat-value">${this.escapeHtml(hackathon.current_participants)}/${this.escapeHtml(hackathon.max_participants)}</div>
+                        <div class="stat-value">${this.escapeHTML(hackathon.current_participants)}/${this.escapeHTML(hackathon.max_participants)}</div>
                     </div>
                     <div>
                         <div class="stat-label">Registration Fee</div>
-                        <div class="stat-value">KSh ${this.escapeHtml(hackathon.registration_fee || 0)}</div>
+                        <div class="stat-value">KSh ${this.escapeHTML(hackathon.registration_fee || 0)}</div>
                     </div>
                 </div>
                 
                 ${hackathon.theme ? `
                     <div class="mb-4">
                         <span class="hackathon-theme-badge">
-                            Theme: ${this.escapeHtml(hackathon.theme)}
+                            Theme: ${this.escapeHTML(hackathon.theme)}
                         </span>
                     </div>
                 ` : ''}
@@ -471,11 +477,11 @@ class ProjectsManager {
                 ` : ''}
                 
                 <div class="flex gap-3">
-                    <button class="btn btn-outline btn-sm flex-1" data-action="view-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
+                    <button class="btn btn-outline btn-sm flex-1" data-action="view-hackathon" data-hackathon-id="${this.escapeHTML(hackathon.id)}">
                         <i class="fas fa-info-circle"></i>Details
                     </button>
                     ${isRegistrationOpen ? `
-                        <button class="btn btn-primary btn-sm flex-1" data-action="register-hackathon" data-hackathon-id="${this.escapeHtml(hackathon.id)}">
+                        <button class="btn btn-primary btn-sm flex-1" data-action="register-hackathon" data-hackathon-id="${this.escapeHTML(hackathon.id)}">
                             <i class="fas fa-user-plus"></i>Register
                         </button>
                     ` : `
@@ -516,29 +522,29 @@ class ProjectsManager {
         return `
             <div class="glass-card p-6">
                 <div class="hackathon-card-header">
-                    <h3 class="hackathon-title-main">${this.escapeHtml(project.title)}</h3>
+                    <h3 class="hackathon-title-main">${this.escapeHTML(project.title)}</h3>
                     <span class="incubation-badge">Incubation</span>
                 </div>
                 
-                <p class="hackathon-desc">${this.escapeHtml(project.description)}</p>
+                <p class="hackathon-desc">${this.escapeHTML(project.description)}</p>
                 
                 <div class="hackathon-stats-grid">
                     <div>
                         <div class="stat-label">Stage</div>
-                        <div class="stat-value">${this.escapeHtml(project.stage || 'Validation')}</div>
+                        <div class="stat-value">${this.escapeHTML(project.stage || 'Validation')}</div>
                     </div>
                     <div>
                         <div class="stat-label">Funding</div>
-                        <div class="stat-value">KSh ${this.escapeHtml(project.funding || '0')}</div>
+                        <div class="stat-value">KSh ${this.escapeHTML(project.funding || '0')}</div>
                     </div>
                 </div>
                 
                 <div class="flex justify-between items-center">
                     <div class="lead-info-container">
                         <i class="fas fa-user lead-icon-small"></i>
-                        <span class="lead-name-small">${this.escapeHtml(project.founder || project.project_lead?.name || 'Founder')}</span>
+                        <span class="lead-name-small">${this.escapeHTML(project.founder || project.project_lead?.name || 'Founder')}</span>
                     </div>
-                    <button class="btn btn-outline btn-sm" data-action="view-incubation" data-project-id="${this.escapeHtml(project.id)}">
+                    <button class="btn btn-outline btn-sm" data-action="view-incubation" data-project-id="${this.escapeHTML(project.id)}">
                         <i class="fas fa-eye"></i>View Details
                     </button>
                 </div>
@@ -552,86 +558,91 @@ class ProjectsManager {
         // Show loading state
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Submitting...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
         submitBtn.disabled = true;
 
+        // Get form data
+        const title = document.getElementById('projectTitle')?.value;
+        const category = document.getElementById('projectCategory')?.value;
+        const description = document.getElementById('projectDescription')?.value;
+        const technologies = document.getElementById('projectTechnologies')?.value;
+        const github_url = document.getElementById('projectGithub')?.value;
+        const demo_url = document.getElementById('projectDemo')?.value;
+
+        // Validation
+        if (!title || title.trim().length < 5) {
+            this.showMessage('Please enter a project title (at least 5 characters)', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+
+        if (!description || description.trim().length < 20) {
+            this.showMessage('Please enter a description (at least 20 characters)', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+
+        if (!category) {
+            this.showMessage('Please select a category', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+
         const formData = {
-            title: document.getElementById('projectTitle').value,
-            category: document.getElementById('projectCategory').value,
-            description: document.getElementById('projectDescription').value,
-            expected_duration: document.getElementById('projectDuration').value,
-            budget_estimate: Number.parseFloat(document.getElementById('projectBudget').value) || 0, // prefer Number.parseFloat (S7773)
-            technologies: document
-                .getElementById('projectTechnologies')
-                .value.split(',')
-                .map(t => t.trim())
-                .filter(Boolean), // arrow => Boolean (S7770)
-            objectives: document.getElementById('projectObjectives').value
-                .split('\n')
-                .filter(o => o.trim()),
-            submissionStatus: 'pending',
-            submitted_at: new Date().toISOString(),
-            submitted_by: 'current_user' // In real app, get from auth
+            title: title.trim(),
+            description: description.trim(),
+            category,
+            project_type: 'personal',
+            status: 'planning',
+            tech_stack: technologies ? technologies.split(',').map(t => t.trim()).filter(Boolean) : [],
+            technologies: technologies ? technologies.split(',').map(t => t.trim()).filter(Boolean) : [],
+            github_url: github_url || null,
+            demo_url: demo_url || null,
+            looking_for_collaborators: document.getElementById('lookingForCollaborators')?.checked || false,
+            tags: []
         };
 
         try {
-            const response = await fetch('/api/v1/projects/submit', {
+            // Get user ID from localStorage
+            const storedUser = localStorage.getItem('user');
+            const userId = storedUser ? JSON.parse(storedUser).id : null;
+
+            const response = await fetch('/api/v1/projects', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId || ''
                 },
                 body: JSON.stringify(formData)
             });
 
+            const result = await response.json();
+
             if (response.ok) {
-                this.showMessage('Project submitted successfully! Your submission is now pending review by our team. You will be notified once it has been approved.', 'success');
+                this.showMessage('Project submitted successfully! Your project is now live.', 'success');
                 document.getElementById('projectSubmissionForm').reset();
+                
+                // Reload projects
+                await this.loadInitialData();
+                
                 // Switch to showcase tab after successful submission
                 setTimeout(() => {
                     this.switchTab('showcase');
-                }, 3000);
+                }, 2000);
             } else {
-                const error = await response.json();
-                this.showMessage(error.message || 'Failed to submit project', 'error');
+                this.showMessage(result.message || 'Failed to submit project', 'error');
             }
         } catch (error) {
             console.error('Error submitting project:', error);
-            // For static deployment, show success message since backend isn't available
-            this.showMessage('Thank you for your submission! Your project idea is now pending review by our team. You will be notified via email once it has been approved and published.', 'success');
-            document.getElementById('projectSubmissionForm').reset();
-
-            // Simulate adding to pending projects
-            this.simulateProjectSubmission(formData);
-
-            setTimeout(() => {
-                this.switchTab('showcase');
-            }, 4000);
+            this.showMessage('Failed to submit project. Please try again.', 'error');
         } finally {
             // Reset button state
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
-    }
-
-    simulateProjectSubmission(projectData) {
-        // prefer globalThis over window (S7764)
-        if (!globalThis.pendingProjects) {
-            globalThis.pendingProjects = [];
-        }
-
-        projectData.id = 'pending_proj_' + Date.now();
-        projectData.status = 'Pending Review';
-        projectData.progress_percentage = 0;
-        projectData.project_lead = {
-            name: 'Current User',
-            email: 'user@jkuat.ac.ke'
-        };
-        projectData.created_at = new Date().toISOString();
-
-        globalThis.pendingProjects.push(projectData);
-
-        console.log('Project added to pending queue:', projectData);
-        console.log('🗳️ Admin notification sent for new project submission');
     }
 
     async handleCollaborationSubmission(e) {
@@ -656,10 +667,15 @@ class ProjectsManager {
         };
 
         try {
+            // Get user ID from localStorage if available
+            const storedUser = localStorage.getItem('user');
+            const userId = storedUser ? JSON.parse(storedUser).id : null;
+
             const response = await fetch(`/api/v1/projects/${projectId}/collaborate`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-User-Id': userId || ''
                 },
                 body: JSON.stringify(collaborationData)
             });
@@ -861,7 +877,7 @@ class ProjectsManager {
             : '<div class="modal-stat-pill"><i class="fas fa-user"></i> Personal Project</div>';
 
         modalContent.innerHTML = `
-            <button id="closeModalBtn" class="modal-close-btn">×</button>
+            <button id="closeModalBtn" class="modal-close-btn">�</button>
 
             <div class="modal-inner-padding">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -992,7 +1008,7 @@ class ProjectsManager {
         modalContent.className = 'modal-content-premium';
 
         modalContent.innerHTML = `
-            <button id="closeModalBtn" class="modal-close-btn">×</button>
+            <button id="closeModalBtn" class="modal-close-btn">�</button>
 
             <div class="modal-inner-padding">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -1121,7 +1137,7 @@ class ProjectsManager {
         modalContent.style.maxWidth = '600px';
 
         modalContent.innerHTML = `
-            <button id="closeCollabModalBtn" class="modal-close-btn">×</button>
+            <button id="closeCollabModalBtn" class="modal-close-btn">�</button>
 
             <div class="modal-inner-padding">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -1232,7 +1248,7 @@ class ProjectsManager {
         modalContent.className = 'modal-content-premium';
 
         modalContent.innerHTML = `
-            <button id="closeModalBtn" class="modal-close-btn">×</button>
+            <button id="closeModalBtn" class="modal-close-btn">�</button>
 
             <div class="modal-inner-padding">
                 <div style="text-align: center; margin-bottom: 2rem;">
@@ -1645,5 +1661,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize Projects Manager
     window.projectsManager = new ProjectsManager();
     await globalThis.projectsManager.init();     // async, outside of ctor
-    console.log('✅ Projects Manager initialized successfully');
+    console.log('? Projects Manager initialized successfully');
 });
+

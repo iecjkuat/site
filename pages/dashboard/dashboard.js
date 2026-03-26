@@ -10,13 +10,15 @@ class DashboardPage {
         // Cached DOM elements
         this.dom = {};
         this.cacheDOMElements();
+        
+        // Initialize data storage
+        this.projects = [];
+        this.ideas = [];
 
         // Initialize modules
         try {
             console.log('📦 Initializing NotificationManager...');
             this.notificationManager = new NotificationManager(this);
-            console.log('📦 Initializing ProjectManager...');
-            this.projectManager = new ProjectManager(this);
             console.log('✅ Managers created');
         } catch (e) {
             console.error('❌ Error during manager initialization:', e);
@@ -38,9 +40,9 @@ class DashboardPage {
 
     cacheDOMElements() {
         const ids = [
-            'userName', 'userName2', 'userEmail', 'userRole',
+            'userName', 'userEmail', 'userRole',
             'myProjectsGrid', 'myIdeasGrid', 'paymentHistory', 'currentTime',
-            'userInitials', 'userInitials2', 'ideasCount', 'projectsCount',
+            'userInitials', 'ideasCount', 'projectsCount',
             'notificationsList', 'notifBadge', 'markAllReadBtn'
         ];
 
@@ -275,26 +277,9 @@ class DashboardPage {
             }
         }
 
-        // Update profile card with full name
-        if (this.dom.userName2) {
-            this.dom.userName2.textContent = displayName;
-        }
-
-        // Update other profile fields
-        if (this.dom.userEmail) {
-            this.dom.userEmail.textContent = user.email || '';
-        }
-
-        if (this.dom.userRole) {
-            this.dom.userRole.textContent = user.role || 'Member';
-        }
-
         // Set initials in avatar circles
         if (this.dom.userInitials) {
             this.dom.userInitials.textContent = initials;
-        }
-        if (this.dom.userInitials2) {
-            this.dom.userInitials2.textContent = initials;
         }
 
         // Update stats
@@ -316,7 +301,12 @@ class DashboardPage {
         bindClick('generateCardBtn', () => window.jkuatApp?.showToast('Membership card generated!', 'success'));
         bindClick('markAllReadBtn', () => this.notificationManager.markAllNotificationsRead());
         bindClick('requestMentorBtn', () => this.showMentorRequestModal());
-        bindClick('viewAllProjectsBtn', () => window.location.href = '/projects');
+        bindClick('viewAllProjectsBtn', () => this.showMyProjectsModal());
+        bindClick('viewAllIdeasBtn', () => this.showMyIdeasModal());
+        bindClick('viewAllPaymentsBtn', () => {
+            window.location.href = '/payment';
+        });
+        bindClick('viewAllNotificationsBtn', () => this.showNotificationsModal());
 
         // Logout buttons
         document.querySelectorAll('.logout-btn, #logoutBtn').forEach(btn => {
@@ -330,7 +320,7 @@ class DashboardPage {
     // ======= Stats =======
     updateStats() {
         const stats = {
-            myProjects: this.projectManager.projects.length
+            myProjects: this.projects?.length || 0
         };
 
         Object.entries(stats).forEach(([id, value]) => {
@@ -462,10 +452,339 @@ class DashboardPage {
         });
     }
 
+    async showMyProjectsModal() {
+        // Fetch all user's projects
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (!token) {
+            window.jkuatApp?.showToast('Please log in to view your projects', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/v1/dashboard/overview', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch projects');
+            
+            const data = await response.json();
+            const projects = data.projects || [];
+
+            const modalHtml = `
+                <div class="modal-backdrop active" id="myProjectsModal">
+                    <div class="modal-content-premium" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+                        <button class="modal-close-btn" onclick="document.getElementById('myProjectsModal').remove(); document.body.style.overflow='auto';">×</button>
+                        
+                        <div class="modal-inner-padding">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <div class="incubation-icon-container" style="background: rgba(59, 130, 246, 0.2);">
+                                    <i class="fas fa-project-diagram" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                                </div>
+                                <h2 class="modal-title-vibrant">My Projects</h2>
+                                <p class="modal-subtitle">${projects.length} project${projects.length !== 1 ? 's' : ''}</p>
+                            </div>
+
+                            ${projects.length === 0 ? `
+                                <div style="text-center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                                    <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                    <p>You haven't created any projects yet</p>
+                                    <a href="/pages/projects/projects.html#create" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
+                                        <i class="fas fa-plus"></i> Create Your First Project
+                                    </a>
+                                </div>
+                            ` : `
+                                <div id="modalProjectsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+                                    ${projects.map(project => this.createMyProjectCard(project)).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.style.overflow = 'hidden';
+
+            // Add event listeners for collaboration requests
+            this.setupProjectCardListeners();
+
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            window.jkuatApp?.showToast('Failed to load projects', 'error');
+        }
+    }
+
+    createMyProjectCard(project) {
+        const isClubProject = project.project_type === 'club';
+        const projectTypeBadge = isClubProject
+            ? '<span class="project-type-badge club-project"><i class="fas fa-building"></i> Club Project</span>'
+            : '<span class="project-type-badge personal-project"><i class="fas fa-user"></i> Personal Project</span>';
+
+        return `
+            <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
+                <div class="project-header">
+                    <div class="project-lead-wrapper">
+                        <h3 class="project-title">${this.escapeHtml(project.title)}</h3>
+                        <div class="project-meta-row">
+                            ${projectTypeBadge}
+                            <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'planning')}">${this.escapeHtml(project.status || 'Planning')}</span>
+                            <span class="category-badge-static">${this.escapeHtml(project.category)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="project-description">${this.escapeHtml(project.description)}</p>
+                
+                ${project.technologies && project.technologies.length > 0 ? `
+                    <div class="project-tech">
+                        ${project.technologies.slice(0, 3).map(tech => `
+                            <span class="tech-tag">${this.escapeHtml(tech)}</span>
+                        `).join('')}
+                        ${project.technologies.length > 3 ? `<span class="tech-tag-more">+${project.technologies.length - 3} more</span>` : ''}
+                    </div>
+                ` : ''}
+                
+                <div class="project-stats">
+                    <div class="project-stat team">
+                        <i class="fas fa-users"></i>
+                        <span id="team-count-${project.id}">Loading team...</span>
+                    </div>
+                    <div class="project-stat timeline">
+                        <i class="fas fa-clock"></i>
+                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
+                    </div>
+                </div>
+                
+                <div class="project-actions">
+                    <button class="btn btn-outline btn-sm" data-action="view-team" data-project-id="${this.escapeHtml(project.id)}">
+                        <i class="fas fa-users"></i> Team
+                    </button>
+                    <button class="btn btn-primary btn-sm" data-action="view-requests" data-project-id="${this.escapeHtml(project.id)}">
+                        <i class="fas fa-user-plus"></i> Requests
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async setupProjectCardListeners() {
+        // Load team counts for all projects
+        const projectCards = document.querySelectorAll('[data-project-id]');
+        projectCards.forEach(async (card) => {
+            const projectId = card.dataset.projectId;
+            await this.loadTeamCount(projectId);
+        });
+
+        // View team button
+        document.querySelectorAll('[data-action="view-team"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const projectId = btn.dataset.projectId;
+                await this.showTeamModal(projectId);
+            });
+        });
+
+        // View requests button
+        document.querySelectorAll('[data-action="view-requests"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const projectId = btn.dataset.projectId;
+                await this.showCollaborationRequestsModal(projectId);
+            });
+        });
+    }
+
+    async loadTeamCount(projectId) {
+        try {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborations?status=accepted`);
+            if (response.ok) {
+                const data = await response.json();
+                const count = data.collaborations?.length || 0;
+                const el = document.getElementById(`team-count-${projectId}`);
+                if (el) el.textContent = `${count} member${count !== 1 ? 's' : ''}`;
+            }
+        } catch (error) {
+            console.error('Error loading team count:', error);
+        }
+    }
+
+    async showTeamModal(projectId) {
+        try {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborations?status=accepted`);
+            if (!response.ok) throw new Error('Failed to fetch team');
+            
+            const data = await response.json();
+            const team = data.collaborations || [];
+
+            const modalHtml = `
+                <div class="modal-backdrop active" id="teamModal">
+                    <div class="modal-content-premium" style="max-width: 600px;">
+                        <button class="modal-close-btn" onclick="document.getElementById('teamModal').remove();">×</button>
+                        
+                        <div class="modal-inner-padding">
+                            <h2 class="modal-title-vibrant">Team Members</h2>
+                            
+                            ${team.length === 0 ? `
+                                <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">
+                                    No team members yet
+                                </p>
+                            ` : `
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    ${team.map(member => `
+                                        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                                            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                                ${this.escapeHtml(member.user?.name?.charAt(0) || '?')}
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div style="color: white; font-weight: 600;">${this.escapeHtml(member.user?.name || 'Unknown')}</div>
+                                                <div style="color: rgba(255,255,255,0.6); font-size: 0.875rem;">${this.escapeHtml(member.role)}</div>
+                                            </div>
+                                            <div style="color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                                                ${this.escapeHtml(member.time_commitment || 'N/A')}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        } catch (error) {
+            console.error('Error showing team:', error);
+            window.jkuatApp?.showToast('Failed to load team members', 'error');
+        }
+    }
+
+    async showCollaborationRequestsModal(projectId) {
+        try {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborations?status=pending`);
+            if (!response.ok) throw new Error('Failed to fetch requests');
+            
+            const data = await response.json();
+            const requests = data.collaborations || [];
+
+            const modalHtml = `
+                <div class="modal-backdrop active" id="requestsModal">
+                    <div class="modal-content-premium" style="max-width: 700px;">
+                        <button class="modal-close-btn" onclick="document.getElementById('requestsModal').remove();">×</button>
+                        
+                        <div class="modal-inner-padding">
+                            <h2 class="modal-title-vibrant">Collaboration Requests</h2>
+                            
+                            ${requests.length === 0 ? `
+                                <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">
+                                    No pending requests
+                                </p>
+                            ` : `
+                                <div id="requestsList" style="display: flex; flex-direction: column; gap: 1rem;">
+                                    ${requests.map(req => `
+                                        <div class="collaboration-request" data-request-id="${req.id}" style="padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.1);">
+                                            <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 1rem;">
+                                                <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.25rem;">
+                                                    ${this.escapeHtml((req.contact_email?.charAt(0) || '?').toUpperCase())}
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <div style="color: white; font-weight: 600; margin-bottom: 0.25rem;">${this.escapeHtml(req.contact_email)}</div>
+                                                    <div style="color: rgba(255,255,255,0.6); font-size: 0.875rem;">
+                                                        <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem;">
+                                                            ${this.escapeHtml(req.role)}
+                                                        </span>
+                                                        <span style="margin-left: 0.5rem;">${this.escapeHtml(req.time_commitment || 'N/A')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            ${req.skills_offered && req.skills_offered.length > 0 ? `
+                                                <div style="margin-bottom: 1rem;">
+                                                    <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.5rem;">Skills:</div>
+                                                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                                        ${req.skills_offered.map(skill => `
+                                                            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem;">
+                                                                ${this.escapeHtml(skill)}
+                                                            </span>
+                                                        `).join('')}
+                                                    </div>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                                <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.5rem;">Message:</div>
+                                                <div style="color: rgba(255,255,255,0.9); font-size: 0.875rem;">${this.escapeHtml(req.message)}</div>
+                                            </div>
+                                            
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-primary btn-sm" onclick="dashboard.approveRequest('${req.id}', '${projectId}')">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                                <button class="btn btn-outline btn-sm" onclick="dashboard.denyRequest('${req.id}', '${projectId}')">
+                                                    <i class="fas fa-times"></i> Deny
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        } catch (error) {
+            console.error('Error showing requests:', error);
+            window.jkuatApp?.showToast('Failed to load collaboration requests', 'error');
+        }
+    }
+
+    async approveRequest(collaborationId, projectId) {
+        try {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborations/${collaborationId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'accepted' })
+            });
+
+            if (!response.ok) throw new Error('Failed to approve request');
+
+            window.jkuatApp?.showToast('Request approved!', 'success');
+            
+            // Refresh the requests modal
+            document.getElementById('requestsModal')?.remove();
+            await this.showCollaborationRequestsModal(projectId);
+            
+        } catch (error) {
+            console.error('Error approving request:', error);
+            window.jkuatApp?.showToast('Failed to approve request', 'error');
+        }
+    }
+
+    async denyRequest(collaborationId, projectId) {
+        try {
+            const response = await fetch(`/api/v1/projects/${projectId}/collaborations/${collaborationId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'declined' })
+            });
+
+            if (!response.ok) throw new Error('Failed to deny request');
+
+            window.jkuatApp?.showToast('Request denied', 'info');
+            
+            // Refresh the requests modal
+            document.getElementById('requestsModal')?.remove();
+            await this.showCollaborationRequestsModal(projectId);
+            
+        } catch (error) {
+            console.error('Error denying request:', error);
+            window.jkuatApp?.showToast('Failed to deny request', 'error');
+        }
+    }
+
     // ===== Project integration =====
     addProjectToGrid(projectData) {
-        if (!this.projectManager) return;
-
         // Create full project object with defaults
         const newProject = {
             id: `proj_${Date.now()}`,
@@ -486,218 +805,204 @@ class DashboardPage {
             funding: { requested: 0, approved: 0, spent: 0 }
         };
 
-        this.projectManager.projects.unshift(newProject);
-        this.projectManager.renderProjects();
+        this.projects.unshift(newProject);
+        
+        // Re-render projects
+        this.loadMyProjects();
         this.updateStats();
     }
 
-    // ======= Load mock/demo data =======
+    // ======= Load dashboard data =======
     async loadMockData() {
         console.log('📊 Loading dashboard data from API...');
         await Promise.all([
             this.loadMyProjects(),
             this.loadMyIdeas(),
             this.loadPaymentHistory(),
-            this.loadNotificationsList()
+            this.loadNotifications()
         ]);
     }
 
     async loadMyProjects() {
-        const container = this.dom.myProjectsGrid;
-        if (!container) return;
-
         try {
             const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             
             if (!token) {
-                console.warn('⚠️ No auth token, showing empty state');
-                this.showEmptyProjects(container);
+                console.warn('⚠️ No auth token');
+                if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
+                document.getElementById('projectsCountDisplay').textContent = '0';
                 return;
             }
 
-            const response = await fetch('/api/dashboard/overview', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch('/api/v1/dashboard/overview', {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch dashboard data');
-            }
+            if (!response.ok) throw new Error('Failed to fetch dashboard data');
 
             const data = await response.json();
             const projects = data.projects || [];
+            
+            // Store projects for modal
+            this.projects = projects;
 
             console.log('✅ Projects loaded:', projects.length);
 
-            container.innerHTML = '';
-
-            if (projects.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-folder-plus text-3xl mb-2 opacity-50"></i>
-                        <p>No projects yet</p>
-                        <a href="/projects" class="btn btn-primary btn-sm mt-3">
-                            <i class="fas fa-plus"></i> Create Your First Project
-                        </a>
-                    </div>
-                `;
-                if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
-                return;
-            }
-
+            // Update counts
             if (this.dom.projectsCount) this.dom.projectsCount.textContent = projects.length;
+            document.getElementById('projectsCountDisplay').textContent = projects.length;
 
-            projects.forEach(project => {
-                const projectCard = document.createElement('div');
-                projectCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
-                
-                const statusColor = project.status === 'Active' ? 'green' : 
-                                  project.status === 'Completed' ? 'blue' : 'yellow';
-                
-                projectCard.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <h4 class="text-white font-semibold flex-1">${this.escapeHtml(project.title)}</h4>
-                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-500/20 text-${statusColor}-400 ml-2">
-                            ${this.escapeHtml(project.status || 'Planning')}
-                        </span>
-                    </div>
-                    <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(project.description || '')}</p>
-                    ${project.progress_percentage !== null && project.progress_percentage !== undefined ? `
-                        <div class="mb-3">
-                            <div class="flex justify-between text-xs text-gray-400 mb-1">
-                                <span>Progress</span>
-                                <span>${project.progress_percentage}%</span>
-                            </div>
-                            <div class="w-full bg-gray-700 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: ${project.progress_percentage}%"></div>
-                            </div>
-                        </div>
-                    ` : ''}
-                    <div class="flex justify-between items-center text-xs text-gray-400">
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-tag"></i> ${this.escapeHtml(project.category || 'General')}
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-clock"></i> ${this.getTimeAgo(new Date(project.created_at))}
-                        </span>
-                    </div>
-                `;
-                
-                projectCard.addEventListener('click', () => {
-                    window.location.href = `/projects#${project.id}`;
-                });
-                
-                container.appendChild(projectCard);
-            });
         } catch (error) {
             console.error('❌ Error loading projects:', error);
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-exclamation-triangle text-3xl mb-2 opacity-50"></i>
-                    <p>Failed to load projects</p>
-                </div>
-            `;
+            if (this.dom.projectsCount) this.dom.projectsCount.textContent = '0';
+            document.getElementById('projectsCountDisplay').textContent = '0';
         }
     }
 
-    async loadMyIdeas() {
-        const container = this.dom.myIdeasGrid;
-        if (!container) return;
+    createProjectCard(project) {
+        // Determine project type badge
+        const isClubProject = project.project_type === 'club';
+        const projectTypeBadge = isClubProject
+            ? '<span class="project-type-badge club-project"><i class="fas fa-building"></i> Club Project</span>'
+            : '<span class="project-type-badge personal-project"><i class="fas fa-user"></i> Personal Project</span>';
 
+        return `
+            <div class="project-card" data-project-id="${this.escapeHtml(project.id)}">
+                <div class="project-header">
+                    <div class="project-lead-wrapper">
+                        <h3 class="project-title">${this.escapeHtml(project.title)}</h3>
+                        <div class="project-meta-row">
+                            ${projectTypeBadge}
+                            <span class="project-status ${this.escapeHtml(project.status?.toLowerCase() || 'active')}">${this.escapeHtml(project.status || 'Active')}</span>
+                            <span class="category-badge-static">${this.escapeHtml(project.category)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="project-description">${this.escapeHtml(project.description)}</p>
+                
+                ${project.technologies && project.technologies.length > 0 ? `
+                    <div class="project-tech">
+                        ${project.technologies.slice(0, 3).map(tech => `
+                            <span class="tech-tag">${this.escapeHtml(tech)}</span>
+                        `).join('')}
+                        ${project.technologies.length > 3 ? `<span class="tech-tag-more">+${project.technologies.length - 3} more</span>` : ''}
+                    </div>
+                ` : ''}
+                
+                <div class="project-stats">
+                    <div class="project-stat team">
+                        <i class="fas fa-user"></i>
+                        <span>${this.escapeHtml(project.project_lead?.name || 'No Lead Assigned')}</span>
+                    </div>
+                    <div class="project-stat timeline">
+                        <i class="fas fa-clock"></i>
+                        <span>${this.escapeHtml(this.getTimeAgo(new Date(project.created_at)))}</span>
+                    </div>
+                </div>
+                
+                <div class="project-actions">
+                    <button class="btn btn-outline btn-sm" data-action="view-project" data-project-id="${this.escapeHtml(project.id)}">
+                        <i class="fas fa-eye"></i>View
+                    </button>
+                    <button class="btn btn-primary btn-sm" data-action="join-project" data-project-id="${this.escapeHtml(project.id)}">
+                        <i class="fas fa-plus"></i>Join
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async loadMyIdeas() {
         try {
             const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             
             if (!token) {
-                console.warn('⚠️ No auth token, showing empty state');
-                container.innerHTML = `
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
-                        <p>No ideas submitted yet</p>
-                        <a href="/ideas" class="btn btn-primary btn-sm mt-3">
-                            <i class="fas fa-plus"></i> Submit Your First Idea
-                        </a>
-                    </div>
-                `;
+                console.warn('⚠️ No auth token');
+                if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
+                document.getElementById('ideasCountDisplay').textContent = '0';
                 return;
             }
 
-            const response = await fetch('/api/dashboard/overview', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch('/api/v1/dashboard/overview', {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch dashboard data');
-            }
+            if (!response.ok) throw new Error('Failed to fetch dashboard data');
 
             const data = await response.json();
             const ideas = data.ideas || [];
+            
+            // Store ideas for modal
+            this.ideas = ideas;
 
             console.log('✅ Ideas loaded:', ideas.length);
 
-            container.innerHTML = '';
-
-            if (ideas.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-lightbulb text-3xl mb-2 opacity-50"></i>
-                        <p>No ideas submitted yet</p>
-                        <a href="/ideas" class="btn btn-primary btn-sm mt-3">
-                            <i class="fas fa-plus"></i> Submit Your First Idea
-                        </a>
-                    </div>
-                `;
-                if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
-                return;
-            }
-
+            // Update counts
             if (this.dom.ideasCount) this.dom.ideasCount.textContent = ideas.length;
+            document.getElementById('ideasCountDisplay').textContent = ideas.length;
 
-            ideas.forEach(idea => {
-                const ideaDate = new Date(idea.created_at);
-                const timeAgo = this.getTimeAgo(ideaDate);
-
-                const statusColor = idea.status === 'approved' ? 'green' : 
-                                  idea.status === 'pending' ? 'yellow' : 'gray';
-
-                const ideaCard = document.createElement('div');
-                ideaCard.className = 'p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all cursor-pointer';
-                ideaCard.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="text-white font-semibold flex-1">${this.escapeHtml(idea.title)}</h4>
-                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-500/20 text-${statusColor}-400 ml-2">
-                            ${this.escapeHtml(idea.status || 'pending')}
-                        </span>
-                    </div>
-                    <p class="text-gray-400 text-sm mb-3">${this.escapeHtml(idea.description || '')}</p>
-                    <div class="flex justify-between items-center text-xs text-gray-400">
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-thumbs-up"></i> ${idea.votes_count || 0} votes
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <i class="fas fa-comment"></i> ${idea.comments_count || 0} comments
-                        </span>
-                        <span>${timeAgo}</span>
-                    </div>
-                `;
-                
-                ideaCard.addEventListener('click', () => {
-                    window.location.href = `/ideas#${idea.id}`;
-                });
-                
-                container.appendChild(ideaCard);
-            });
         } catch (error) {
             console.error('❌ Error loading ideas:', error);
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-exclamation-triangle text-3xl mb-2 opacity-50"></i>
-                    <p>Failed to load ideas</p>
-                </div>
-            `;
+            if (this.dom.ideasCount) this.dom.ideasCount.textContent = '0';
+            document.getElementById('ideasCountDisplay').textContent = '0';
         }
+    }
+
+    async showMyIdeasModal() {
+        const ideas = this.ideas || [];
+
+        const modalHtml = `
+            <div class="modal-backdrop active" id="myIdeasModal">
+                <div class="modal-content-premium" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+                    <button class="modal-close-btn" onclick="document.getElementById('myIdeasModal').remove(); document.body.style.overflow='auto';">×</button>
+                    
+                    <div class="modal-inner-padding">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <div class="incubation-icon-container" style="background: rgba(234, 179, 8, 0.2);">
+                                <i class="fas fa-lightbulb" style="font-size: 1.5rem; color: #eab308;"></i>
+                            </div>
+                            <h2 class="modal-title-vibrant">My Ideas</h2>
+                            <p class="modal-subtitle">${ideas.length} idea${ideas.length !== 1 ? 's' : ''}</p>
+                        </div>
+
+                        ${ideas.length === 0 ? `
+                            <div style="text-center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                                <i class="fas fa-lightbulb" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                <p>You haven't submitted any ideas yet</p>
+                                <a href="/pages/ideas/ideas.html#submit" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
+                                    <i class="fas fa-plus"></i> Submit Your First Idea
+                                </a>
+                            </div>
+                        ` : `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+                                ${ideas.map(idea => `
+                                    <div style="padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.1);">
+                                        <div style="display: flex; justify-between; align-items: start; margin-bottom: 1rem;">
+                                            <h3 style="color: white; font-weight: 600; flex: 1;">${this.escapeHtml(idea.title)}</h3>
+                                            <span style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; background: rgba(234, 179, 8, 0.2); color: #fbbf24;">
+                                                ${this.escapeHtml(idea.status || 'pending')}
+                                            </span>
+                                        </div>
+                                        <p style="color: rgba(255,255,255,0.7); font-size: 0.875rem; margin-bottom: 1rem;">
+                                            ${this.escapeHtml(idea.description || '')}
+                                        </p>
+                                        <div style="display: flex; justify-between; align-items: center; font-size: 0.75rem; color: rgba(255,255,255,0.5);">
+                                            <span><i class="fas fa-thumbs-up"></i> ${idea.votes_count || 0} votes</span>
+                                            <span><i class="fas fa-comments"></i> ${idea.comments_count || 0} comments</span>
+                                            <span><i class="fas fa-clock"></i> ${this.getTimeAgo(new Date(idea.created_at))}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.body.style.overflow = 'hidden';
     }
 
     async loadPaymentHistory() {
@@ -718,7 +1023,7 @@ class DashboardPage {
                 return;
             }
 
-            const response = await fetch('/api/dashboard/overview', {
+            const response = await fetch('/api/v1/dashboard/overview', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -732,6 +1037,12 @@ class DashboardPage {
             const payments = (data.payments || []).slice(0, 3);
 
             console.log('✅ Payments loaded:', payments.length);
+
+            // Update payment count in compact card
+            const paymentsCountEl = document.getElementById('paymentsCountDisplay');
+            if (paymentsCountEl) {
+                paymentsCountEl.textContent = data.payments?.length || 0;
+            }
 
             container.innerHTML = '';
 
@@ -779,6 +1090,176 @@ class DashboardPage {
         }
     }
 
+    async loadNotifications() {
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            if (!token) {
+                console.warn('⚠️ No auth token');
+                document.getElementById('notificationsCountDisplay').textContent = '0';
+                return;
+            }
+
+            // Get user ID from stored user data
+            const storedUser = localStorage.getItem('user');
+            if (!storedUser) {
+                console.warn('⚠️ No user data');
+                document.getElementById('notificationsCountDisplay').textContent = '0';
+                return;
+            }
+
+            const userData = JSON.parse(storedUser);
+            const userId = userData.id;
+
+            // Fetch notifications from API
+            const response = await fetch(`/api/v1/notifications/user/${userId}?unread_only=true`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch notifications');
+
+            const data = await response.json();
+            const notificationsCount = data.unreadCount || 0;
+
+            console.log('✅ Notifications count:', notificationsCount);
+
+            // Update count
+            document.getElementById('notificationsCountDisplay').textContent = notificationsCount;
+
+        } catch (error) {
+            console.error('❌ Error loading notifications:', error);
+            document.getElementById('notificationsCountDisplay').textContent = '0';
+        }
+    }
+
+    async showNotificationsModal() {
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const storedUser = localStorage.getItem('user');
+            
+            if (!token || !storedUser) {
+                alert('Please log in to view notifications');
+                return;
+            }
+
+            const userData = JSON.parse(storedUser);
+            const userId = userData.id;
+
+            // Fetch all notifications
+            const response = await fetch(`/api/v1/notifications/user/${userId}?limit=50`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch notifications');
+
+            const data = await response.json();
+            const notifications = data.notifications || [];
+
+            const modalHtml = `
+                <div class="modal-backdrop active" id="notificationsModal">
+                    <div class="modal-content-premium" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+                        <button class="modal-close-btn" onclick="document.getElementById('notificationsModal').remove(); document.body.style.overflow='auto';">×</button>
+                        
+                        <div class="modal-inner-padding">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <div class="incubation-icon-container" style="background: rgba(59, 130, 246, 0.2);">
+                                    <i class="fas fa-bell" style="font-size: 1.5rem; color: #3b82f6;"></i>
+                                </div>
+                                <h2 class="modal-title-vibrant">Notifications</h2>
+                                <p class="modal-subtitle">${notifications.length} notification${notifications.length !== 1 ? 's' : ''}</p>
+                            </div>
+
+                            ${notifications.length === 0 ? `
+                                <div style="text-center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                                    <i class="fas fa-bell-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            ` : `
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    ${notifications.map(notif => this.renderNotificationItem(notif, userId, token)).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.style.overflow = 'hidden';
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            alert('Failed to load notifications');
+        }
+    }
+
+    renderNotificationItem(notif, userId, token) {
+        const isUnread = !notif.read_at;
+        const priorityColors = {
+            'low': 'gray',
+            'medium': 'blue',
+            'high': 'orange',
+            'urgent': 'red'
+        };
+        const priorityColor = priorityColors[notif.priority] || 'blue';
+
+        return `
+            <div style="padding: 1.5rem; background: ${isUnread ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isUnread ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.1)'}; border-radius: 0.5rem; position: relative;">
+                ${isUnread ? '<div style="position: absolute; top: 1rem; right: 1rem; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>' : ''}
+                
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(${priorityColor === 'blue' ? '59, 130, 246' : priorityColor === 'orange' ? '245, 158, 11' : priorityColor === 'red' ? '239, 68, 68' : '156, 163, 175'}, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fas fa-bell" style="color: ${priorityColor === 'blue' ? '#3b82f6' : priorityColor === 'orange' ? '#f59e0b' : priorityColor === 'red' ? '#ef4444' : '#9ca3af'};"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <h4 style="color: white; margin: 0; font-size: 1rem;">${this.escapeHTML(notif.title)}</h4>
+                            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">${this.getTimeAgo(new Date(notif.created_at))}</span>
+                        </div>
+                        <p style="color: rgba(255,255,255,0.8); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${this.escapeHTML(notif.message)}</p>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: rgba(${priorityColor === 'blue' ? '59, 130, 246' : priorityColor === 'orange' ? '245, 158, 11' : priorityColor === 'red' ? '239, 68, 68' : '156, 163, 175'}, 0.2); color: ${priorityColor === 'blue' ? '#60a5fa' : priorityColor === 'orange' ? '#fbbf24' : priorityColor === 'red' ? '#f87171' : '#d1d5db'}; border-radius: 0.25rem;">
+                                ${this.escapeHTML(notif.type.replace(/_/g, ' '))}
+                            </span>
+                            ${notif.action_url ? `
+                                <a href="${this.escapeHTML(notif.action_url)}" style="font-size: 0.75rem; color: #3b82f6; text-decoration: none;">
+                                    ${this.escapeHTML(notif.action_text || 'View')} →
+                                </a>
+                            ` : ''}
+                            ${isUnread ? `
+                                <button onclick="dashboard.markNotificationAsRead('${notif.id}', '${userId}', '${token}')" style="margin-left: auto; font-size: 0.75rem; padding: 0.25rem 0.5rem; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: none; border-radius: 0.25rem; cursor: pointer;">
+                                    Mark as read
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async markNotificationAsRead(notificationId, userId, token) {
+        try {
+            const response = await fetch(`/api/v1/notifications/${notificationId}/read`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            if (!response.ok) throw new Error('Failed to mark as read');
+
+            // Refresh notifications
+            document.getElementById('notificationsModal')?.remove();
+            document.body.style.overflow = 'auto';
+            await this.loadNotifications();
+            this.showNotificationsModal();
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    }
+
     async loadNotificationsList() {
         const container = document.getElementById('notificationsList');
         if (!container) return;
@@ -811,6 +1292,12 @@ class DashboardPage {
             const notifications = (data.notifications || []).slice(0, 5);
 
             console.log('✅ Notifications loaded:', notifications.length);
+
+            // Update notification count in compact card
+            const notifCountEl = document.getElementById('notifCount');
+            if (notifCountEl) {
+                notifCountEl.textContent = data.counts?.unreadNotifications || 0;
+            }
 
             container.innerHTML = '';
 
@@ -950,20 +1437,7 @@ class DashboardPage {
     }
 
     initializeNotificationSystem() {
-        this.startNotificationPolling();
-        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) this.addDemoNotificationButton();
-    }
-
-    startNotificationPolling() {
-        setInterval(() => Math.random() < 0.1 && this.notificationManager.simulateNotification(), 30000);
-    }
-
-    addDemoNotificationButton() {
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-outline btn-sm demo-notif-btn';
-        btn.innerHTML = '<i class="fas fa-bell"></i> Demo Notification';
-        btn.addEventListener('click', () => this.notificationManager.simulateNotification());
-        document.body.appendChild(btn);
+        // Notification system initialized
     }
 
     // Update clock in real-time
@@ -998,6 +1472,7 @@ const bootDashboard = () => {
     console.log('🚀 Booting Dashboard Controller...');
     if (!window.dashboardPage) {
         window.dashboardPage = new DashboardPage();
+        window.dashboard = window.dashboardPage; // Expose for onclick handlers and notification methods
     }
 };
 

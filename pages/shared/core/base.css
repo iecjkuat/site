@@ -43,7 +43,6 @@ body {
     color: white;
     font-family: 'Inter', sans-serif;
     position: relative;
-    z-index: 1;
 }
 
 /* Glass morphism utilities */

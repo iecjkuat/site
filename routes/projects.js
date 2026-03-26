@@ -118,6 +118,96 @@ router.get('/incubation', async (req, res) => {
 });
 
 /**
+ * POST /api/projects
+ * Create a new project
+ */
+router.post('/', async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      category,
+      status = 'planning',
+      project_type = 'personal',
+      github_url,
+      demo_url,
+      tech_stack,
+      technologies,
+      tags,
+      looking_for_collaborators = false
+    } = req.body;
+
+    // Validation
+    if (!title || title.trim().length < 5) {
+      return res.status(400).json({ 
+        message: 'Title is required and must be at least 5 characters' 
+      });
+    }
+
+    if (!description || description.trim().length < 20) {
+      return res.status(400).json({ 
+        message: 'Description is required and must be at least 20 characters' 
+      });
+    }
+
+    if (!category) {
+      return res.status(400).json({ 
+        message: 'Category is required' 
+      });
+    }
+
+    // Get user ID from stored user data (temporary solution)
+    // In production, this should come from JWT token
+    const storedUser = req.headers['x-user-id']; // Frontend should send this
+    
+    // Prepare project data
+    const projectData = {
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      status,
+      project_type,
+      github_url: github_url || null,
+      demo_url: demo_url || null,
+      tech_stack: Array.isArray(tech_stack) ? tech_stack : (tech_stack ? [tech_stack] : []),
+      technologies: Array.isArray(technologies) ? technologies : (technologies ? [technologies] : []),
+      tags: Array.isArray(tags) ? tags : (tags ? [tags] : []),
+      looking_for_collaborators,
+      project_lead_id: storedUser || null,
+      progress_percentage: 0,
+      likes_count: 0,
+      views_count: 0
+    };
+
+    // Insert into database
+    const { data: project, error } = await supabase
+      .from('projects')
+      .insert(projectData)
+      .select(`
+        *,
+        project_lead:users!projects_project_lead_id_fkey(id, name, email)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating project:', error);
+      return res.status(500).json({ 
+        message: 'Failed to create project',
+        error: error.message 
+      });
+    }
+
+    res.status(201).json({
+      message: 'Project created successfully',
+      project
+    });
+  } catch (error) {
+    console.error('Error in POST /projects:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/projects/stats
  * Get project statistics
  */
@@ -234,9 +324,8 @@ router.post('/:id/collaborate', async (req, res) => {
       });
     }
 
-    // Use a default user ID for anonymous submissions
-    // In a real app, you'd get this from authentication middleware
-    const anonymousUserId = 'cb8ec53d-7117-4957-9b40-148edf811452';
+    // Get user ID from header (sent by frontend)
+    const userId = req.headers['x-user-id'];
 
     // Check if project exists and get project lead info
     const { data: project, error: projectError } = await supabase
@@ -254,34 +343,39 @@ router.post('/:id/collaborate', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Get requester info (in real app, this would come from auth)
-    const { data: requester, error: requesterError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', anonymousUserId)
-      .single();
-
-    if (requesterError || !requester) {
-      return res.status(404).json({ message: 'User not found' });
+    // Get requester info if userId is provided
+    let requester = null;
+    if (userId) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('id', userId)
+        .single();
+      
+      if (!userError && userData) {
+        requester = userData;
+      }
     }
 
-    // Check if user already has a collaboration request for this project
-    const { data: existingRequest } = await supabase
-      .from('project_collaborations')
-      .select('id, status')
-      .eq('project_id', id)
-      .eq('user_id', anonymousUserId)
-      .single();
+    // Check if user already has a collaboration request for this project (only if userId provided)
+    if (userId) {
+      const { data: existingRequest } = await supabase
+        .from('project_collaborations')
+        .select('id, status')
+        .eq('project_id', id)
+        .eq('user_id', userId)
+        .single();
 
-    if (existingRequest) {
-      if (existingRequest.status === 'pending') {
-        return res.status(400).json({ 
-          message: 'You already have a pending collaboration request for this project' 
-        });
-      } else if (existingRequest.status === 'accepted') {
-        return res.status(400).json({ 
-          message: 'You are already a collaborator on this project' 
-        });
+      if (existingRequest) {
+        if (existingRequest.status === 'pending') {
+          return res.status(400).json({ 
+            message: 'You already have a pending collaboration request for this project' 
+          });
+        } else if (existingRequest.status === 'accepted') {
+          return res.status(400).json({ 
+            message: 'You are already a collaborator on this project' 
+          });
+        }
       }
     }
 
@@ -292,7 +386,7 @@ router.post('/:id/collaborate', async (req, res) => {
 
     const collaborationData = {
       project_id: id,
-      user_id: anonymousUserId,
+      user_id: userId || null, // Allow null for anonymous requests
       role,
       message,
       skills_offered: skillsArray,
@@ -315,28 +409,30 @@ router.post('/:id/collaborate', async (req, res) => {
       });
     }
 
-    // Send email notification to project lead
-    try {
-      const collaborationEmailService = require('../utils/collaboration-email-service');
-      await collaborationEmailService.sendRequestReceivedEmail({
-        projectTitle: project.title,
-        projectLead: {
-          name: project.project_lead.name,
-          email: project.project_lead.email,
-          phone: project.project_lead.phone
-        },
-        requester: {
-          name: requester.name,
-          email: requester.email
-        },
-        role,
-        skills: skillsArray.join(', '),
-        message,
-        timeCommitment
-      });
-    } catch (emailError) {
-      console.error('Failed to send email notification:', emailError);
-      // Don't fail the request if email fails
+    // Send email notification to project lead (if project has a lead)
+    if (project.project_lead && project.project_lead.email) {
+      try {
+        const collaborationEmailService = require('../utils/collaboration-email-service');
+        await collaborationEmailService.sendRequestReceivedEmail({
+          projectTitle: project.title,
+          projectLead: {
+            name: project.project_lead.name,
+            email: project.project_lead.email,
+            phone: project.project_lead.phone
+          },
+          requester: {
+            name: requester?.name || 'Anonymous User',
+            email: email
+          },
+          role,
+          skills: skillsArray.join(', '),
+          message,
+          timeCommitment
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     res.status(201).json({
