@@ -95,40 +95,39 @@ app.use(helmet({
   } : false // Disable HSTS in development to avoid localhost issues
 }));
 
-// CORS configuration with environment-specific origins
+// CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean)
+  ? [
+      ...(process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean),
+      'https://iecjkuat.vercel.app',
+      // Allow any vercel.app subdomain for preview deployments
+    ]
   : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5000'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, or file:// protocol)
+    // Allow requests with no origin (same-origin, mobile apps, curl)
     if (!origin) {
       return callback(null, true);
     }
 
-    // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Always allow same Vercel deployment
+    if (origin.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     }
 
-    // In development, be more permissive but don't log for null origins
+    // In development, allow everything
     if (process.env.NODE_ENV !== 'production') {
-      // Only log warnings for actual origins that are not allowed
-      if (origin) {
-        console.warn('⚠️ CORS: Allowing origin in development mode:', origin);
-      }
       return callback(null, true);
     }
 
-    // In production, block unknown origins
     console.warn('❌ CORS blocked origin:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400
 }));
 
 // Body parsing middleware

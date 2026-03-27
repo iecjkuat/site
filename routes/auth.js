@@ -1,5 +1,5 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
@@ -79,13 +79,7 @@ router.post('/create-profile', async (req, res) => {
 });
 // Register new user (database-only approach)
 router.post('/register', [
-  body('email').isEmail().withMessage('Valid email is required')
-    .custom((email) => {
-      if (!email.includes('@students.jkuat.ac.ke') && !email.includes('@jkuat.ac.ke')) {
-        throw new Error('Please use a valid JKUAT email address (@students.jkuat.ac.ke or @jkuat.ac.ke)');
-      }
-      return true;
-    }),
+  body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').notEmpty().withMessage('Name is required')
 ], async (req, res) => {
@@ -164,7 +158,8 @@ router.post('/register', [
 
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+    console.error('Registration error stack:', error.stack);
+    res.status(500).json({ message: 'Server error during registration', detail: error.message });
   }
 });
 
@@ -205,7 +200,6 @@ router.post('/login', [
 
     // Check password if hash exists
     if (userData.password_hash) {
-      const bcrypt = require('bcrypt');
       const passwordValid = await bcrypt.compare(password, userData.password_hash);
       
       if (!passwordValid) {
