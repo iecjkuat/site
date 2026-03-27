@@ -3,14 +3,22 @@
   "builds": [
     {
       "src": "server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "server.js",
+          "package.json",
+          "lib/**",
+          "routes/**",
+          "middleware/**",
+          "pages/**",
+          "shared/**",
+          "api/**"
+        ]
+      }
     }
   ],
   "routes": [
-    {
-      "src": "/api/health",
-      "dest": "/api/health.js"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/server.js"
@@ -25,7 +33,6 @@
   },
   "functions": {
     "server.js": {
-      "includeFiles": "{pages,shared}/**",
       "maxDuration": 30
     }
   }

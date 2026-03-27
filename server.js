@@ -10,7 +10,10 @@ require('dotenv').config();
 const { supabaseAdmin } = require('./lib/supabase');
 
 // Import WebSocket service
-const WebSocketService = require('./routes/websocket-service');
+let WebSocketService;
+if (!process.env.VERCEL) {
+  WebSocketService = require('./routes/websocket-service');
+}
 
 // Import routes
 const authRoutes = require('./routes/auth');
