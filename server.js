@@ -55,7 +55,10 @@ const PORT = process.env.PORT || 3000;
 const apiVersion = '/api/v1';
 
 // Initialize WebSocket service
-const wsService = new WebSocketService(server);
+let wsService = null;
+if (!process.env.VERCEL) {
+  wsService = new WebSocketService(server);
+}
 
 // Security middleware - Apply before other middleware
 const connectSrc = ["'self'", "https://*.supabase.co", "wss://*.supabase.co"];
@@ -443,6 +446,9 @@ app.get('/privacy', (req, res) => {
 // WebSocket stats endpoint - DEV ONLY for security
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/websocket/stats', (req, res) => {
+    if (!wsService) {
+      return res.status(503).json({ error: 'WebSocket service not running' });
+    }
     res.json({
       websocket: wsService.getStats(),
       timestamp: new Date().toISOString()
@@ -635,7 +641,8 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start server
-server.listen(PORT, () => {
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
   console.log(`🚀 JKUAT Clubs Platform (Supabase) running on port ${PORT}`);
   console.log(`🔌 WebSocket server enabled for real-time updates`);
   console.log(`🏠 Home: http://localhost:${PORT}`);
@@ -667,6 +674,7 @@ server.listen(PORT, () => {
   console.log(`🔐 Auth: Supabase Auth + Direct SQL`);
   console.log(`📧 Email: ${process.env.EMAIL_USER ? 'Configured' : 'Not configured'}`);
   console.log(`💰 M-Pesa: ${process.env.MPESA_CONSUMER_KEY ? 'Configured' : 'Mock mode'}`);
-});
+  });
+}
 
 module.exports = app;

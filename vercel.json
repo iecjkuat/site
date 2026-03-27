@@ -25,6 +25,7 @@
   },
   "functions": {
     "server.js": {
+      "includeFiles": "{pages,shared}/**",
       "maxDuration": 30
     }
   }
