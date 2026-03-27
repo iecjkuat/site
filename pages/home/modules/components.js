@@ -472,24 +472,38 @@ class ComponentsManager {
         events.forEach(event => {
             const card = document.createElement('div');
             card.className = 'event-card';
+            const eventId = event.id || '';
+            const dateStr = event.date || (event.start_date ? new Date(event.start_date).toLocaleDateString() : 'TBD');
+            const timeStr = event.time || (event.start_date ? new Date(event.start_date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'TBD');
+            const locationStr = event.location || event.venue || 'TBD';
+            const spotsStr = String(event.spots || event.max_attendees || 'Limited');
+
             card.innerHTML = `
-                <div class="event-date">${this.escapeHtml(event.date || new Date(event.start_date).toLocaleDateString())}</div>
+                <div class="event-date">${this.escapeHtml(dateStr)}</div>
                 <h3 class="event-title">${this.escapeHtml(event.title)}</h3>
                 <p class="event-description">${this.escapeHtml(event.description)}</p>
                 <div class="event-meta">
-                    <span><i class="fas fa-clock"></i> ${this.escapeHtml(event.time || new Date(event.start_date).toLocaleTimeString())}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(event.location || event.venue)}</span>
-                    <span><i class="fas fa-users"></i> ${this.escapeHtml(String(event.spots || event.max_attendees || 'Limited'))} spots</span>
+                    <span><i class="fas fa-clock"></i> ${this.escapeHtml(timeStr)}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${this.escapeHtml(locationStr)}</span>
+                    <span><i class="fas fa-users"></i> ${this.escapeHtml(spotsStr)} spots</span>
                 </div>
                 <div class="event-actions">
-                    <button class="btn-register" onclick="window.location.href='/events#${this.escapeHtml(event.id)}'">
+                    <button class="btn-register" data-event-id="${this.escapeHtml(eventId)}">
                         <i class="fas fa-calendar-plus"></i> Register
                     </button>
-                    <button class="btn-details" onclick="window.location.href='/events#${this.escapeHtml(event.id)}'">
+                    <button class="btn-details" data-event-id="${this.escapeHtml(eventId)}">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
                 </div>
             `;
+
+            // Attach event listeners (no inline onclick — CSP safe)
+            card.querySelectorAll('[data-event-id]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window.location.href = `/events#${eventId}`;
+                });
+            });
+
             container.appendChild(card);
         });
     }

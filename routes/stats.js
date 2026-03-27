@@ -131,6 +131,16 @@ router.get('/detailed', async (req, res) => {
             .select('id', { count: 'exact' })
             .eq('status', 'upcoming');
 
+        // Get testimonials count
+        const { count: testimonialsCount, error: testimonialsError } = await supabase
+            .from('testimonials')
+            .select('id', { count: 'exact' })
+            .eq('is_approved', true);
+
+        if (testimonialsError) {
+            console.error('❌ Error fetching testimonials count:', testimonialsError);
+        }
+
         const detailedStats = {
             membership: {
                 total: membershipStats?.length || 0,

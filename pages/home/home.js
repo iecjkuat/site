@@ -283,25 +283,21 @@ class HomePage {
     }
 
     handleEngagementAction(role) {
+        const isAuthenticated = window.authManager?.isAuthenticated() || false;
+
         switch (role) {
             case 'student':
-                // Check authentication using auth manager
-                let isAuthenticated = false;
-                if (window.authManager) {
-                    isAuthenticated = window.authManager.isAuthenticated();
-                }
-
                 if (isAuthenticated) {
-                    window.location.href = '../events/events.html';
+                    window.location.href = '/events';
                 } else {
-                    window.showRegister?.();
+                    window.location.href = '/signup';
                 }
                 break;
             case 'professional':
-                window.location.href = '/partnerships';
+                window.location.href = '/opportunities';
                 break;
             case 'alumni':
-                window.location.href = '/alumni';
+                window.location.href = '/feedback';
                 break;
         }
     }

@@ -212,7 +212,9 @@ class ActivityFeed {
 
     renderFeedItem(item) {
         const timeAgo = this.getTimeAgo(item.timestamp);
-        
+        const typeIcon = this.getTypeIcon(item.type);
+        const typeLabel = this.getTypeLabel(item.type);
+
         return `
             <article class="feed-item" data-item-id="${item.id}" data-type="${item.type}">
                 <div class="feed-header">
@@ -227,24 +229,41 @@ class ActivityFeed {
 
                 <div class="feed-content">
                     <div class="feed-type-badge ${item.type}">
-                        <i class="${this.getTypeIcon(item.type)}"></i>
-                        ${this.getTypeLabel(item.type)}
+                        <i class="${typeIcon}"></i> ${typeLabel}
                     </div>
                     <h3 class="feed-title">${this.escapeHtml(item.title)}</h3>
                     <p class="feed-description">${this.escapeHtml(item.description.substring(0, 100))}...</p>
-                </div>
-                        
-                        ${item.tags && item.tags.length > 0 ? `
-                            <div class="feed-tags">
-                                ${item.tags.map(tag => `<span class="feed-tag">#${tag}</span>`).join(' ')}
-                            </div>
-                        ` : ''}
-                    </div>
+
+                    ${item.tags && item.tags.length > 0 ? `
+                        <div class="feed-tags">
+                            ${item.tags.map(tag => `<span class="feed-tag">#${this.escapeHtml(tag)}</span>`).join(' ')}
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="feed-actions">
                     <div class="action-buttons">
-                        <button class="feed-action-btn like-btn ${item.isLiked ? 'liked' : ''}" 
+                        <button class="feed-action-btn like-btn ${item.isLiked ? 'liked' : ''}"
+                                data-action="like" data-item-id="${item.id}">
+                            <i class="fas fa-heart"></i>
+                            <span>${item.likes || 0}</span>
+                        </button>
+                        <button class="feed-action-btn comment-btn"
+                                data-action="comment" data-item-id="${item.id}">
+                            <i class="fas fa-comment"></i>
+                            <span>${item.comments || 0}</span>
+                        </button>
+                        <button class="feed-action-btn share-btn"
+                                data-action="share" data-item-id="${item.id}">
+                            <i class="fas fa-share"></i>
+                        </button>
+                    </div>
+                    ${item.cta ? `
+                        <button class="feed-cta-btn" data-action="cta" data-item-id="${item.id}">
+                            <i class="fas fa-${this.escapeHtml(item.cta.icon)}"></i>
+                            ${this.escapeHtml(item.cta.text)}
+                        </button>
+                    ` : ''}
                 </div>
             </article>
         `;
