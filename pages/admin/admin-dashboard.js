@@ -388,6 +388,9 @@ class AdminDashboard {
             case 'notifications':
                 await this.loadNotifications();
                 break;
+            case 'email':
+                await this.loadEmail();
+                break;
             case 'database':
                 await this.loadDatabaseInfo();
                 break;
@@ -402,6 +405,13 @@ class AdminDashboard {
             window.notificationMgmt = new NotificationManagement(this);
         }
         await window.notificationMgmt.init();
+    }
+
+    async loadEmail() {
+        if (!window.emailMgmt) {
+            window.emailMgmt = new EmailManagement(this);
+        }
+        await window.emailMgmt.init();
     }
 
     // Initialize notification management on page load

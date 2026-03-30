@@ -95,6 +95,9 @@
             <button class="admin-tab" data-tab="settings">
                 <i class="fas fa-cog"></i> Settings
             </button>
+            <button class="admin-tab" data-tab="email">
+                <i class="fas fa-envelope"></i> Email
+            </button>
         </div>
 
         <!-- Tab Content -->
@@ -485,6 +488,18 @@
         </div>
     </div>
 
+    <!-- Email Tab -->
+    <div id="email-tab" class="tab-pane">
+        <div id="emailContent">
+            <div style="text-align:center;padding:4rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size:3rem;color:#3b82f6;"></i>
+                <p style="color:white;margin-top:1rem;">Loading email management...</p>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- end admin-content -->
+
     <!-- Modals -->
     <!-- Add User Modal -->
     <div id="addUserModal" class="modal">
@@ -522,6 +537,7 @@
 
     <!-- Scripts -->
     <script src="/pages/admin/modules/notifications-management.js"></script>
+    <script src="/pages/admin/modules/email-management.js"></script>
     <script src="/pages/admin/admin-dashboard.js"></script>
     
     <!-- Minimal Footer -->

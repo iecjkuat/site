@@ -86,10 +86,9 @@ signupForm.addEventListener('submit', async (e) => {
         showMessage('Please enter a valid email address', 'error');
         return;
     }
-    
-    // Validate JKUAT email
+
     if (!email.includes('@students.jkuat.ac.ke') && !email.includes('@jkuat.ac.ke')) {
-        showMessage('Please use a valid JKUAT email address (@students.jkuat.ac.ke or @jkuat.ac.ke)', 'error');
+        showMessage('Please use your JKUAT email (@students.jkuat.ac.ke or @jkuat.ac.ke)', 'error');
         return;
     }
     
@@ -134,17 +133,16 @@ signupForm.addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (!response.ok) {
-            throw new Error(data.message || 'Registration failed');
+            const errorData = data.errors ? data.errors[0].msg : (data.message || 'Registration failed');
+            throw new Error(errorData);
         }
         
         console.log('✅ Registration successful');
         
-        showMessage('Registration successful! Redirecting to sign in...', 'success');
+        showMessage('Registration successful! Please check your JKUAT email inbox and click the verification link to activate your account.', 'success');
         
-        // Redirect to signin page after 2 seconds
-        setTimeout(() => {
-            window.location.href = '/signin';
-        }, 2000);
+        // Don't redirect — user needs to verify email first
+        submitBtn.disabled = true;
         
     } catch (error) {
         console.error('❌ Registration error:', error);

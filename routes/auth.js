@@ -7,7 +7,59 @@ const { supabaseAdmin, supabaseAnon } = require('../lib/supabase');
 const jkuatPortal = require('../utils/jkuatPortal');
 const { logActivity } = require('../lib/audit');
 const { generateSecureToken, requireAdmin, authenticateToken } = require('../middleware/auth');
-const router = express.Router();
+const { Resend } = require('resend');
+const _resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM = process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@iecjkuat.com>';
+
+async function resend_welcome(userId) {
+    if (!_resend) { console.warn('Resend not configured — skipping welcome email'); return; }
+    const { supabaseAdmin } = require('../lib/supabase');
+    const { data: user } = await supabaseAdmin.from('users').select('name,email').eq('id', userId).single();
+    if (!user) return;
+    await _resend.emails.send({
+        from: FROM,
+        to: user.email,
+        subject: 'Welcome to JKUAT Innovation Club!',
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:40px auto;background:#0f172a;color:#f9fafb;border-radius:12px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px">
+                <h1 style="margin:0;color:#fff">Welcome, ${user.name}! 🎉</h1>
+            </div>
+            <div style="padding:32px">
+                <p>Your account is ready. Start exploring projects, events, and ideas.</p>
+                <a href="${process.env.FRONTEND_URL || 'https://iecjkuat.com'}/dashboard" 
+                   style="display:inline-block;background:#10b981;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:600;margin-top:16px">
+                   Go to Dashboard
+                </a>
+            </div>
+        </div>`
+    });
+}
+
+async function sendVerificationEmail(email, name, token) {
+    if (!_resend) { console.warn('Resend not configured — skipping verification email'); return; }
+    const site = process.env.FRONTEND_URL || 'https://iecjkuat.com';
+    const link = `${site}/verify-email?token=${token}`;
+    await _resend.emails.send({
+        from: FROM,
+        to: email,
+        subject: 'Verify your JKUAT Innovation Club email',
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:40px auto;background:#0f172a;color:#f9fafb;border-radius:12px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px">
+                <h1 style="margin:0;color:#fff">Verify your email</h1>
+                <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);">JKUAT Innovation &amp; Entrepreneurship Club</p>
+            </div>
+            <div style="padding:32px">
+                <p>Hi <strong>${name}</strong>,</p>
+                <p>Thanks for signing up! Click the button below to verify your email. This link expires in <strong>24 hours</strong>.</p>
+                <a href="${link}" style="display:inline-block;background:#10b981;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:700;margin:20px 0;font-size:1rem;">
+                    Verify Email Address
+                </a>
+                <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">Or copy this link: ${link}</p>
+                <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;">If you didn't create an account, ignore this email.</p>
+            </div>
+        </div>`
+    });
+}
 
 // Create user profile (called after Supabase Auth registration)
 router.post('/create-profile', async (req, res) => {
@@ -79,7 +131,13 @@ router.post('/create-profile', async (req, res) => {
 });
 // Register new user (database-only approach)
 router.post('/register', [
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('email').isEmail().withMessage('Valid email is required')
+    .custom((email) => {
+      if (!email.includes('@students.jkuat.ac.ke') && !email.includes('@jkuat.ac.ke')) {
+        throw new Error('Please use your JKUAT email address (@students.jkuat.ac.ke or @jkuat.ac.ke)');
+      }
+      return true;
+    }),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').notEmpty().withMessage('Name is required')
 ], async (req, res) => {
@@ -108,11 +166,13 @@ router.post('/register', [
       });
     }
 
-    // Generate UUID and hash password
+    // Generate UUID, hash password, and create verification token
     const userId = require('crypto').randomUUID();
     const passwordHash = await bcrypt.hash(password, 12);
+    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
 
-    // Create user profile in database
+    // Create user — unverified until they click the email link
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -124,10 +184,12 @@ router.post('/register', [
         course: course || null,
         year_of_study: yearOfStudy ? parseInt(yearOfStudy) : null,
         college: college || null,
-        email_verified: true,
-        membership_status: 'active',
+        email_verified: false,
+        membership_status: 'pending',
         role: 'member',
         password_hash: passwordHash,
+        verification_token: verificationToken,
+        verification_token_expiry: tokenExpiry,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -144,16 +206,21 @@ router.post('/register', [
 
     console.log('✅ User created successfully in database');
 
+    // Send verification email (non-blocking)
+    sendVerificationEmail(user.email, user.name, verificationToken).catch(err =>
+      console.error('Verification email failed:', err)
+    );
+
     res.status(201).json({
-      message: 'Registration successful! You can now log in.',
+      message: 'Registration successful! Please check your JKUAT email to verify your account.',
+      requiresVerification: true,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         membershipStatus: user.membership_status
-      },
-      canLoginImmediately: true
+      }
     });
 
   } catch (error) {
@@ -196,6 +263,15 @@ router.post('/login', [
     if (userError || !userData) {
       console.log('User not found or error:', userError);
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Block login if email not verified
+    if (!userData.email_verified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in. Check your JKUAT inbox for the verification link.',
+        requiresVerification: true,
+        email: userData.email
+      });
     }
 
     // Check password if hash exists
@@ -263,6 +339,89 @@ router.post('/login', [
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+// Verify email address via token
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json({ message: 'Verification token required' });
+
+    // Find user with this token
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, name, verification_token_expiry, email_verified')
+      .eq('verification_token', token)
+      .single();
+
+    if (error || !user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link. Please request a new one.' });
+    }
+
+    if (user.email_verified) {
+      return res.json({ message: 'Email already verified. You can log in.', alreadyVerified: true });
+    }
+
+    // Check token expiry
+    if (user.verification_token_expiry && new Date(user.verification_token_expiry) < new Date()) {
+      return res.status(400).json({ message: 'Verification link has expired. Please sign up again or request a new link.', expired: true });
+    }
+
+    // Mark as verified
+    await supabaseAdmin
+      .from('users')
+      .update({
+        email_verified: true,
+        membership_status: 'active',
+        verification_token: null,
+        verification_token_expiry: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    // Send welcome email now that they're verified
+    resend_welcome(user.id).catch(err => console.error('Welcome email failed:', err));
+
+    console.log('✅ Email verified for:', user.email);
+    res.json({ message: 'Email verified successfully! You can now log in.', verified: true });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Server error during verification' });
+  }
+});
+
+// Resend verification email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, name, email, email_verified')
+      .eq('email', email)
+      .single();
+
+    if (!user) return res.status(404).json({ message: 'No account found with this email' });
+    if (user.email_verified) return res.json({ message: 'Email already verified. You can log in.' });
+
+    // Generate new token
+    const newToken = require('crypto').randomBytes(32).toString('hex');
+    const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    await supabaseAdmin
+      .from('users')
+      .update({ verification_token: newToken, verification_token_expiry: newExpiry })
+      .eq('id', user.id);
+
+    await sendVerificationEmail(user.email, user.name, newToken);
+
+    res.json({ message: 'Verification email resent. Check your JKUAT inbox.' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -1,350 +1,219 @@
 /**
- * Email Service Routes
- * Handles email notifications and reminders
+ * Email Service - powered by Resend
  */
 
 const express = require('express');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
 
 const router = express.Router();
 
-// Email transporter configuration
-const createTransporter = () => {
-    if (process.env.NODE_ENV === 'production') {
-        // Production email service (e.g., SendGrid, Mailgun)
-        return nodemailer.createTransporter({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-    } else {
-        // Development - use Ethereal for testing
-        return nodemailer.createTransporter({
-            host: 'smtp.ethereal.email',
-            port: 587,
-            auth: {
-                user: 'ethereal.user@ethereal.email',
-                pass: 'ethereal.pass'
-            }
-        });
-    }
-};
+// Initialise Resend client
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM = process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@iecjkuat.com>';
+const SITE = process.env.FRONTEND_URL || 'https://iecjkuat.com';
 
-// Send event registration confirmation
+/* ─── helpers ─────────────────────────────────────────────── */
+
+function baseTemplate(title, bodyHtml) {
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <style>
+      body{font-family:Arial,sans-serif;background:#0f172a;color:#f9fafb;margin:0;padding:0}
+      .wrap{max-width:600px;margin:40px auto;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}
+      .hdr{background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px}
+      .hdr h1{margin:0;font-size:1.5rem;color:#fff}
+      .hdr p{margin:4px 0 0;color:rgba(255,255,255,.85);font-size:.9rem}
+      .body{padding:32px}
+      .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:20px;margin:20px 0}
+      .btn{display:inline-block;background:#10b981;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:600;margin-top:16px}
+      .ftr{text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:.8rem;border-top:1px solid rgba(255,255,255,.08)}
+    </style></head><body>
+    <div class="wrap">
+      <div class="hdr"><h1>${title}</h1><p>JKUAT Innovation &amp; Entrepreneurship Club</p></div>
+      <div class="body">${bodyHtml}</div>
+      <div class="ftr">© 2025 JKUAT Innovation Club · <a href="mailto:info@iecjkuat.com" style="color:#10b981">info@iecjkuat.com</a></div>
+    </div></body></html>`;
+}
+
+async function sendEmail(to, subject, html) {
+    if (!resend) throw new Error('Email service not configured — set RESEND_API_KEY');
+    const { data, error } = await resend.emails.send({ from: FROM, to, subject, html });
+    if (error) throw new Error(error.message);
+    return data;
+}
+
+/* ─── welcome / signup confirmation ───────────────────────── */
+
+router.post('/welcome', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const { data: user } = await supabase.from('users').select('name,email').eq('id', userId).single();
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const html = baseTemplate('Welcome to the Club! 🎉', `
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>Welcome to the JKUAT Innovation &amp; Entrepreneurship Club! We're thrilled to have you.</p>
+            <div class="card">
+                <p>✅ Your account is active</p>
+                <p>🚀 Explore projects, events, and ideas</p>
+                <p>💡 Submit your first idea</p>
+            </div>
+            <a href="${SITE}/dashboard" class="btn">Go to Dashboard</a>
+        `);
+
+        await sendEmail(user.email, 'Welcome to JKUAT Innovation Club!', html);
+        res.json({ message: 'Welcome email sent', recipient: user.email });
+    } catch (err) {
+        console.error('Welcome email error:', err);
+        res.status(500).json({ message: 'Failed to send welcome email', error: err.message });
+    }
+});
+
+/* ─── event registration confirmation ─────────────────────── */
+
 router.post('/registration-confirmation', [
-    body('userId').isUUID().withMessage('Valid user ID required'),
-    body('eventId').isUUID().withMessage('Valid event ID required'),
-    body('registrationId').isUUID().withMessage('Valid registration ID required')
+    body('userId').isUUID(),
+    body('eventId').isUUID(),
+    body('registrationId').isUUID()
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
         const { userId, eventId, registrationId } = req.body;
 
-        // Get user and event details
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('name, email')
-            .eq('id', userId)
-            .single();
+        const [{ data: user }, { data: event }] = await Promise.all([
+            supabase.from('users').select('name,email').eq('id', userId).single(),
+            supabase.from('events').select('title,start_date,end_date,location,fee').eq('id', eventId).single()
+        ]);
 
-        const { data: event, error: eventError } = await supabase
-            .from('events')
-            .select('title, start_date, end_date, location, venue_details, fee')
-            .eq('id', eventId)
-            .single();
+        if (!user || !event) return res.status(404).json({ message: 'User or event not found' });
 
-        if (userError || eventError || !user || !event) {
-            return res.status(404).json({ message: 'User or event not found' });
-        }
+        const dateStr = new Date(event.start_date).toLocaleDateString('en-KE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        const timeStr = new Date(event.start_date).toLocaleTimeString('en-KE', { hour:'2-digit', minute:'2-digit' });
 
-        // Create email content
-        const emailHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-                    .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
-                    .event-details { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-                    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
-                    .btn { display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>🎉 Registration Confirmed!</h1>
-                        <p>JKUAT Innovation and Entrepreneurship Club</p>
-                    </div>
-                    <div class="content">
-                        <p>Dear ${user.name},</p>
-                        <p>Your registration for <strong>${event.title}</strong> has been confirmed!</p>
-                        
-                        <div class="event-details">
-                            <h3>📅 Event Details</h3>
-                            <p><strong>Event:</strong> ${event.title}</p>
-                            <p><strong>Date:</strong> ${new Date(event.start_date).toLocaleDateString('en-US', { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            })}</p>
-                            <p><strong>Time:</strong> ${new Date(event.start_date).toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit' 
-                            })} - ${new Date(event.end_date).toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit' 
-                            })}</p>
-                            <p><strong>Location:</strong> ${event.location}</p>
-                            ${event.venue_details ? `<p><strong>Venue Details:</strong> ${event.venue_details}</p>` : ''}
-                            <p><strong>Registration Fee:</strong> ${event.fee > 0 ? `KES ${event.fee.toLocaleString()}` : 'Free for members'}</p>
-                            <p><strong>Registration ID:</strong> ${registrationId}</p>
-                        </div>
-                        
-                        <p><strong>What to bring:</strong></p>
-                        <ul>
-                            <li>Valid student ID</li>
-                            <li>This confirmation email (digital or printed)</li>
-                            <li>Notebook and pen for taking notes</li>
-                            ${event.fee > 0 ? '<li>Payment receipt (if not paid online)</li>' : ''}
-                        </ul>
-                        
-                        <p><strong>Important Notes:</strong></p>
-                        <ul>
-                            <li>Please arrive 15 minutes before the event starts</li>
-                            <li>Bring your QR code (available in your dashboard) for quick check-in</li>
-                            <li>Contact us if you need to cancel your registration</li>
-                        </ul>
-                        
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/events" class="btn">View Event Details</a>
-                        
-                        <p>We're excited to see you at the event!</p>
-                        <p>Best regards,<br>JKUAT Innovation and Entrepreneurship Club</p>
-                    </div>
-                    <div class="footer">
-                        <p>© 2024 JKUAT Innovation and Entrepreneurship Club. All rights reserved.</p>
-                        <p>If you have any questions, contact us at innovation@jkuat.ac.ke</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
+        const html = baseTemplate('Registration Confirmed! 🎉', `
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>Your registration for <strong>${event.title}</strong> is confirmed.</p>
+            <div class="card">
+                <p>📅 <strong>Date:</strong> ${dateStr}</p>
+                <p>🕐 <strong>Time:</strong> ${timeStr}</p>
+                <p>📍 <strong>Location:</strong> ${event.location}</p>
+                <p>💳 <strong>Fee:</strong> ${event.fee > 0 ? `KES ${event.fee.toLocaleString()}` : 'Free'}</p>
+                <p>🔖 <strong>Registration ID:</strong> ${registrationId}</p>
+            </div>
+            <a href="${SITE}/events" class="btn">View Event</a>
+        `);
 
-        // Send email
-        const transporter = createTransporter();
-        const mailOptions = {
-            from: process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@jkuat.ac.ke>',
-            to: user.email,
-            subject: `Registration Confirmed: ${event.title}`,
-            html: emailHtml
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        // Log email sent
-        console.log(`Registration confirmation email sent to ${user.email} for event ${event.title}`);
-
-        res.json({
-            message: 'Registration confirmation email sent successfully',
-            recipient: user.email,
-            eventTitle: event.title
-        });
-
-    } catch (error) {
-        console.error('Error sending registration confirmation:', error);
-        res.status(500).json({ message: 'Failed to send confirmation email' });
+        await sendEmail(user.email, `Registration Confirmed: ${event.title}`, html);
+        res.json({ message: 'Confirmation email sent', recipient: user.email });
+    } catch (err) {
+        console.error('Registration confirmation error:', err);
+        res.status(500).json({ message: 'Failed to send confirmation email', error: err.message });
     }
 });
 
-// Send event reminders
+/* ─── event reminders ──────────────────────────────────────── */
+
 router.post('/send-reminders', [
-    body('eventId').isUUID().withMessage('Valid event ID required'),
-    body('reminderType').isIn(['24h', '1h', 'now']).withMessage('Invalid reminder type')
+    body('eventId').isUUID(),
+    body('reminderType').isIn(['24h', '1h', 'now'])
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
         const { eventId, reminderType } = req.body;
-
-        // Get event details
-        const { data: event, error: eventError } = await supabase
-            .from('events')
-            .select('title, start_date, location')
-            .eq('id', eventId)
-            .single();
-
-        if (eventError || !event) {
-            return res.status(404).json({ message: 'Event not found' });
-        }
-
-        // Get registered attendees
-        const { data: attendees, error: attendeesError } = await supabase
-            .from('event_attendees')
-            .select(`
-                users:user_id(name, email)
-            `)
-            .eq('event_id', eventId)
-            .eq('attendance_status', 'registered');
-
-        if (attendeesError) {
-            return res.status(500).json({ message: 'Failed to fetch attendees' });
-        }
-
-        const reminderMessages = {
-            '24h': {
-                subject: `Reminder: ${event.title} - Tomorrow`,
-                message: 'Your event is tomorrow! Don\'t forget to attend.'
-            },
-            '1h': {
-                subject: `Starting Soon: ${event.title} - 1 Hour`,
-                message: 'Your event starts in 1 hour. Please make your way to the venue.'
-            },
-            'now': {
-                subject: `Starting Now: ${event.title}`,
-                message: 'Your event is starting now! Please check in at the venue.'
-            }
-        };
-
-        const reminder = reminderMessages[reminderType];
-        const transporter = createTransporter();
-        let sentCount = 0;
-
-        // Send reminders to all attendees
-        for (const attendee of attendees) {
-            if (attendee.users && attendee.users.email) {
-                const mailOptions = {
-                    from: process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@jkuat.ac.ke>',
-                    to: attendee.users.email,
-                    subject: reminder.subject,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: #10b981;">📅 Event Reminder</h2>
-                            <p>Dear ${attendee.users.name},</p>
-                            <p>${reminder.message}</p>
-                            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                                <h3>${event.title}</h3>
-                                <p><strong>Date:</strong> ${new Date(event.start_date).toLocaleDateString()}</p>
-                                <p><strong>Time:</strong> ${new Date(event.start_date).toLocaleTimeString()}</p>
-                                <p><strong>Location:</strong> ${event.location}</p>
-                            </div>
-                            <p>See you there!</p>
-                            <p>Best regards,<br>JKUAT Innovation Club</p>
-                        </div>
-                    `
-                };
-
-                try {
-                    await transporter.sendMail(mailOptions);
-                    sentCount++;
-                } catch (emailError) {
-                    console.error(`Failed to send reminder to ${attendee.users.email}:`, emailError);
-                }
-            }
-        }
-
-        res.json({
-            message: 'Event reminders sent successfully',
-            sentCount,
-            totalAttendees: attendees.length,
-            reminderType
-        });
-
-    } catch (error) {
-        console.error('Error sending event reminders:', error);
-        res.status(500).json({ message: 'Failed to send reminders' });
-    }
-});
-
-// Send event updates/notifications
-router.post('/event-update', [
-    body('eventId').isUUID().withMessage('Valid event ID required'),
-    body('updateType').isIn(['update', 'cancellation', 'postponement']).withMessage('Invalid update type'),
-    body('message').notEmpty().withMessage('Update message required')
-], async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { eventId, updateType, message, newDate } = req.body;
-
-        // Get event and attendees
-        const { data: event } = await supabase
-            .from('events')
-            .select('title')
-            .eq('id', eventId)
-            .single();
+        const { data: event } = await supabase.from('events').select('title,start_date,location').eq('id', eventId).single();
+        if (!event) return res.status(404).json({ message: 'Event not found' });
 
         const { data: attendees } = await supabase
             .from('event_attendees')
-            .select(`users:user_id(name, email)`)
-            .eq('event_id', eventId);
+            .select('users:user_id(name,email)')
+            .eq('event_id', eventId)
+            .eq('attendance_status', 'registered');
 
-        const updateTitles = {
-            'update': `Update: ${event.title}`,
-            'cancellation': `CANCELLED: ${event.title}`,
-            'postponement': `POSTPONED: ${event.title}`
-        };
-
-        const transporter = createTransporter();
+        const labels = { '24h': 'Tomorrow', '1h': 'In 1 Hour', 'now': 'Starting Now' };
+        const subject = `${labels[reminderType]}: ${event.title}`;
         let sentCount = 0;
 
-        for (const attendee of attendees) {
-            if (attendee.users && attendee.users.email) {
-                const mailOptions = {
-                    from: process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@jkuat.ac.ke>',
-                    to: attendee.users.email,
-                    subject: updateTitles[updateType],
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: ${updateType === 'cancellation' ? '#ef4444' : '#f59e0b'};">
-                                📢 Event ${updateType.charAt(0).toUpperCase() + updateType.slice(1)}
-                            </h2>
-                            <p>Dear ${attendee.users.name},</p>
-                            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                                <h3>${event.title}</h3>
-                                <p>${message}</p>
-                                ${newDate ? `<p><strong>New Date:</strong> ${new Date(newDate).toLocaleDateString()}</p>` : ''}
-                            </div>
-                            <p>We apologize for any inconvenience caused.</p>
-                            <p>Best regards,<br>JKUAT Innovation Club</p>
-                        </div>
-                    `
-                };
+        for (const a of (attendees || [])) {
+            if (!a.users?.email) continue;
+            const html = baseTemplate(`Event Reminder — ${labels[reminderType]}`, `
+                <p>Hi <strong>${a.users.name}</strong>,</p>
+                <p>Your event is <strong>${labels[reminderType].toLowerCase()}</strong>!</p>
+                <div class="card">
+                    <p>📅 <strong>${event.title}</strong></p>
+                    <p>🕐 ${new Date(event.start_date).toLocaleString('en-KE')}</p>
+                    <p>📍 ${event.location}</p>
+                </div>
+                <a href="${SITE}/events" class="btn">View Event</a>
+            `);
+            try { await sendEmail(a.users.email, subject, html); sentCount++; } catch (e) { console.error(e); }
+        }
 
-                try {
-                    await transporter.sendMail(mailOptions);
-                    sentCount++;
-                } catch (emailError) {
-                    console.error(`Failed to send update to ${attendee.users.email}:`, emailError);
-                }
+        res.json({ message: 'Reminders sent', sentCount, total: attendees?.length || 0 });
+    } catch (err) {
+        console.error('Reminder error:', err);
+        res.status(500).json({ message: 'Failed to send reminders', error: err.message });
+    }
+});
+
+/* ─── test endpoint ────────────────────────────────────────── */
+
+router.post('/test', async (req, res) => {
+    try {
+        const { to } = req.body;
+        if (!to) return res.status(400).json({ message: 'Recipient email required' });
+
+        const html = baseTemplate('Test Email ✅', `
+            <p>This is a test email from your JKUAT Innovation Club platform.</p>
+            <p>If you received this, your Resend integration is working correctly! 🎉</p>
+            <a href="${SITE}" class="btn">Visit Website</a>
+        `);
+
+        await sendEmail(to, 'Test Email — JKUAT Innovation Club', html);
+        res.json({ message: 'Test email sent successfully', recipient: to });
+    } catch (err) {
+        console.error('Test email error:', err);
+        res.status(500).json({ message: 'Failed to send test email', error: err.message });
+    }
+});
+
+/* ─── bulk announcement ────────────────────────────────────── */
+
+router.post('/announcement', async (req, res) => {
+    try {
+        const { subject, body } = req.body;
+        if (!subject || !body) return res.status(400).json({ message: 'Subject and body required' });
+
+        const { data: users } = await supabase
+            .from('users')
+            .select('name,email')
+            .eq('membership_status', 'active');
+
+        if (!users?.length) return res.status(404).json({ message: 'No active members found' });
+
+        const html = baseTemplate(subject, `
+            <p>${body.replace(/\n/g, '<br>')}</p>
+            <a href="${SITE}" class="btn">Visit Website</a>
+        `);
+
+        let sentCount = 0;
+        for (const user of users) {
+            try {
+                await sendEmail(user.email, subject, html);
+                sentCount++;
+            } catch (e) {
+                console.error(`Failed to send to ${user.email}:`, e.message);
             }
         }
 
-        res.json({
-            message: 'Event update notifications sent successfully',
-            sentCount,
-            updateType
-        });
-
-    } catch (error) {
-        console.error('Error sending event updates:', error);
-        res.status(500).json({ message: 'Failed to send event updates' });
+        res.json({ message: 'Announcement sent', sentCount, total: users.length });
+    } catch (err) {
+        console.error('Announcement error:', err);
+        res.status(500).json({ message: 'Failed to send announcement', error: err.message });
     }
 });
 

@@ -1113,7 +1113,13 @@
     <!-- JavaScript -->
     <script src="/shared/core/app.js"></script>
     <script src="/cms/cms-init.js"></script>
-    <script type="module" src="/cms/cms.js"></script>
+    <script>
+        // Dynamically import CMS module with error handling
+        import('/cms/cms.js').catch(err => {
+            console.error('CMS module failed to load:', err);
+            document.body.innerHTML += '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e293b;color:white;padding:2rem;border-radius:1rem;text-align:center;z-index:9999;"><h2>CMS Failed to Load</h2><p>Please refresh the page.</p><button onclick="location.reload()" style="background:#10b981;color:white;border:none;padding:0.75rem 1.5rem;border-radius:0.5rem;cursor:pointer;margin-top:1rem;">Refresh</button></div>';
+        });
+    </script>
 
     <!-- Minimal Footer -->
     <div id="footer-placeholder"></div>

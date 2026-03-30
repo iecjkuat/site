@@ -93,6 +93,30 @@ signinForm.addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (!response.ok) {
+            // Handle unverified email specifically
+            if (data.requiresVerification) {
+                messageContainer.innerHTML = `
+                    <div class="message error">
+                        <i class="fas fa-envelope"></i>
+                        <span>Please verify your email first. 
+                            <a href="#" id="resendVerificationLink" style="color:#10b981;text-decoration:underline;">Resend verification email</a>
+                        </span>
+                    </div>
+                `;
+                document.getElementById('resendVerificationLink')?.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const r = await fetch('/api/auth/resend-verification', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email })
+                        });
+                        const d = await r.json();
+                        showMessage(d.message, r.ok ? 'success' : 'error');
+                    } catch { showMessage('Failed to resend. Try again.', 'error'); }
+                });
+                return;
+            }
             throw new Error(data.message || 'Login failed');
         }
         
@@ -131,12 +155,12 @@ signinForm.addEventListener('submit', async (e) => {
         // If no redirect specified, check user role
         if (!redirectTo && data.user) {
             if (data.user.role === 'admin') {
-                redirectTo = '/pages/admin/admin.html';
+                redirectTo = '/admin';
             } else {
-                redirectTo = '/pages/dashboard/dashboard.html';
+                redirectTo = '/dashboard';
             }
         } else if (!redirectTo) {
-            redirectTo = '/pages/dashboard/dashboard.html';
+            redirectTo = '/dashboard';
         }
         
         // Redirect after 1 second
