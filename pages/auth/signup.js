@@ -4,20 +4,6 @@
 
 console.log('🔐 Signup page loaded');
 
-// Initialize Supabase client
-const SUPABASE_URL = 'https://gakuuxwhlczhlgngcdrv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdha3V1eHdobGN6aGxnbmdjZHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzUyODksImV4cCI6MjA4MTY1MTI4OX0.wbgJik7A6qasB8FMEWZqZka8CEpZyUrSw-Ma2oLZZwM';
-
-let supabaseClient = null;
-
-// Initialize Supabase
-if (typeof supabase !== 'undefined') {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase client initialized');
-} else {
-    console.error('❌ Supabase library not loaded');
-}
-
 // Form elements
 const signupForm = document.getElementById('signupForm');
 const nameInput = document.getElementById('name');
@@ -33,19 +19,18 @@ const agreeTermsCheckbox = document.getElementById('agreeTerms');
 const messageContainer = document.getElementById('messageContainer');
 const submitBtn = signupForm.querySelector('.submit-btn');
 
-// Show message
-function showMessage(message, type = 'error') {
+// Show message — persistent = true means it won't auto-hide
+function showMessage(message, type = 'error', persistent = false) {
     messageContainer.innerHTML = `
         <div class="message ${type}">
             <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
             <span>${message}</span>
         </div>
     `;
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-        messageContainer.innerHTML = '';
-    }, 5000);
+
+    if (!persistent) {
+        setTimeout(() => { messageContainer.innerHTML = ''; }, 6000);
+    }
 }
 
 // Set loading state
@@ -64,7 +49,7 @@ function setLoading(isLoading) {
 // Handle form submission
 signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
     const registrationNumber = registrationNumberInput.value.trim();
@@ -75,13 +60,13 @@ signupForm.addEventListener('submit', async (e) => {
     const password = passwordInput.value;
     const confirmPassword = confirmPasswordInput.value;
     const agreeTerms = agreeTermsCheckbox.checked;
-    
+
     // Validation
     if (!name || !email || !registrationNumber || !phone || !course || !yearOfStudy || !college || !password || !confirmPassword) {
         showMessage('Please fill in all fields', 'error');
         return;
     }
-    
+
     if (!email.includes('@')) {
         showMessage('Please enter a valid email address', 'error');
         return;
@@ -91,64 +76,66 @@ signupForm.addEventListener('submit', async (e) => {
         showMessage('Please use your JKUAT email (@students.jkuat.ac.ke or @jkuat.ac.ke)', 'error');
         return;
     }
-    
+
     if (password.length < 6) {
         showMessage('Password must be at least 6 characters', 'error');
         return;
     }
-    
+
     if (password !== confirmPassword) {
         showMessage('Passwords do not match', 'error');
         return;
     }
-    
+
     if (!agreeTerms) {
         showMessage('Please agree to the terms of service', 'error');
         return;
     }
-    
+
     setLoading(true);
-    
+    let success = false;
+
     try {
         console.log('🔐 Attempting registration via backend API...');
-        
-        // Use backend API for registration
+
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name: name,
-                email: email,
-                registrationNumber: registrationNumber,
-                phone: phone,
-                course: course,
-                yearOfStudy: yearOfStudy,
-                college: college,
-                password: password
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, registrationNumber, phone, course, yearOfStudy, college, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
-            const errorData = data.errors ? data.errors[0].msg : (data.message || 'Registration failed');
-            throw new Error(errorData);
+            const errorMsg = data.errors ? data.errors[0].msg : (data.message || 'Registration failed');
+            throw new Error(errorMsg);
         }
-        
+
         console.log('✅ Registration successful');
-        
-        showMessage('Registration successful! Please check your JKUAT email inbox and click the verification link to activate your account.', 'success');
-        
-        // Don't redirect — user needs to verify email first
-        submitBtn.disabled = true;
-        
+        success = true;
+
+        // Show persistent success message with next steps
+        messageContainer.innerHTML = `
+            <div class="message success" style="line-height:1.8;">
+                <i class="fas fa-check-circle"></i>
+                <span>
+                    <strong>Account created!</strong><br>
+                    We've sent a verification link to <strong>${email}</strong>.<br>
+                    Click the link in your JKUAT email to activate your account, then
+                    <a href="/signin" style="color:#10b981;font-weight:600;">sign in here</a>.
+                </span>
+            </div>
+        `;
+
+        // Hide the form so they don't try to submit again
+        signupForm.style.display = 'none';
+
     } catch (error) {
         console.error('❌ Registration error:', error);
         showMessage(error.message || 'Registration failed. Please try again.', 'error');
     } finally {
-        setLoading(false);
+        // Only re-enable button if registration failed
+        if (!success) setLoading(false);
     }
 });
 

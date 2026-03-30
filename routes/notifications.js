@@ -1,39 +1,30 @@
 // JKUAT Innovation Club - Notifications Service
 const express = require('express');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
-const webpush = require('web-push');
-const nodemailer = require('nodemailer');
 const router = express.Router();
 
-// Configure Web Push (only if VAPID keys are provided and valid)
-if (process.env.VAPID_PUBLIC_KEY && 
-    process.env.VAPID_PRIVATE_KEY && 
-    process.env.VAPID_PUBLIC_KEY !== 'your_vapid_public_key' &&
-    process.env.VAPID_PRIVATE_KEY !== 'your_vapid_private_key') {
+// Web push — optional, only load if VAPID keys are set
+let webpush = null;
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     try {
+        webpush = require('web-push');
         webpush.setVapidDetails(
-            'mailto:innovation@jkuat.ac.ke',
+            'mailto:info@iecjkuat.com',
             process.env.VAPID_PUBLIC_KEY,
             process.env.VAPID_PRIVATE_KEY
         );
         console.log('✅ Web Push notifications configured');
     } catch (error) {
         console.log('⚠️ Web Push configuration failed:', error.message);
+        webpush = null;
     }
 } else {
     console.log('⚠️ Web Push notifications disabled (VAPID keys not configured)');
 }
 
-// Configure Email
-const emailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
-});
+// Email via Resend (replaces nodemailer)
+const { Resend } = require('resend');
+const _resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Notification Service Class
 class NotificationService {
@@ -251,16 +242,20 @@ class NotificationService {
             const subject = this.renderTemplate(template.subject_template || template.title_template, variables);
             const htmlContent = this.renderEmailTemplate(template.message_template, variables, notification);
 
-            // Send email
-            const mailOptions = {
-                from: `"JKUAT Innovation Club" <${process.env.SMTP_USER}>`,
+            // Send email via Resend
+            if (!_resend) {
+                console.log('Resend not configured — skipping email notification');
+                return;
+            }
+
+            const { data: result, error: sendError } = await _resend.emails.send({
+                from: process.env.EMAIL_FROM || 'JKUAT Innovation Club <noreply@iecjkuat.com>',
                 to: user.email,
                 subject: subject,
-                html: htmlContent,
-                text: notification.message // Fallback plain text
-            };
+                html: htmlContent
+            });
 
-            const result = await emailTransporter.sendMail(mailOptions);
+            if (sendError) throw new Error(sendError.message);
 
             // Record successful delivery
             await supabase
@@ -269,7 +264,7 @@ class NotificationService {
                     notification_id: notification.id,
                     channel: 'email',
                     status: 'sent',
-                    external_id: result.messageId,
+                    external_id: result?.id,
                     sent_at: new Date().toISOString()
                 });
 
