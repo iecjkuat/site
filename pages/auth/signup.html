@@ -4,8 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - JKUAT Innovation Club</title>
+    <meta name="description" content="Create your IEC JKUAT account.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/auth/auth.css">
+    <style>
+        .sr-only {
+            position: absolute; width: 1px; height: 1px;
+            padding: 0; margin: -1px; overflow: hidden;
+            clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+        }
+        .input-group .pw-toggle {
+            position: absolute; right: 1rem; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; color: #95a5a6;
+            cursor: pointer; padding: 0.25rem; font-size: 1rem;
+            line-height: 1; transition: color 0.2s;
+        }
+        .input-group .pw-toggle:hover { color: #2563eb; }
+    </style>
 </head>
 <body>
     <div class="auth-page">
@@ -18,36 +36,41 @@
                 
                 <h1 class="page-title">SIGN UP</h1>
                 
-                <form id="signupForm" class="auth-form">
-                    <div id="messageContainer"></div>
+                <form id="signupForm" class="auth-form" novalidate>
+                    <div id="messageContainer" role="status" aria-live="polite"></div>
                     
                     <!-- Full Name -->
                     <div class="input-group">
-                        <i class="fas fa-user input-icon"></i>
-                        <input type="text" id="name" name="name" placeholder="Full Name" required autocomplete="name">
+                        <label for="name" class="sr-only">Full Name</label>
+                        <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                        <input type="text" id="name" name="name" placeholder="Full Name" required autocomplete="name" aria-required="true">
                     </div>
                     
                     <!-- Email -->
                     <div class="input-group">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="email" name="email" placeholder="JKUAT Email (@students.jkuat.ac.ke)" required autocomplete="email">
+                        <label for="email" class="sr-only">JKUAT Email</label>
+                        <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
+                        <input type="email" id="email" name="email" placeholder="JKUAT Email (@students.jkuat.ac.ke)" required autocomplete="email" inputmode="email" aria-required="true">
                     </div>
                     
                     <!-- Registration Number -->
                     <div class="input-group">
-                        <i class="fas fa-id-card input-icon"></i>
-                        <input type="text" id="registrationNumber" name="registrationNumber" placeholder="Registration Number (e.g., EN111-0001/2024)" required>
+                        <label for="registrationNumber" class="sr-only">Registration Number</label>
+                        <i class="fas fa-id-card input-icon" aria-hidden="true"></i>
+                        <input type="text" id="registrationNumber" name="registrationNumber" placeholder="Registration Number (e.g., EN111-0001/2024)" required aria-required="true">
                     </div>
                     
                     <!-- Phone -->
                     <div class="input-group">
-                        <i class="fas fa-phone input-icon"></i>
-                        <input type="tel" id="phone" name="phone" placeholder="Phone Number (e.g., +254700000000)" required>
+                        <label for="phone" class="sr-only">Phone Number</label>
+                        <i class="fas fa-phone input-icon" aria-hidden="true"></i>
+                        <input type="tel" id="phone" name="phone" placeholder="Phone Number (e.g., +254700000000)" required inputmode="tel" aria-required="true">
                     </div>
                     
                     <!-- Course -->
                     <div class="input-group">
-                        <i class="fas fa-graduation-cap input-icon"></i>
+                        <label for="course" class="sr-only">Course</label>
+                        <i class="fas fa-graduation-cap input-icon" aria-hidden="true"></i>
                         <input type="text" id="course" name="course" placeholder="Course (e.g., Computer Science)" required>
                     </div>
                     
@@ -79,14 +102,22 @@
                     
                     <!-- Password -->
                     <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="password" name="password" placeholder="Password (min 6 characters)" required autocomplete="new-password">
+                        <label for="password" class="sr-only">Password</label>
+                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
+                        <input type="password" id="password" name="password" placeholder="Password (min 8 characters)" required autocomplete="new-password" aria-required="true">
+                        <button type="button" class="pw-toggle" id="pwToggle1" aria-label="Show password">
+                            <i class="fas fa-eye" id="pwIcon1" aria-hidden="true"></i>
+                        </button>
                     </div>
                     
                     <!-- Confirm Password -->
                     <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required autocomplete="new-password">
+                        <label for="confirmPassword" class="sr-only">Confirm Password</label>
+                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required autocomplete="new-password" aria-required="true">
+                        <button type="button" class="pw-toggle" id="pwToggle2" aria-label="Show confirm password">
+                            <i class="fas fa-eye" id="pwIcon2" aria-hidden="true"></i>
+                        </button>
                     </div>
                     
                     <!-- Terms Checkbox -->
@@ -130,5 +161,20 @@
     <!-- Minimal Footer -->
     <div id="footer-placeholder"></div>
     <script src="/shared/minimal-footer.js"></script>
+
+    <script>
+        function setupPwToggle(btnId, inputId, iconId) {
+            document.getElementById(btnId)?.addEventListener('click', function() {
+                const input = document.getElementById(inputId);
+                const icon  = document.getElementById(iconId);
+                const show  = input.type === 'password';
+                input.type  = show ? 'text' : 'password';
+                icon.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+                this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            });
+        }
+        setupPwToggle('pwToggle1', 'password', 'pwIcon1');
+        setupPwToggle('pwToggle2', 'confirmPassword', 'pwIcon2');
+    </script>
 </body>
 </html>

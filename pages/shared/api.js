@@ -5,7 +5,7 @@
  */
 
 (function () {
-    const BASE_URL   = '/api';
+    const BASE_URL   = '/api/v1';
     const TIMEOUT_MS = 12000;
     const DEBUG      = false;
 
@@ -82,7 +82,7 @@
 
         _refreshPromise = (async () => {
             try {
-                const data = await request('POST', '/auth/refresh', undefined, { _skipRefresh: true });
+                const data = await request('POST', '/v1/auth/refresh', undefined, { _skipRefresh: true });
                 if (data?.token) {
                     // Store new token in whichever storage the old one was in
                     const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
@@ -181,16 +181,17 @@
         patch:  (path, body, opts) => request('PATCH',  path, body,      opts),
         delete: (path, opts)       => requestWithRetry('DELETE', path, undefined, opts),
 
-        // Auth endpoints
+        // Auth endpoints — use full versioned paths
         auth: {
-            login:              (body)  => request('POST', '/auth/login',               body, { timeout: 10000 }),
-            register:           (body)  => request('POST', '/auth/register',            body, { timeout: 15000 }),
-            verify:             ()      => request('GET',  '/auth/verify'),
-            verifyEmail:        (token) => request('GET',  '/auth/verify-email', undefined, { query: { token } }),
-            resendVerification: (email) => request('POST', '/auth/resend-verification', { email }),
-            logout:             ()      => request('POST', '/auth/logout'),
-            profile:            ()      => request('GET',  '/auth/profile'),
-            updateProfile:      (body)  => request('PUT',  '/auth/profile',             body),
+            login:              (body)  => request('POST', '/v1/auth/login',               body, { timeout: 10000 }),
+            register:           (body)  => request('POST', '/v1/auth/register',            body, { timeout: 15000 }),
+            verify:             ()      => request('GET',  '/v1/auth/verify'),
+            verifyEmail:        (token) => request('GET',  '/v1/auth/verify-email', undefined, { query: { token } }),
+            resendVerification: (email) => request('POST', '/v1/auth/resend-verification', { email }),
+            logout:             ()      => request('POST', '/v1/auth/logout'),
+            profile:            ()      => request('GET',  '/v1/auth/profile'),
+            updateProfile:      (body)  => request('PUT',  '/v1/auth/profile',             body),
+            refresh:            ()      => request('POST', '/v1/auth/refresh', undefined,  { _skipRefresh: true }),
         },
 
         // Resource endpoints — all support optional query params

@@ -5,42 +5,7 @@ const { supabaseAdmin } = require('../lib/supabase');
 const userCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Rate limiting for authentication attempts
-const authAttempts = new Map();
-const MAX_AUTH_ATTEMPTS = 10;
-const AUTH_WINDOW = 60 * 1000;
-
-// Sweep stale entries every 5 minutes to prevent memory leak (#44)
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, timestamps] of authAttempts.entries()) {
-        const recent = timestamps.filter(t => now - t < AUTH_WINDOW);
-        if (recent.length === 0) authAttempts.delete(key);
-        else authAttempts.set(key, recent);
-    }
-}, 5 * 60 * 1000);
-
-// Token blacklist for logout (in production, use Redis)
-const tokenBlacklist = new Set();
-
-// Function to check rate limit
-const checkRateLimit = (identifier) => {
-    const now = Date.now();
-    const attempts = authAttempts.get(identifier) || [];
-    
-    // Remove old attempts outside the window
-    const recentAttempts = attempts.filter(timestamp => now - timestamp < AUTH_WINDOW);
-    
-    if (recentAttempts.length >= MAX_AUTH_ATTEMPTS) {
-        return false; // Rate limit exceeded
-    }
-    
-    // Add current attempt
-    recentAttempts.push(now);
-    authAttempts.set(identifier, recentAttempts);
-    
-    return true; // Within rate limit
-};
+// Rate limiting handled by Express rate-limit middleware in server.js
 
 // Function to add token to blacklist
 const blacklistToken = (tokenId) => {
@@ -70,7 +35,7 @@ const clearAllCache = () => {
 };
 
 // Function to generate secure JWT token
-const generateSecureToken = (userId, userRole, options = {}) => {
+const generateSecureToken = (userId, userRole, options = {}, req = null) => {
     const payload = {
         userId,
         role: userRole,
@@ -78,6 +43,16 @@ const generateSecureToken = (userId, userRole, options = {}) => {
         aud: 'jkuat-platform',
         jti: require('crypto').randomUUID()
     };
+
+    // Bind token to device fingerprint if request context available
+    if (req) {
+        const fp = require('crypto')
+            .createHash('sha256')
+            .update((req.headers['user-agent'] || '') + (req.ip || ''))
+            .digest('hex')
+            .slice(0, 16);
+        payload.fp = fp;
+    }
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
         algorithm: 'HS256',
@@ -137,6 +112,19 @@ const authenticateToken = async (req, res, next) => {
         if (!decoded.userId || !decoded.exp || !decoded.jti) {
             console.warn(`⚠️ [${requestId}] Invalid token structure`);
             return res.status(401).json({ message: 'Invalid authentication token' });
+        }
+
+        // Verify device fingerprint if token was bound to one
+        if (decoded.fp) {
+            const currentFp = require('crypto')
+                .createHash('sha256')
+                .update((req.headers['user-agent'] || '') + (clientIp || ''))
+                .digest('hex')
+                .slice(0, 16);
+            if (currentFp !== decoded.fp) {
+                console.warn(`⚠️ [${requestId}] Device fingerprint mismatch — possible token theft`);
+                return res.status(401).json({ message: 'Session invalid. Please log in again.' });
+            }
         }
 
         // Check if token is blacklisted (logout)

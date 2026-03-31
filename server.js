@@ -48,7 +48,6 @@ const dashboardRoutes = require('./routes/dashboard');
 
 // Import validation middleware
 const { rateLimits, sanitizeInput } = require('./middleware/validation');
-const { csrfMiddleware } = require('./middleware/csrf');
 
 const app = express();
 const server = http.createServer(app);
@@ -97,32 +96,25 @@ app.use(helmet({
 
 // CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [
-      ...(process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean),
-      'https://iecjkuat.vercel.app',
-      // Allow any vercel.app subdomain for preview deployments
-    ]
+  ? (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean)
   : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5000'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (same-origin, mobile apps, curl)
-    if (!origin) {
-      return callback(null, true);
-    }
+    // Allow same-origin requests (no origin header) — mobile apps, curl, server-to-server
+    if (!origin) return callback(null, true);
 
-    // Always allow same Vercel deployment
-    if (origin.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
+    // Allow any *.vercel.app for preview deployments
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
 
-    // In development, allow everything
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
+    // Allow explicitly listed origins
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // In development allow everything
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
 
     console.warn('❌ CORS blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
+    return callback(new Error('Origin not allowed'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -150,18 +142,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Input sanitization - Apply after body parsing
+// Input sanitization
 app.use(sanitizeInput);
-
-// CSRF Protection - Skip for Bearer token APIs, apply only to cookie-based sessions
-app.use((req, res, next) => {
-  // Skip CSRF for API endpoints (Bearer token based) and development
-  if (req.path.startsWith('/api/') || process.env.NODE_ENV === 'development') {
-    return next();
-  }
-  // Apply CSRF only to cookie-based browser sessions
-  return csrfMiddleware(req, res, next);
-});
 
 // Rate limiting
 // On Vercel (serverless), each function instance has its own memory.
@@ -192,8 +174,6 @@ const isProd = process.env.NODE_ENV === 'production';
 app.use(`${apiVersion}/auth/login`, createLimiter(15 * 60 * 1000, isProd ? 5 : 50, 'Too many login attempts. Try again in 15 minutes.'));
 app.use(`${apiVersion}/auth/register`, createLimiter(60 * 60 * 1000, isProd ? 3 : 20, 'Too many registration attempts. Try again in 1 hour.'));
 app.use(`${apiVersion}/auth/resend-verification`, createLimiter(60 * 60 * 1000, isProd ? 3 : 10, 'Too many resend attempts. Try again in 1 hour.'));
-app.use('/api/auth/login', createLimiter(15 * 60 * 1000, isProd ? 5 : 50, 'Too many login attempts.'));
-app.use('/api/auth/register', createLimiter(60 * 60 * 1000, isProd ? 3 : 20, 'Too many registration attempts.'));
 
 // Email: prevent spam
 app.use(`${apiVersion}/email`, createLimiter(60 * 60 * 1000, isProd ? 10 : 100, 'Too many email requests. Try again in 1 hour.'));

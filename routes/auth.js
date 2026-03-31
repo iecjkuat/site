@@ -291,17 +291,41 @@ router.post('/login', [
       }
     }
 
-    // Update login stats
+    // Update login stats and detect new device
+    const currentAgent = (req.headers['user-agent'] || '').slice(0, 200);
+    const isNewDevice = userData.last_user_agent &&
+        !currentAgent.startsWith(userData.last_user_agent.slice(0, 30));
+
     await supabaseAdmin
       .from('users')
       .update({
         last_login: new Date().toISOString(),
-        login_count: userData.login_count ? userData.login_count + 1 : 1
+        last_user_agent: currentAgent,
+        login_count: (userData.login_count || 0) + 1
       })
       .eq('id', userData.id);
 
-    // Generate JWT token using standard security module
-    const token = generateSecureToken(userData.id, userData.role);
+    // Non-blocking security alert on new device
+    if (isNewDevice && _resend) {
+      _resend.emails.send({
+        from: FROM,
+        to: userData.email,
+        subject: 'New login detected — JKUAT Innovation Club',
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:40px auto;background:#0f172a;color:#f9fafb;border-radius:12px;padding:32px">
+          <h2 style="color:#f59e0b;">⚠️ New Login Detected</h2>
+          <p>A login to your account was detected from a new device or browser.</p>
+          <p><strong>Time:</strong> ${new Date().toLocaleString('en-KE')}</p>
+          <p>If this was you, no action needed. If not,
+            <a href="${process.env.FRONTEND_URL || 'https://iecjkuat.com'}/settings" style="color:#10b981;">
+              secure your account immediately
+            </a>.
+          </p>
+        </div>`
+      }).catch(err => console.error('Security alert email failed:', err));
+    }
+
+    // Generate JWT token with device fingerprint
+    const token = generateSecureToken(userData.id, userData.role, {}, req);
 
     // Audit Log
     logActivity(userData.id, 'LOGIN', {

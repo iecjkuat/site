@@ -1,182 +1,192 @@
+/**
+ * Validation & Security Middleware
+ *
+ * Design principles applied:
+ * - Validate first, never mutate before validation
+ * - Sanitization is a logging/output concern, not an input gate
+ * - SQL injection is prevented by parameterized queries (Supabase), not regex
+ * - Rate limiting is in server.js; these configs are kept for reference only
+ * - Error responses expose field names but not raw values or schema internals
+ */
+
 const { body, param, query, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 
-// Enhanced validation error handler
+// ── Standardised error classes ────────────────────────────────────────────────
+
+class ValidationError extends Error {
+    constructor(errors) {
+        super('Validation failed');
+        this.name = 'ValidationError';
+        this.errors = errors;
+        this.status = 400;
+    }
+}
+
+class AuthError extends Error {
+    constructor(message = 'Authentication required') {
+        super(message);
+        this.name = 'AuthError';
+        this.status = 401;
+    }
+}
+
+class ApiError extends Error {
+    constructor(message, status = 500) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
+// ── Validation error handler ──────────────────────────────────────────────────
+
 const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        // Log validation failures for security monitoring
-        console.warn('Validation failed:', {
-            path: req.path,
-            method: req.method,
-            ip: req.ip,
-            errors: errors.array(),
-            timestamp: new Date().toISOString()
-        });
-        
+    const result = validationResult(req);
+    if (!result.isEmpty()) {
+        // Log for monitoring — mask values to avoid leaking PII
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn('Validation failed:', {
+                path: req.path,
+                method: req.method,
+                errors: result.array().map(e => ({ field: e.path, msg: e.msg }))
+            });
+        }
+
+        // Return field names + messages only — no raw values, no schema internals
         return res.status(400).json({
-            message: 'Validation failed',
-            errors: errors.array().map(err => ({
+            message: 'Invalid request data',
+            errors: result.array().map(err => ({
                 field: err.path,
-                message: err.msg,
-                value: typeof err.value === 'string' ? err.value.substring(0, 50) : err.value
+                message: err.msg
             }))
         });
     }
     next();
 };
 
-// Common validation rules
+// ── Common validation rules ───────────────────────────────────────────────────
+
 const commonValidations = {
-    // UUID validation
-    uuid: param('id').isUUID().withMessage('Invalid ID format'),
-    
-    // Email validation
+    uuid: param('id')
+        .isUUID()
+        .withMessage('Invalid ID format'),
+
     email: body('email')
         .isEmail()
         .normalizeEmail()
         .isLength({ max: 254 })
-        .withMessage('Valid email required (max 254 characters)'),
-    
-    // Password validation
+        .withMessage('Valid email required'),
+
+    // Signup uses min:8 (enforced in signup.js); backend enforces min:8 too
     password: body('password')
-        .isLength({ min: 12, max: 128 })
-        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/)
-        .withMessage('Password must be 12-128 characters with uppercase, lowercase, numbers, and special characters'),
-    
-    // Name validation
+        .isLength({ min: 8, max: 128 })
+        .withMessage('Password must be 8-128 characters'),
+
     name: body('name')
         .trim()
         .isLength({ min: 2, max: 100 })
-        .matches(/^[a-zA-Z\s'-]+$/)
-        .withMessage('Name must be 2-100 characters, letters only'),
-    
-    // Amount validation (for payments)
+        .withMessage('Name must be 2-100 characters'),
+
     amount: body('amount')
         .isFloat({ min: 0.01, max: 1000000 })
         .withMessage('Amount must be between 0.01 and 1,000,000'),
-    
-    // Date validation
+
     date: body('date')
         .isISO8601()
         .toDate()
-        .withMessage('Valid date required (ISO 8601 format)'),
-    
-    // Pagination validation
+        .withMessage('Valid ISO 8601 date required'),
+
     pagination: [
         query('page').optional().isInt({ min: 1, max: 1000 }).withMessage('Page must be 1-1000'),
         query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100')
     ],
-    
-    // Search query validation
+
     searchQuery: query('q')
         .optional()
         .trim()
         .isLength({ min: 1, max: 100 })
-        .matches(/^[a-zA-Z0-9\s\-_]+$/)
-        .withMessage('Search query must be 1-100 characters, alphanumeric only'),
-    
-    // Status validation
+        .withMessage('Search query must be 1-100 characters'),
+
     status: body('status')
         .isIn(['active', 'inactive', 'pending', 'completed', 'cancelled'])
         .withMessage('Invalid status value'),
-    
-    // Role validation
+
     role: body('role')
         .isIn(['admin', 'executive', 'member', 'treasurer', 'secretary'])
         .withMessage('Invalid role value'),
-    
-    // Phone validation
+
     phone: body('phone')
         .optional()
         .matches(/^\+254[0-9]{9}$/)
         .withMessage('Phone must be in format +254XXXXXXXXX'),
-    
-    // URL validation
+
     url: body('url')
         .optional()
         .isURL({ protocols: ['http', 'https'], require_protocol: true })
         .isLength({ max: 2048 })
-        .withMessage('Valid URL required (max 2048 characters)')
+        .withMessage('Valid URL required'),
 };
 
-// Rate limiting configurations
+// ── Rate limit configs (used in server.js) ────────────────────────────────────
+
 const rateLimits = {
-    // Strict rate limiting for auth endpoints
     auth: rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5, // 5 attempts per window
-        message: {
-            message: 'Too many authentication attempts, please try again later',
-            retryAfter: '15 minutes'
-        },
+        windowMs: 15 * 60 * 1000,
+        max: 5,
         standardHeaders: true,
         legacyHeaders: false,
-        handler: (req, res) => {
-            console.warn('Rate limit exceeded for auth:', {
-                ip: req.ip,
-                path: req.path,
-                timestamp: new Date().toISOString()
-            });
-            res.status(429).json({
-                message: 'Too many authentication attempts, please try again later',
-                retryAfter: '15 minutes'
-            });
-        }
+        message: { message: 'Too many authentication attempts. Try again in 15 minutes.' }
     }),
-    
-    // Moderate rate limiting for API endpoints
     api: rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // 100 requests per window
-        message: {
-            message: 'Too many requests, please try again later',
-            retryAfter: '15 minutes'
-        }
+        windowMs: 15 * 60 * 1000,
+        max: 100,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { message: 'Too many requests. Please slow down.' }
     }),
-    
-    // Strict rate limiting for admin endpoints
     admin: rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 50, // 50 requests per window
-        message: {
-            message: 'Too many admin requests, please try again later',
-            retryAfter: '15 minutes'
-        }
+        windowMs: 15 * 60 * 1000,
+        max: 50,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { message: 'Too many admin requests.' }
     }),
-    
-    // Very strict for password reset
     passwordReset: rateLimit({
-        windowMs: 60 * 60 * 1000, // 1 hour
-        max: 3, // 3 attempts per hour
-        message: {
-            message: 'Too many password reset attempts, please try again later',
-            retryAfter: '1 hour'
-        }
+        windowMs: 60 * 60 * 1000,
+        max: 3,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { message: 'Too many password reset attempts. Try again in 1 hour.' }
     })
 };
 
-// Sanitization middleware — strips dangerous patterns from all string inputs
+// ── Sanitization ──────────────────────────────────────────────────────────────
+//
+// NOTE: This is NOT the primary defence against injection attacks.
+// Supabase uses parameterized queries — SQL injection is prevented at the ORM level.
+// This middleware only strips the most obvious XSS payloads as a defence-in-depth
+// measure for any values that might be rendered in HTML responses.
+// It runs AFTER validation so it never corrupts data before it's checked.
+
 const sanitizeInput = (req, res, next) => {
     const sanitizeString = (str) => {
         if (typeof str !== 'string') return str;
         return str
-            .replace(/<script[\s\S]*?<\/script>/gi, '')   // script tags
-            .replace(/javascript\s*:/gi, '')               // javascript: protocol
-            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')  // inline event handlers
-            .replace(/data\s*:\s*text\/html/gi, '')        // data: URIs with HTML
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/javascript\s*:/gi, '')
+            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+            .replace(/data\s*:\s*text\/html/gi, '')
             .trim();
     };
 
     const sanitizeObject = (obj, depth = 0) => {
-        if (depth > 10) return obj; // prevent prototype pollution via deep nesting
+        if (depth > 10) return obj;
         if (obj === null || typeof obj !== 'object') return obj;
         if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item, depth + 1));
-
         const clean = {};
         for (const key of Object.keys(obj)) {
-            // Block prototype pollution keys
-            if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+            if (['__proto__', 'constructor', 'prototype'].includes(key)) continue;
             const val = obj[key];
             clean[key] = typeof val === 'string'
                 ? sanitizeString(val)
@@ -187,37 +197,27 @@ const sanitizeInput = (req, res, next) => {
         return clean;
     };
 
-    if (req.body) req.body = sanitizeObject(req.body);
-    if (req.query) req.query = sanitizeObject(req.query);
+    // Sanitize AFTER body parsing — validation runs before this in route handlers
+    if (req.body)   req.body   = sanitizeObject(req.body);
+    if (req.query)  req.query  = sanitizeObject(req.query);
     if (req.params) req.params = sanitizeObject(req.params);
 
     next();
 };
 
-// SQL injection prevention for raw queries
-const preventSQLInjection = (input) => {
-    if (typeof input !== 'string') return input;
-    
-    // List of dangerous SQL keywords and patterns
-    const sqlPatterns = [
-        /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|SCRIPT)\b)/gi,
-        /(--|\/\*|\*\/|;|'|"|`)/g,
-        /(\bOR\b|\bAND\b).*?[=<>]/gi
-    ];
-    
-    for (const pattern of sqlPatterns) {
-        if (pattern.test(input)) {
-            throw new Error('Potentially malicious input detected');
-        }
-    }
-    
-    return input;
-};
+// ── preventSQLInjection — REMOVED ────────────────────────────────────────────
+//
+// Regex-based SQL detection causes false positives on legitimate input
+// (e.g. "SELECT your best work", "DROP by later", "O'Connor").
+// SQL injection is prevented by Supabase's parameterized query layer.
+// Do not use raw string interpolation in queries — that is the real fix.
 
 module.exports = {
     handleValidationErrors,
     commonValidations,
     rateLimits,
     sanitizeInput,
-    preventSQLInjection
+    ValidationError,
+    AuthError,
+    ApiError,
 };
