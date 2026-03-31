@@ -130,9 +130,25 @@ app.use(cors({
   maxAge: 86400
 }));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware — tight limits to prevent DoS
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Add security response headers
+app.use((req, res, next) => {
+  // Remove server fingerprinting
+  res.removeHeader('X-Powered-By');
+  // Add request ID for tracing
+  res.setHeader('X-Request-ID', require('crypto').randomUUID());
+  // Prevent MIME sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Cache control for API responses
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+  }
+  next();
+});
 
 // Input sanitization - Apply after body parsing
 app.use(sanitizeInput);
@@ -147,30 +163,49 @@ app.use((req, res, next) => {
   return csrfMiddleware(req, res, next);
 });
 
-// Rate limiting - Fixed to use proper versioned paths and remove fake admin check
-const createRoleBasedLimiter = (windowMs, max, message) => {
-  return rateLimit({
-    windowMs,
-    max, // Remove fake admin boost - proper auth should be handled in route middleware
-    message: { error: message },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-};
+// Rate limiting
+// On Vercel (serverless), each function instance has its own memory.
+// We use a simple in-memory store but with conservative limits.
+// For production scale, replace with Redis via @upstash/ratelimit.
+const createLimiter = (windowMs, max, message) => rateLimit({
+  windowMs,
+  max,
+  message: { error: message, retryAfter: Math.ceil(windowMs / 1000) },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use real IP, accounting for Vercel's proxy headers
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+      || req.headers['x-real-ip']
+      || req.ip
+      || 'unknown';
+  },
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === '/health';
+  }
+});
 
-// Apply rate limits to correct versioned paths
-// In development, use higher limits for testing
-const isDevelopment = process.env.NODE_ENV !== 'production';
-const authLimit = isDevelopment ? 100 : 10; // 100 in dev, 10 in production
-const adminLimit = isDevelopment ? 500 : 100;
-const apiLimit = isDevelopment ? 5000 : 1000;
+const isProd = process.env.NODE_ENV === 'production';
 
-app.use(`${apiVersion}/auth`, createRoleBasedLimiter(15 * 60 * 1000, authLimit, 'Too many auth attempts'));
-app.use(`${apiVersion}/admin`, createRoleBasedLimiter(15 * 60 * 1000, adminLimit, 'Too many admin requests'));
-app.use(`${apiVersion}`, createRoleBasedLimiter(15 * 60 * 1000, apiLimit, 'Too many API requests'));
+// Auth: very strict — 5 attempts per 15 min in prod, 50 in dev
+app.use(`${apiVersion}/auth/login`, createLimiter(15 * 60 * 1000, isProd ? 5 : 50, 'Too many login attempts. Try again in 15 minutes.'));
+app.use(`${apiVersion}/auth/register`, createLimiter(60 * 60 * 1000, isProd ? 3 : 20, 'Too many registration attempts. Try again in 1 hour.'));
+app.use(`${apiVersion}/auth/resend-verification`, createLimiter(60 * 60 * 1000, isProd ? 3 : 10, 'Too many resend attempts. Try again in 1 hour.'));
+app.use('/api/auth/login', createLimiter(15 * 60 * 1000, isProd ? 5 : 50, 'Too many login attempts.'));
+app.use('/api/auth/register', createLimiter(60 * 60 * 1000, isProd ? 3 : 20, 'Too many registration attempts.'));
 
-// Compatibility rate limits for non-versioned paths
-app.use('/api/auth', createRoleBasedLimiter(15 * 60 * 1000, authLimit, 'Too many auth attempts'));
+// Email: prevent spam
+app.use(`${apiVersion}/email`, createLimiter(60 * 60 * 1000, isProd ? 10 : 100, 'Too many email requests. Try again in 1 hour.'));
+
+// Admin: moderate
+app.use(`${apiVersion}/admin`, createLimiter(15 * 60 * 1000, isProd ? 100 : 500, 'Too many admin requests.'));
+
+// Payments: strict
+app.use(`${apiVersion}/payment-lipana/initiate`, createLimiter(60 * 60 * 1000, isProd ? 10 : 50, 'Too many payment attempts.'));
+
+// General API: generous but bounded
+app.use(`${apiVersion}`, createLimiter(15 * 60 * 1000, isProd ? 300 : 5000, 'Too many requests. Please slow down.'));
 
 // Normalize trailing slashes - redirect /dashboard/ to /dashboard (but not root /)
 app.use((req, res, next) => {
@@ -303,13 +338,14 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Supabase configuration endpoint for frontend
+// Supabase configuration endpoint — only expose URL, never keys
 app.get('/api/config/supabase', (req, res) => {
-  res.json({
-    url: process.env.SUPABASE_URL,
-    anonKey: process.env.SUPABASE_ANON_KEY
-  });
+  res.json({ url: process.env.SUPABASE_URL });
 });
+
+// Upload routes get a larger limit
+app.use(`${apiVersion}/upload`, express.json({ limit: '15mb' }));
+app.use(`${apiVersion}/upload`, express.urlencoded({ extended: true, limit: '15mb' }));
 
 // API Routes
 app.use(`${apiVersion}/auth`, authRoutes);
@@ -573,24 +609,35 @@ app.get(`${apiVersion}`, (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  // Never log sensitive data
+  const safeError = {
+    message: err.message,
+    code: err.code,
+    path: req.path,
+    method: req.method,
+    requestId: res.getHeader('X-Request-ID')
+  };
+  console.error('Unhandled error:', safeError);
 
-  if (err.code === 'P2002') {
-    return res.status(400).json({
-      message: 'Duplicate entry. This record already exists.',
-      field: err.meta?.target
-    });
+  // CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'Origin not allowed' });
   }
 
-  if (err.code === 'P2025') {
-    return res.status(404).json({
-      message: 'Record not found'
-    });
+  // Payload too large
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Request payload too large' });
   }
 
-  res.status(500).json({
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  // JSON parse errors
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON in request body' });
+  }
+
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(err.status || 500).json({
+    error: isProd ? 'An unexpected error occurred' : err.message,
+    requestId: res.getHeader('X-Request-ID')
   });
 });
 

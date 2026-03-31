@@ -156,44 +156,41 @@ const rateLimits = {
     })
 };
 
-// Sanitization middleware
+// Sanitization middleware — strips dangerous patterns from all string inputs
 const sanitizeInput = (req, res, next) => {
-    // Remove potentially dangerous characters from string inputs
     const sanitizeString = (str) => {
         if (typeof str !== 'string') return str;
         return str
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-            .replace(/javascript:/gi, '') // Remove javascript: protocol
-            .replace(/on\w+\s*=/gi, '') // Remove event handlers
+            .replace(/<script[\s\S]*?<\/script>/gi, '')   // script tags
+            .replace(/javascript\s*:/gi, '')               // javascript: protocol
+            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')  // inline event handlers
+            .replace(/data\s*:\s*text\/html/gi, '')        // data: URIs with HTML
             .trim();
     };
-    
-    // Recursively sanitize object properties
-    const sanitizeObject = (obj) => {
+
+    const sanitizeObject = (obj, depth = 0) => {
+        if (depth > 10) return obj; // prevent prototype pollution via deep nesting
         if (obj === null || typeof obj !== 'object') return obj;
-        
-        for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                if (typeof obj[key] === 'string') {
-                    obj[key] = sanitizeString(obj[key]);
-                } else if (typeof obj[key] === 'object') {
-                    obj[key] = sanitizeObject(obj[key]);
-                }
-            }
+        if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item, depth + 1));
+
+        const clean = {};
+        for (const key of Object.keys(obj)) {
+            // Block prototype pollution keys
+            if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+            const val = obj[key];
+            clean[key] = typeof val === 'string'
+                ? sanitizeString(val)
+                : typeof val === 'object'
+                    ? sanitizeObject(val, depth + 1)
+                    : val;
         }
-        return obj;
+        return clean;
     };
-    
-    // Sanitize request body
-    if (req.body) {
-        req.body = sanitizeObject(req.body);
-    }
-    
-    // Sanitize query parameters
-    if (req.query) {
-        req.query = sanitizeObject(req.query);
-    }
-    
+
+    if (req.body) req.body = sanitizeObject(req.body);
+    if (req.query) req.query = sanitizeObject(req.query);
+    if (req.params) req.params = sanitizeObject(req.params);
+
     next();
 };
 

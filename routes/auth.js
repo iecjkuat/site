@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const BCRYPT_ROUNDS = 12; // consistent across all password operations
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
@@ -61,44 +62,34 @@ async function sendVerificationEmail(email, name, token) {
     });
 }
 
-// Create user profile (called after Supabase Auth registration)
+// Create user profile — requires authentication (admin or self only)
 const router = express.Router();
 
-router.post('/create-profile', async (req, res) => {
+router.post('/create-profile', authenticateToken, async (req, res) => {
   try {
-    const {
-      id, name, email, registrationNumber, phone, course, yearOfStudy, college, emailVerified
-    } = req.body;
+    const { id, name, email, registrationNumber, phone, course, yearOfStudy, college } = req.body;
 
-    console.log('🔄 Creating user profile for:', email);
-
-    // Check if profile already exists
-    const { data: existingUser } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', id)
-      .single();
-
-    if (existingUser) {
-      return res.json({ message: 'Profile already exists' });
+    if (req.user.id !== id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
     }
 
-    // Create user profile in database
+    const { data: existingUser } = await supabaseAdmin
+      .from('users').select('id').eq('id', id).single();
+
+    if (existingUser) return res.json({ message: 'Profile already exists' });
+
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
-        id: id,
-        name: name,
-        email: email,
+        id, name, email,
         registration_number: registrationNumber,
-        phone: phone,
-        course: course,
+        phone, course,
         year_of_study: parseInt(yearOfStudy),
-        college: college,
-        email_verified: emailVerified,
-        membership_status: emailVerified ? 'active' : 'pending',
+        college,
+        email_verified: false,       // never trust client
+        membership_status: 'pending', // always start pending
         role: 'member',
-        password_hash: null, // We use Supabase Auth, not custom passwords
+        password_hash: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -106,26 +97,10 @@ router.post('/create-profile', async (req, res) => {
       .single();
 
     if (userError) {
-      console.error('Profile creation error:', userError);
-      return res.status(400).json({
-        message: 'Failed to create user profile',
-        error: userError.message
-      });
+      return res.status(400).json({ message: 'Failed to create user profile', error: userError.message });
     }
 
-    console.log('✅ User profile created successfully');
-
-    res.json({
-      message: 'Profile created successfully',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        membershipStatus: user.membership_status
-      }
-    });
-
+    res.json({ message: 'Profile created successfully', user });
   } catch (error) {
     console.error('Create profile error:', error);
     res.status(500).json({ message: 'Server error during profile creation' });
@@ -170,7 +145,7 @@ router.post('/register', [
 
     // Generate UUID, hash password, and create verification token
     const userId = require('crypto').randomUUID();
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const verificationToken = require('crypto').randomBytes(32).toString('hex');
     const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
 
@@ -267,10 +242,11 @@ router.post('/login', [
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Block login if email not verified
+    // Block login if email not verified — use same status as invalid credentials
+    // to avoid leaking whether the account exists
     if (!userData.email_verified) {
-      return res.status(403).json({
-        message: 'Please verify your email before logging in. Check your JKUAT inbox for the verification link.',
+      return res.status(400).json({
+        message: 'Invalid credentials or unverified account.',
         requiresVerification: true,
         email: userData.email
       });
@@ -301,6 +277,14 @@ router.post('/login', [
         }
         
         console.log('✅ Supabase Auth fallback successful');
+        // Re-check email_verified after Supabase fallback (same rule applies)
+        if (!userData.email_verified) {
+          return res.status(403).json({
+            message: 'Please verify your email before logging in.',
+            requiresVerification: true,
+            email: userData.email
+          });
+        }
       } catch (authFallbackError) {
         console.log('Auth fallback error:', authFallbackError.message);
         return res.status(400).json({ message: 'Invalid credentials' });
@@ -424,6 +408,70 @@ router.post('/resend-verification', async (req, res) => {
   } catch (error) {
     console.error('Resend verification error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Refresh token — issues a new JWT if the current one is still valid
+router.post('/refresh', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'No token provided' });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET, {
+        algorithms: ['HS256'],
+        issuer: 'jkuat-innovation-club',
+        audience: 'jkuat-platform',
+        // Allow tokens up to 7 days past expiry for refresh
+        ignoreExpiration: true
+      });
+    } catch {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Check token isn't too old to refresh (7 day window)
+    const issuedAt = decoded.iat * 1000;
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - issuedAt > sevenDays) {
+      return res.status(401).json({ message: 'Token too old to refresh. Please log in again.' });
+    }
+
+    // Check token hasn't been blacklisted (logged out)
+    const { isTokenBlacklisted } = require('../middleware/auth');
+    if (decoded.jti && isTokenBlacklisted(decoded.jti)) {
+      return res.status(401).json({ message: 'Token has been revoked. Please log in again.' });
+    }
+
+    // Verify user still exists and is active
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('id, name, email, role, membership_status, email_verified')
+      .eq('id', decoded.userId)
+      .single();
+
+    if (error || !user) return res.status(401).json({ message: 'User not found' });
+    if (user.membership_status === 'inactive' || user.membership_status === 'suspended') {
+      return res.status(401).json({ message: 'Account inactive' });
+    }
+
+    // Issue fresh token
+    const newToken = generateSecureToken(user.id, user.role);
+
+    res.json({
+      token: newToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        membershipStatus: user.membership_status
+      }
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ message: 'Server error during token refresh' });
   }
 });
 
@@ -864,8 +912,7 @@ router.post('/change-password', authenticateToken, [
     }
 
     // Hash the new password
-    const saltRounds = 10;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+    const newPasswordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
     // Update password in database
     const { error: updateError } = await supabaseAdmin
@@ -1041,14 +1088,29 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete account
+// Delete account — requires password confirmation
 router.delete('/delete-account', authenticateToken, async (req, res) => {
   try {
-    // Delete user from database (foreign keys should handle cascade)
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ message: 'Password confirmation required to delete account' });
+    }
+
+    // Verify password before deletion
+    const { data: user } = await supabaseAdmin
+      .from('users').select('password_hash').eq('id', req.user.id).single();
+
+    if (!user?.password_hash) {
+      return res.status(400).json({ message: 'Cannot delete account — no password set' });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
     const { error: dbError } = await supabaseAdmin
-      .from('users')
-      .delete()
-      .eq('id', req.user.id);
+      .from('users').delete().eq('id', req.user.id);
 
     if (dbError) throw dbError;
 
@@ -1072,7 +1134,7 @@ router.get('/export-data', authenticateToken, async (req, res) => {
       { data: payments },
       { data: activity }
     ] = await Promise.all([
-      supabaseAdmin.from('users').select('*').eq('id', userId).single(),
+      supabaseAdmin.from('users').select('id, name, email, phone, registration_number, course, year_of_study, college, role, membership_status, bio, linkedin_url, skills, interests, created_at, updated_at').eq('id', userId).single(),
       supabaseAdmin.from('notification_preferences').select('*').eq('user_id', userId).single(),
       supabaseAdmin.from('notifications').select('*').eq('user_id', userId),
       supabaseAdmin.from('financial_transactions').select('*').eq('user_id', userId),

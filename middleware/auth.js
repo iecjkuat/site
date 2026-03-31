@@ -7,8 +7,18 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Rate limiting for authentication attempts
 const authAttempts = new Map();
-const MAX_AUTH_ATTEMPTS = 10; // Max attempts per IP per minute
-const AUTH_WINDOW = 60 * 1000; // 1 minute window
+const MAX_AUTH_ATTEMPTS = 10;
+const AUTH_WINDOW = 60 * 1000;
+
+// Sweep stale entries every 5 minutes to prevent memory leak (#44)
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, timestamps] of authAttempts.entries()) {
+        const recent = timestamps.filter(t => now - t < AUTH_WINDOW);
+        if (recent.length === 0) authAttempts.delete(key);
+        else authAttempts.set(key, recent);
+    }
+}, 5 * 60 * 1000);
 
 // Token blacklist for logout (in production, use Redis)
 const tokenBlacklist = new Set();
@@ -62,17 +72,16 @@ const clearAllCache = () => {
 // Function to generate secure JWT token
 const generateSecureToken = (userId, userRole, options = {}) => {
     const payload = {
-        userId: userId,
+        userId,
         role: userRole,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (options.expiresIn || 24 * 60 * 60), // 24 hours default
         iss: 'jkuat-innovation-club',
         aud: 'jkuat-platform',
-        jti: require('crypto').randomUUID() // Unique token ID
+        jti: require('crypto').randomUUID()
     };
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
-        algorithm: 'HS256'
+        algorithm: 'HS256',
+        expiresIn: options.expiresIn || '24h'
     });
 };
 
@@ -91,15 +100,17 @@ const authenticateToken = async (req, res, next) => {
         }
 
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+        const token = authHeader && authHeader.split(' ')[1];
 
-        console.log(`🔐 [${requestId}] Auth attempt:`, {
-            hasAuthHeader: !!authHeader,
-            hasToken: !!token,
-            path: req.path,
-            method: req.method,
-            ip: clientIp
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`🔐 [${requestId}] Auth attempt:`, {
+                hasAuthHeader: !!authHeader,
+                hasToken: !!token,
+                path: req.path,
+                method: req.method,
+                ip: clientIp
+            });
+        }
 
         if (!token) {
             console.log(`❌ [${requestId}] No token provided`);
@@ -263,8 +274,7 @@ const requireRole = (roles) => {
             });
 
             return res.status(403).json({
-                message: `Access denied. Required roles: ${roles.join(', ')}`,
-                userRole: userRole
+                message: `Access denied. Insufficient permissions.`
             });
         }
 

@@ -84,12 +84,7 @@ class AuthManager {
                 
                 // Update UI immediately
                 this.updateUI();
-                
-                // Dispatch login event immediately
-                setTimeout(() => {
-                    console.log('🔐 Dispatching userLoggedIn event with user:', this.user);
-                    document.dispatchEvent(new CustomEvent('userLoggedIn', { detail: this.user }));
-                }, 100);
+                // userLoggedIn will be dispatched at the end of init() — don't fire twice (#15)
             } catch (error) {
                 console.error('Error parsing stored user:', error);
                 localStorage.removeItem('user');
@@ -300,48 +295,43 @@ class AuthManager {
 
     async logout() {
         try {
-            console.log('🔐 Logging out...');
-            this.isLoggingOut = true; // Set flag to prevent modal
-            
-            // Clear JWT tokens
+            this.isLoggingOut = true;
+
+            // Sign out from Supabase first, then clear storage (#19 — reversed order)
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) console.error('❌ Supabase signOut error:', error);
+
+            // Clear JWT tokens and user data
             localStorage.removeItem('authToken');
             sessionStorage.removeItem('authToken');
             localStorage.removeItem('user');
-            
-            // Use Supabase Auth logout
-            const { error } = await supabaseClient.auth.signOut();
-            
-            if (error) {
-                console.error('❌ Logout error:', error);
-            }
-            
+            sessionStorage.removeItem('user'); // was missing before
+
             // Clear local state
             this.session = null;
             this.user = null;
-            
-            console.log('✅ Logout successful');
+
+            // Keep AuthState in sync (#48)
+            if (window.AuthState) window.AuthState.clear();
+
             document.dispatchEvent(new CustomEvent('userLoggedOut'));
             this.updateUI();
-            
-            // Redirect to home page
             window.location.href = '/';
-            
+
         } catch (error) {
             console.error('❌ Logout error:', error);
-            // Still clear local state even if Supabase call fails
             this.session = null;
             this.user = null;
             localStorage.removeItem('authToken');
             sessionStorage.removeItem('authToken');
             localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
+            if (window.AuthState) window.AuthState.clear();
             document.dispatchEvent(new CustomEvent('userLoggedOut'));
             this.updateUI();
             window.location.href = '/';
         } finally {
-            // Clear logout flag after a short delay
-            setTimeout(() => {
-                this.isLoggingOut = false;
-            }, 1000);
+            setTimeout(() => { this.isLoggingOut = false; }, 1000);
         }
     }
 
@@ -935,8 +925,6 @@ class AuthModal {
     }
 
     hide() {
-        console.log('🔐 AuthModal.hide() called');
-        console.trace('🔍 Hide called from:'); // This will show the call stack
         
         if (this.currentModal) {
             console.log('🔐 Removing modal from DOM');
@@ -1270,11 +1258,11 @@ class AuthModal {
 
         } catch (error) {
             console.error('❌ Form submission error:', error);
-            messageContainer.innerHTML = `
-                <div class="message error">
-                    ${error.message || 'An error occurred. Please try again.'}
-                </div>
-            `;
+            messageContainer.innerHTML = '';
+            const errDiv = document.createElement('div');
+            errDiv.className = 'message error';
+            errDiv.textContent = error.message || 'An error occurred. Please try again.';
+            messageContainer.appendChild(errDiv);
         } finally {
             // Reset button state
             // Reset button state
