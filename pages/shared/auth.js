@@ -72,7 +72,7 @@ class AuthManager {
         
         // Check for JWT token from backend API login
         const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        const storedUser = localStorage.getItem('user');
+        const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
         
         if (authToken && storedUser) {
             try {

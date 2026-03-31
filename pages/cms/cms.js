@@ -3,7 +3,7 @@
  * Secure entry point with robust error handling and timeout protection
  */
 
-import { SecureCMSManager } from './modules/cms-manager.js';
+import { SecureCMSManager } from '/cms/modules/cms-manager.js';
 
 // Utility functions
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -43,16 +43,21 @@ const isDevelopment = () => {
 async function waitForAuthManager(timeoutMs = 8000) {
     const start = Date.now();
     
-    // Wait for authManager with required methods
-    while (!window.authManager?.isAuthenticated || !window.authManager?.getUser) {
+    // Accept either AuthState (new) or authManager (legacy)
+    while (true) {
+        // New system: AuthState
+        if (window.AuthState?.isAuthenticated !== undefined) {
+            return; // AuthState is a getter, not a function — it's ready
+        }
+        // Legacy system: authManager
+        if (typeof window.authManager?.isAuthenticated === 'function' &&
+            typeof window.authManager?.getUser === 'function') {
+            return;
+        }
         if (Date.now() - start > timeoutMs) {
             throw new Error('Auth system did not load within timeout. Please refresh the page or check your connection.');
         }
         await sleep(100);
-    }
-    
-    if (isDevelopment()) {
-        console.log('✅ Auth manager loaded successfully');
     }
 }
 
@@ -317,10 +322,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Wait for auth system with timeout protection
         await waitForAuthManager();
         
-        // Verify auth manager has required methods with type checking
-        const authManager = window.authManager;
-        if (typeof authManager?.isAuthenticated !== 'function' || typeof authManager?.getUser !== 'function') {
-            throw new Error('Auth manager is missing required methods (isAuthenticated, getUser)');
+        // Accept either auth system
+        const isAuthed = window.AuthState?.isAuthenticated
+            || window.authManager?.isAuthenticated?.();
+
+        if (!isAuthed) {
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+            window.location.href = '/signin';
+            return;
         }
         
         // Initialize CMS manager (handles all auth checks internally)

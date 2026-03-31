@@ -33,7 +33,7 @@ class AdminDashboard {
 
         // Check admin authentication
         if (!await this.checkAdminAuth()) {
-            window.location.href = '/pages/auth/signin.html';
+            window.location.href = '/signin';
             return;
         }
 
@@ -179,22 +179,14 @@ class AdminDashboard {
 
     async checkAdminAuth() {
         try {
-            console.log('🔐 Starting admin auth check...');
-            console.log('Current URL:', window.location.href);
-            
-            // Check for custom auth token
+            // Check for custom auth token — both storage types
             const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-            const storedUser = localStorage.getItem('user');
-            
-            console.log('Auth check:', {
-                hasToken: !!authToken,
-                hasStoredUser: !!storedUser
-            });
+            const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
             
             if (!authToken || !storedUser) {
                 console.log('No auth token or user data found, redirecting to login...');
                 sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-                alert('Please login first.');
+                window.location.href = '/signin';
                 return false;
             }
             
@@ -285,7 +277,7 @@ class AdminDashboard {
             if (!adminRoles.includes(userRole)) {
                 console.warn(`Access denied. User role: ${userProfile.role}`);
                 alert(`Access denied. Admin privileges required.\n\nYour role: ${userProfile.role || 'none'}\nAccepted roles: ${adminRoles.join(', ')}\n\nPlease contact an administrator if you believe this is an error.`);
-                window.location.href = '/pages/dashboard/dashboard.html';
+                window.location.href = '/dashboard';
                 return false;
             }
             

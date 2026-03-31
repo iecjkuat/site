@@ -505,7 +505,7 @@ export class CMSMessagesManager {
     async loadConversations() {
         try {
             const response = await fetch('/api/v1/support', {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: { 'Authorization': `Bearer ${(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'))}` }
             });
 
             if (!response.ok) throw new Error('Failed to load conversations');
@@ -596,7 +596,7 @@ export class CMSMessagesManager {
         // Fetch full details with replies
         const promises = conv.messages.map(msg => 
             fetch(`/api/v1/support/${msg.id}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                headers: { 'Authorization': `Bearer ${(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'))}` }
             }).then(r => r.json())
         );
 
@@ -629,7 +629,7 @@ export class CMSMessagesManager {
             if (!msg.read_at) {
                 fetch(`/api/v1/support/${msg.id}/read`, {
                     method: 'PATCH',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+                    headers: { 'Authorization': `Bearer ${(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'))}` }
                 });
             }
         });
@@ -730,7 +730,7 @@ export class CMSMessagesManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${(localStorage.getItem('authToken') || sessionStorage.getItem('authToken'))}`
                 },
                 body: JSON.stringify({ content: text })
             });

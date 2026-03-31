@@ -74,7 +74,7 @@ class DashboardPage {
         try {
             // Check if user is logged in via JWT token (backend auth)
             const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-            const storedUser = localStorage.getItem('user');
+            const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
 
             console.log('🔑 Auth token exists:', !!authToken);
             console.log('👤 Stored user exists:', !!storedUser);
