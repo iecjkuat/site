@@ -82,7 +82,7 @@
 
         _refreshPromise = (async () => {
             try {
-                const data = await request('POST', '/v1/auth/refresh', undefined, { _skipRefresh: true });
+                const data = await request('POST', '/auth/refresh', undefined, { _skipRefresh: true });
                 if (data?.token) {
                     // Store new token in whichever storage the old one was in
                     const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
@@ -181,37 +181,37 @@
         patch:  (path, body, opts) => request('PATCH',  path, body,      opts),
         delete: (path, opts)       => requestWithRetry('DELETE', path, undefined, opts),
 
-        // Auth endpoints — use full versioned paths
+        // Auth endpoints
         auth: {
-            login:              (body)  => request('POST', '/v1/auth/login',               body, { timeout: 10000 }),
-            register:           (body)  => request('POST', '/v1/auth/register',            body, { timeout: 15000 }),
-            verify:             ()      => request('GET',  '/v1/auth/verify'),
-            verifyEmail:        (token) => request('GET',  '/v1/auth/verify-email', undefined, { query: { token } }),
-            resendVerification: (email) => request('POST', '/v1/auth/resend-verification', { email }),
-            logout:             ()      => request('POST', '/v1/auth/logout'),
-            profile:            ()      => request('GET',  '/v1/auth/profile'),
-            updateProfile:      (body)  => request('PUT',  '/v1/auth/profile',             body),
-            refresh:            ()      => request('POST', '/v1/auth/refresh', undefined,  { _skipRefresh: true }),
+            login:              (body)  => request('POST', '/auth/login',               body, { timeout: 10000 }),
+            register:           (body)  => request('POST', '/auth/register',            body, { timeout: 15000 }),
+            verify:             ()      => request('GET',  '/auth/verify'),
+            verifyEmail:        (token) => request('GET',  '/auth/verify-email', undefined, { query: { token } }),
+            resendVerification: (email) => request('POST', '/auth/resend-verification', { email }),
+            logout:             ()      => request('POST', '/auth/logout'),
+            profile:            ()      => request('GET',  '/auth/profile'),
+            updateProfile:      (body)  => request('PUT',  '/auth/profile',             body),
+            refresh:            ()      => request('POST', '/auth/refresh', undefined,  { _skipRefresh: true }),
         },
 
-        // Resource endpoints — all support optional query params
+        // Resource endpoints
         events: {
-            list:   (q) => requestWithRetry('GET', '/v1/events',   undefined, { query: q }),
-            get:    (id)=> requestWithRetry('GET', `/v1/events/${id}`),
+            list:   (q) => requestWithRetry('GET', '/events',   undefined, { query: q }),
+            get:    (id)=> requestWithRetry('GET', `/events/${id}`),
         },
         projects: {
-            list:   (q) => requestWithRetry('GET', '/v1/projects', undefined, { query: q }),
-            get:    (id)=> requestWithRetry('GET', `/v1/projects/${id}`),
+            list:   (q) => requestWithRetry('GET', '/projects', undefined, { query: q }),
+            get:    (id)=> requestWithRetry('GET', `/projects/${id}`),
         },
         ideas: {
-            list:   (q) => requestWithRetry('GET', '/v1/ideas',    undefined, { query: q }),
-            get:    (id)=> requestWithRetry('GET', `/v1/ideas/${id}`),
+            list:   (q) => requestWithRetry('GET', '/ideas',    undefined, { query: q }),
+            get:    (id)=> requestWithRetry('GET', `/ideas/${id}`),
         },
         notifications: {
-            list:   (q) => requestWithRetry('GET', '/v1/notifications', undefined, { query: q }),
+            list:   (q) => requestWithRetry('GET', '/notifications', undefined, { query: q }),
         },
         stats: {
-            get:    ()  => requestWithRetry('GET', '/v1/stats'),
+            get:    ()  => requestWithRetry('GET', '/stats'),
         },
 
         // Config
