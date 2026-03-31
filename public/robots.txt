@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /cms
+Disallow: /api/
+Disallow: /settings
+Disallow: /complete-profile
+Disallow: /verify-email
+
+Sitemap: https://iecjkuat.com/sitemap.xml

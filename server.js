@@ -237,6 +237,16 @@ app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'favicon.ico'));
 });
 
+app.get('/sitemap.xml', (req, res) => {
+  res.setHeader('Content-Type', 'application/xml');
+  res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+});
+
 app.get('/manifest.json', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'shared', 'assets', 'manifest.json'));
 });
