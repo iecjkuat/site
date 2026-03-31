@@ -257,48 +257,65 @@ class GlobalNavbar {
     }
 
     setupAuthIntegration() {
+        // Listen for auth events from both AuthState and AuthManager
         document.addEventListener('userLoggedIn', (e) => this.updateAuthButton(e.detail));
         document.addEventListener('userLoggedOut', () => this.updateAuthButton(null));
-        document.addEventListener('authReady', () => {
-            if (window.authManager?.isAuthenticated?.()) {
-                this.updateAuthButton(window.authManager.getUser());
-            }
-        });
+        document.addEventListener('userUpdated', (e) => this.updateAuthButton(e.detail));
 
-        setTimeout(() => {
-            if (window.authManager?.isAuthenticated?.()) {
-                this.updateAuthButton(window.authManager.getUser());
-            }
-        }, 100);
+        // Check auth state once everything has loaded
+        document.addEventListener('authReady', () => this.syncAuthButton());
+
+        // Fallback poll — catches cases where events fired before navbar was ready
+        setTimeout(() => this.syncAuthButton(), 150);
+        setTimeout(() => this.syncAuthButton(), 500);
+    }
+
+    syncAuthButton() {
+        // Prefer AuthState (new system), fall back to AuthManager (legacy)
+        if (window.AuthState?.isAuthenticated) {
+            this.updateAuthButton(window.AuthState.user);
+        } else if (window.authManager?.isAuthenticated?.()) {
+            this.updateAuthButton(window.authManager.getUser());
+        } else {
+            // Check storage directly as last resort
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                const raw   = localStorage.getItem('user') || sessionStorage.getItem('user');
+                if (token && raw) {
+                    this.updateAuthButton(JSON.parse(raw));
+                }
+            } catch { /* ignore */ }
+        }
     }
 
     updateAuthButton(user) {
         const btn = document.getElementById('navbar-login-btn');
         if (!btn) return;
 
-        const currentlyLoggedIn = btn.textContent.includes('Logout');
-        const shouldBeLoggedIn = !!user;
-
-        if (currentlyLoggedIn === shouldBeLoggedIn) return;
-
-        if (shouldBeLoggedIn) {
+        if (user) {
             btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> Logout';
         } else {
             btn.innerHTML = '<i class="fas fa-user"></i> Login';
         }
 
         btn.onclick = this.handleAuthButtonClick;
-        this.updateDropdownMenu();
     }
 
     handleAuthButtonClick = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const isLoggedIn = window.authManager?.isAuthenticated?.();
+        // Check both auth systems
+        const isLoggedIn = window.AuthState?.isAuthenticated
+            || window.authManager?.isAuthenticated?.();
 
         if (isLoggedIn) {
-            if (window.authManager) await window.authManager.logout();
+            // Prefer AuthState logout, fall back to AuthManager
+            if (window.AuthState) {
+                await window.AuthState.logout();
+            } else if (window.authManager) {
+                await window.authManager.logout();
+            }
         } else {
             const redirect = encodeURIComponent(window.location.pathname);
             window.location.href = `/signin?redirect=${redirect}`;

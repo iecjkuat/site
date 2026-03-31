@@ -66,6 +66,11 @@
                 setState(user, token);
                 notify('userLoggedIn', user);
 
+                // Also directly update navbar if it's already in the DOM
+                setTimeout(() => {
+                    window.globalNavbar?.syncAuthButton?.();
+                }, 50);
+
                 // Silently verify token in background — don't block page load
                 this._verifyInBackground(token);
             }

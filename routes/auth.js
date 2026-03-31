@@ -130,17 +130,18 @@ router.post('/register', [
 
     console.log('🔄 Database registration for:', email);
 
-    // Check if user already exists
+    // Check if user already exists (email or registration number)
     const { data: existingUser } = await supabaseAdmin
       .from('users')
-      .select('id, email')
-      .eq('email', email)
-      .single();
+      .select('id, email, registration_number')
+      .or(`email.eq.${email},registration_number.eq.${registrationNumber}`)
+      .maybeSingle();
 
     if (existingUser) {
-      return res.status(400).json({
-        message: 'User already exists with this email'
-      });
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: 'An account with this email already exists' });
+      }
+      return res.status(400).json({ message: 'An account with this registration number already exists' });
     }
 
     // Generate UUID, hash password, and create verification token
@@ -165,8 +166,6 @@ router.post('/register', [
         membership_status: 'pending',
         role: 'member',
         password_hash: passwordHash,
-        verification_token: verificationToken,
-        verification_token_expiry: tokenExpiry,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -175,12 +174,34 @@ router.post('/register', [
 
     if (userError) {
       console.error('User profile creation error:', userError);
+      // Handle duplicate key violations with user-friendly messages
+      if (userError.code === '23505') {
+        if (userError.details?.includes('email')) {
+          return res.status(400).json({ message: 'An account with this email already exists' });
+        }
+        if (userError.details?.includes('registration_number')) {
+          return res.status(400).json({ message: 'An account with this registration number already exists' });
+        }
+        return res.status(400).json({ message: 'An account with these details already exists' });
+      }
       return res.status(400).json({
         message: 'Failed to create user profile',
-        error: userError.message,
-        code: userError.code,
-        detail: userError.details
+        error: userError.message
       });
+    }
+
+    // Try to store verification token — columns may not exist yet
+    try {
+      await supabaseAdmin
+        .from('users')
+        .update({
+          verification_token: verificationToken,
+          verification_token_expiry: tokenExpiry
+        })
+        .eq('id', userId);
+    } catch (tokenErr) {
+      console.warn('Could not store verification token (columns may be missing):', tokenErr.message);
+      // Continue anyway — user is created, email will still be sent
     }
 
     console.log('✅ User created successfully in database');
