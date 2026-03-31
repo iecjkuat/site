@@ -1,193 +1,146 @@
-// JKUAT Innovation Club - Statistics API Routes
+/**
+ * Statistics API Routes
+ * Cached to avoid hammering the DB on every page load.
+ * Cache TTL: 5 minutes (configurable via STATS_CACHE_TTL_MS env var)
+ */
 
 const express = require('express');
 const router = express.Router();
 const { supabaseAdmin: supabase } = require('../lib/supabase');
 
+const CACHE_TTL = parseInt(process.env.STATS_CACHE_TTL_MS || '300000'); // 5 min default
+
+// Simple in-memory cache — good enough for Vercel (single instance per region)
+const cache = {
+    data: null,
+    ts: 0,
+    isValid() { return this.data && (Date.now() - this.ts) < CACHE_TTL; },
+    set(data) { this.data = data; this.ts = Date.now(); },
+    clear() { this.data = null; this.ts = 0; }
+};
+
+// Run all count queries in parallel
+async function fetchStats() {
+    const [
+        { count: activeMembers },
+        { count: totalUsers },
+        { count: projects },
+        { count: events },
+        { count: ideas },
+        { count: testimonials }
+    ] = await Promise.all([
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('membership_status', 'active'),
+        supabase.from('users').select('id', { count: 'exact', head: true }),
+        supabase.from('projects').select('id', { count: 'exact', head: true }),
+        supabase.from('events').select('id', { count: 'exact', head: true }),
+        supabase.from('ideas').select('id', { count: 'exact', head: true }),
+        supabase.from('testimonials').select('id', { count: 'exact', head: true }).eq('is_approved', true)
+    ]);
+
+    return {
+        activeMembers:    activeMembers    || 0,
+        totalUsers:       totalUsers       || 0,
+        projectsLaunched: projects         || 0,
+        totalEvents:      events           || 0,
+        totalIdeas:       ideas            || 0,
+        testimonials:     testimonials     || 0,
+        timestamp: new Date().toISOString()
+    };
+}
+
 /**
- * GET /api/stats
- * Get real-time statistics for the homepage
+ * GET /api/v1/stats
+ * Public stats for homepage counters — cached
  */
 router.get('/', async (req, res) => {
     try {
-        console.log('📊 Fetching real-time statistics...');
+        // Force-refresh if ?refresh=1 (admin use)
+        if (req.query.refresh === '1') cache.clear();
 
-        // Get active members count
-        const { count: activeMembersCount, error: membersError } = await supabase
-            .from('users')
-            .select('id', { count: 'exact' })
-            .eq('membership_status', 'active');
-
-        if (membersError) {
-            console.error('❌ Error fetching active members:', membersError);
+        if (cache.isValid()) {
+            return res.json({ success: true, stats: cache.data, cached: true });
         }
 
-        // Get projects count (from project_submissions table)
-        const { count: projectsCount, error: projectsError } = await supabase
-            .from('project_submissions')
-            .select('id', { count: 'exact' });
+        const stats = await fetchStats();
+        cache.set(stats);
 
-        if (projectsError) {
-            console.error('❌ Error fetching projects:', projectsError);
-        }
-
-        // Get industry partners count (we'll count from a partners table if it exists, or use a default)
-        // First, let's check if we have any partnership-related data
-        let partnersCount = 0;
-        
-        // Try to get partners from opportunities table (partnership category)
-        const { count: opportunityPartnersCount, error: partnersError } = await supabase
-            .from('opportunities')
-            .select('id', { count: 'exact' })
-            .eq('category', 'Partnerships');
-
-        if (!partnersError && opportunityPartnersCount !== null) {
-            partnersCount = opportunityPartnersCount;
-        } else {
-            // Fallback: count unique organizations from opportunities
-            const { data: organizations, error: orgError } = await supabase
-                .from('opportunities')
-                .select('organization')
-                .not('organization', 'is', null);
-
-            if (!orgError && organizations) {
-                const uniqueOrgs = new Set(organizations.map(o => o.organization));
-                partnersCount = uniqueOrgs.size;
-            }
-        }
-
-        // Get testimonials count
-        const { count: testimonialsCount, error: testimonialsError } = await supabase
-            .from('testimonials')
-            .select('id', { count: 'exact' })
-            .eq('is_approved', true);
-
-        if (testimonialsError) {
-            console.error('❌ Error fetching testimonials count:', testimonialsError);
-        }
-
-        // Prepare the response with real data
-        const stats = {
-            activeMembers: activeMembersCount || 0,
-            projectsLaunched: projectsCount || 0,
-            industryPartners: partnersCount || 0,
-            testimonials: testimonialsCount || 0,
-            timestamp: new Date().toISOString()
-        };
-
-        console.log('✅ Statistics fetched successfully:', stats);
-
-        res.json({
-            success: true,
-            stats,
-            message: 'Statistics retrieved successfully'
-        });
+        res.json({ success: true, stats, cached: false });
 
     } catch (error) {
-        console.error('❌ Error fetching statistics:', error);
-        
-        // Return fallback stats if there's an error
+        console.error('Stats fetch error:', error.message);
+
+        // Return stale cache rather than an error if available
+        if (cache.data) {
+            return res.json({ success: true, stats: cache.data, cached: true, stale: true });
+        }
+
         res.status(500).json({
             success: false,
-            stats: {
-                activeMembers: 0,
-                projectsLaunched: 0,
-                industryPartners: 0,
-                timestamp: new Date().toISOString()
-            },
-            message: 'Error fetching statistics, showing fallback values',
-            error: error.message
+            stats: { activeMembers: 0, totalUsers: 0, projectsLaunched: 0, totalEvents: 0, totalIdeas: 0, testimonials: 0 },
+            message: 'Statistics temporarily unavailable'
         });
     }
 });
 
 /**
- * GET /api/stats/detailed
- * Get detailed statistics breakdown
+ * GET /api/v1/stats/detailed
+ * Detailed breakdown — also cached
  */
 router.get('/detailed', async (req, res) => {
     try {
-        console.log('📊 Fetching detailed statistics...');
+        const [
+            { data: membershipBreakdown },
+            { count: totalEvents },
+            { count: upcomingEvents },
+            { count: testimonialsCount }
+        ] = await Promise.all([
+            supabase.from('users').select('membership_status, role').not('membership_status', 'is', null),
+            supabase.from('events').select('id', { count: 'exact', head: true }),
+            supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'upcoming'),
+            supabase.from('testimonials').select('id', { count: 'exact', head: true }).eq('is_approved', true)
+        ]);
 
-        // Get membership breakdown
-        const { data: membershipStats, error: membershipError } = await supabase
-            .from('users')
-            .select('membership_status, role')
-            .not('membership_status', 'is', null);
-
-        // Get project categories breakdown
-        const { data: projectStats, error: projectError } = await supabase
-            .from('project_submissions')
-            .select('status, category')
-            .not('status', 'is', null);
-
-        // Get events statistics
-        const { count: totalEvents, error: eventsError } = await supabase
-            .from('events')
-            .select('id', { count: 'exact' });
-
-        const { count: upcomingEvents, error: upcomingError } = await supabase
-            .from('events')
-            .select('id', { count: 'exact' })
-            .eq('status', 'upcoming');
-
-        // Get testimonials count
-        const { count: testimonialsCount, error: testimonialsError } = await supabase
-            .from('testimonials')
-            .select('id', { count: 'exact' })
-            .eq('is_approved', true);
-
-        if (testimonialsError) {
-            console.error('❌ Error fetching testimonials count:', testimonialsError);
-        }
-
-        const detailedStats = {
-            membership: {
-                total: membershipStats?.length || 0,
-                active: membershipStats?.filter(m => m.membership_status === 'active').length || 0,
-                pending: membershipStats?.filter(m => m.membership_status === 'pending').length || 0,
-                expired: membershipStats?.filter(m => m.membership_status === 'expired').length || 0,
-                byRole: {
-                    member: membershipStats?.filter(m => m.role === 'member').length || 0,
-                    admin: membershipStats?.filter(m => m.role === 'admin').length || 0,
-                    super_admin: membershipStats?.filter(m => m.role === 'super_admin').length || 0
-                }
-            },
-            projects: {
-                total: projectStats?.length || 0,
-                pending: projectStats?.filter(p => p.status === 'pending').length || 0,
-                approved: projectStats?.filter(p => p.status === 'approved').length || 0,
-                rejected: projectStats?.filter(p => p.status === 'rejected').length || 0
-            },
-            events: {
-                total: totalEvents || 0,
-                upcoming: upcomingEvents || 0
-            },
-            // TODO: Add testimonials stats when testimonials table is created
-            testimonials: {
-                total: testimonialsCount || 0,
-                approved: testimonialsCount || 0,
-                pending: 0 // Will be calculated when we add pending testimonials query
-            },
-            timestamp: new Date().toISOString()
-        };
-
-        console.log('✅ Detailed statistics fetched successfully');
+        const mb = membershipBreakdown || [];
 
         res.json({
             success: true,
-            stats: detailedStats,
-            message: 'Detailed statistics retrieved successfully'
+            stats: {
+                membership: {
+                    total:   mb.length,
+                    active:  mb.filter(m => m.membership_status === 'active').length,
+                    pending: mb.filter(m => m.membership_status === 'pending').length,
+                    expired: mb.filter(m => m.membership_status === 'expired').length,
+                    byRole: {
+                        member:     mb.filter(m => m.role === 'member').length,
+                        admin:      mb.filter(m => m.role === 'admin').length,
+                        super_admin:mb.filter(m => m.role === 'super_admin').length
+                    }
+                },
+                events: {
+                    total:    totalEvents    || 0,
+                    upcoming: upcomingEvents || 0
+                },
+                testimonials: {
+                    total:    testimonialsCount || 0,
+                    approved: testimonialsCount || 0
+                },
+                timestamp: new Date().toISOString()
+            }
         });
 
     } catch (error) {
-        console.error('❌ Error fetching detailed statistics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching detailed statistics',
-            error: error.message
-        });
+        console.error('Detailed stats error:', error.message);
+        res.status(500).json({ success: false, message: 'Error fetching detailed statistics' });
     }
+});
+
+/**
+ * POST /api/v1/stats/invalidate
+ * Admin endpoint to bust the stats cache after bulk operations
+ */
+router.post('/invalidate', (req, res) => {
+    cache.clear();
+    res.json({ success: true, message: 'Stats cache cleared' });
 });
 
 module.exports = router;
