@@ -62,6 +62,8 @@ async function sendVerificationEmail(email, name, token) {
 }
 
 // Create user profile (called after Supabase Auth registration)
+const router = express.Router();
+
 router.post('/create-profile', async (req, res) => {
   try {
     const {
