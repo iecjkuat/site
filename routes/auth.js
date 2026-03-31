@@ -177,7 +177,9 @@ router.post('/register', [
       console.error('User profile creation error:', userError);
       return res.status(400).json({
         message: 'Failed to create user profile',
-        error: userError.message
+        error: userError.message,
+        code: userError.code,
+        detail: userError.details
       });
     }
 
