@@ -2,8 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
 const jwt = require('jsonwebtoken');
-const PDFDocument = require('pdfkit');
-const QRCode = require('qrcode');
+// PDFDocument and QRCode loaded lazily inside route handlers (native modules)
 const router = express.Router();
 
 // Middleware to verify JWT token
@@ -322,6 +321,8 @@ router.post('/card/generate', authenticateToken, async (req, res) => {
       .single();
 
     // Generate membership card PDF
+    const PDFDocument = require('pdfkit');
+    const QRCode = require('qrcode');
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     
     // Set response headers

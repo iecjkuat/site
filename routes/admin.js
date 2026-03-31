@@ -162,7 +162,11 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         const { data, error } = await query;
         if (error) throw error;
 
-        console.log('📊 Raw user data from database (first user):', data[0]);
+        // Never log sensitive fields
+        if (data?.[0]) {
+            const { password_hash, verification_token, ...safeUser } = data[0];
+            console.log('📊 Sample user data (first user):', safeUser);
+        }
 
         // Return all user fields for CMS
         const users = data.map(u => ({
