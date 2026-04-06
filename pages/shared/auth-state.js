@@ -26,10 +26,10 @@
         try {
             const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
             if (raw) user = JSON.parse(raw);
-        } catch { /* corrupt storage — ignore */ }
-        } catch (e) { 
+        } catch (e) {
             console.error('AuthState: Failed to parse user data', e);
-            localStorage.removeItem('user'); // Clean up corrupt data
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('user');
         }
         return { token, user };
     }
