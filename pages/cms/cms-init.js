@@ -23,18 +23,29 @@ function hideModal(modalId) {
     }
 }
 
+// Helper to safely show a modal or a fallback notification
+function safelyShowModal(modalId, featureName) {
+    const m = document.getElementById(modalId);
+    if (m) {
+        m.classList.remove('hidden');
+    } else if (window.cmsManager && window.cmsManager.notifications) {
+        window.cmsManager.notifications.show(`${featureName} feature coming soon`, 'info');
+    } else {
+        alert(`${featureName} feature coming soon`);
+    }
+}
+
 // Specific modal functions
 function showCreateArticle() {
-    if (window.cmsManager) window.cmsManager.showCreateForm('article');
+    safelyShowModal('createArticleModal', 'Article creation');
 }
 
 function closeArticleModal() {
-    hideModal('createArticleModal'); // No-op if it doesn't exist, which is fine
+    hideModal('createArticleModal');
 }
 
 function showCreateEvent() {
-    const m = document.getElementById('createEventModal');
-    if (m) m.classList.remove('hidden');
+    safelyShowModal('createEventModal', 'Event creation');
 }
 
 function closeEventModal() {
@@ -42,16 +53,23 @@ function closeEventModal() {
 }
 
 function showCreateOpportunity() {
-    const m = document.getElementById('createOpportunityModal');
-    if (m) {
-        m.classList.remove('hidden');
-    } else if (window.cmsManager) {
-        window.cmsManager.showCreateForm('opportunity');
-    }
+    safelyShowModal('createOpportunityModal', 'Opportunity creation');
 }
 
 function closeOpportunityModal() {
     hideModal('createOpportunityModal');
+}
+
+function showCreateProject() {
+    safelyShowModal('createProjectModal', 'Project creation');
+}
+
+function showCreateChallenge() {
+    safelyShowModal('createChallengeModal', 'Challenge creation');
+}
+
+function showSendAnnouncement() {
+    safelyShowModal('sendAnnouncementModal', 'Announcement');
 }
 
 function showMediaLibrary() {
@@ -90,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     showCreateEvent();
                     break;
                 case 'create-project':
-                    if (window.cmsManager) window.cmsManager.showCreateForm('project');
+                    showCreateProject();
                     break;
                 case 'create-opportunity':
                     showCreateOpportunity();
@@ -113,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showCreateEvent();
     });
     addClickListener('new-project-btn', () => {
-        if (window.cmsManager) window.cmsManager.showCreateForm('project');
+        showCreateProject();
     });
     addClickListener('new-opportunity-btn', () => {
         showCreateOpportunity();
@@ -129,19 +147,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // New tab buttons
     addClickListener('create-challenge-btn', () => {
-        if (window.cmsManager) window.cmsManager.showCreateForm('challenge');
+        showCreateChallenge();
     });
     addClickListener('export-ideas-btn', () => {
         if (window.cmsManager) window.cmsManager.exportContent();
     });
     addClickListener('send-announcement-btn', () => {
-        if (window.cmsManager) window.cmsManager.showCreateForm('announcement');
+        showSendAnnouncement();
     });
     addClickListener('message-templates-btn', () => {
         if (window.cmsManager) window.cmsManager.notifications.show('Message templates feature coming soon!', 'info');
     });
     addClickListener('message-members-btn', () => {
-        if (window.cmsManager) window.cmsManager.showCreateForm('announcement');
+        showSendAnnouncement();
     });
     addClickListener('export-members-btn', () => {
         if (window.cmsManager?.membersManager) {
