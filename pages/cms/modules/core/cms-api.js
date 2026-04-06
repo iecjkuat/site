@@ -507,6 +507,19 @@ export class CMSAPI {
     }
 
     /**
+     * Get single member
+     */
+    static async getMember(id) {
+        try {
+            const data = await this.get(`/admin/users/${id}`);
+            return data.user || data.data;
+        } catch (error) {
+            console.error(`Failed to fetch member ${id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Update member
      */
     static async updateMember(id, memberData) {
@@ -515,6 +528,185 @@ export class CMSAPI {
             return data.user || data.data;
         } catch (error) {
             console.error(`Failed to update member ${id}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete member
+     */
+    static async deleteMember(id) {
+        try {
+            await this.delete(`/admin/users/${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete member ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ==================== MEDIA ====================
+
+    static async getMediaItem(id) {
+        try {
+            const data = await this.get(`/media/${id}`);
+            return data.media || data.data;
+        } catch (error) {
+            console.error(`Failed to fetch media item ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async getMediaFiles(filters = {}) {
+        try {
+            const data = await this.get('/media', filters);
+            return data.media || data.data || [];
+        } catch (error) {
+            console.error('Failed to fetch media files:', error);
+            throw error;
+        }
+    }
+
+    static async uploadFile(file) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Bypass JSON standard POST for multipart form data
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const response = await fetch(`${this.API_BASE}/upload`, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+            });
+            
+            return this.handleResponse(response);
+        } catch (error) {
+            console.error('Failed to upload file:', error);
+            throw error;
+        }
+    }
+
+    static async deleteMediaFile(id) {
+        try {
+            await this.delete(`/media/${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete media ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ==================== CHALLENGES ====================
+
+    static async getChallenges(filters = {}) {
+        try {
+            const data = await this.get('/challenges', filters);
+            return data.challenges || data.data || [];
+        } catch (error) {
+            console.error('Failed to fetch challenges:', error);
+            throw error;
+        }
+    }
+
+    static async createChallenge(data) {
+        try {
+            const result = await this.post('/challenges', data);
+            return result.challenge || result.data;
+        } catch (error) {
+            console.error('Failed to create challenge:', error);
+            throw error;
+        }
+    }
+
+    static async updateChallenge(id, data) {
+        try {
+            const result = await this.put(`/challenges/${id}`, data);
+            return result.challenge || result.data;
+        } catch (error) {
+            console.error(`Failed to update challenge ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async deleteChallenge(id) {
+        try {
+            await this.delete(`/challenges/${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete challenge ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ==================== MESSAGES ====================
+
+    static async getMessages(filters = {}) {
+        try {
+            const data = await this.get('/messages', filters);
+            return data.messages || data.data || [];
+        } catch (error) {
+            console.error('Failed to fetch messages:', error);
+            throw error;
+        }
+    }
+
+    static async getAnnouncements(filters = {}) {
+        try {
+            const data = await this.get('/messages/announcements', filters);
+            return data.announcements || data.data || [];
+        } catch (error) {
+            console.error('Failed to fetch announcements:', error);
+            throw error;
+        }
+    }
+
+    static async deleteAnnouncement(id) {
+        try {
+            await this.delete(`/messages/announcements/${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete announcement ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async sendAnnouncement(data) {
+        try {
+            const result = await this.post('/messages/announcement', data);
+            return result.message || result.data;
+        } catch (error) {
+            console.error('Failed to send announcement:', error);
+            throw error;
+        }
+    }
+
+    static async sendMessage(data) {
+        try {
+            const result = await this.post('/messages', data);
+            return result.message || result.data;
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            throw error;
+        }
+    }
+
+    static async resendMessage(id) {
+        try {
+            const result = await this.post(`/messages/${id}/resend`, {});
+            return result.message || result.data;
+        } catch (error) {
+            console.error(`Failed to resend message ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async deleteMessage(id) {
+        try {
+            await this.delete(`/messages/${id}`);
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete message ${id}:`, error);
             throw error;
         }
     }

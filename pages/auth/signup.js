@@ -8,7 +8,6 @@ console.log('🔐 Signup page loaded');
 const API_BASE         = '/api';
 const SIGNUP_TIMEOUT   = 15000;
 const EMAIL_REGEX      = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const JKUAT_DOMAINS    = ['@students.jkuat.ac.ke', '@jkuat.ac.ke'];
 const MIN_PASSWORD_LEN = 8;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────

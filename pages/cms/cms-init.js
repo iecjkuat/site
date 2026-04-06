@@ -25,15 +25,16 @@ function hideModal(modalId) {
 
 // Specific modal functions
 function showCreateArticle() {
-    showModal('createArticleModal');
+    if (window.cmsManager) window.cmsManager.showCreateForm('article');
 }
 
 function closeArticleModal() {
-    hideModal('createArticleModal');
+    hideModal('createArticleModal'); // No-op if it doesn't exist, which is fine
 }
 
 function showCreateEvent() {
-    showModal('createEventModal');
+    const m = document.getElementById('createEventModal');
+    if (m) m.classList.remove('hidden');
 }
 
 function closeEventModal() {
@@ -41,7 +42,12 @@ function closeEventModal() {
 }
 
 function showCreateOpportunity() {
-    showModal('createOpportunityModal');
+    const m = document.getElementById('createOpportunityModal');
+    if (m) {
+        m.classList.remove('hidden');
+    } else if (window.cmsManager) {
+        window.cmsManager.showCreateForm('opportunity');
+    }
 }
 
 function closeOpportunityModal() {

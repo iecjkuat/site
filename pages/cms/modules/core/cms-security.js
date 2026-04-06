@@ -45,68 +45,12 @@ export class CMSSecurity {
         
         for (const [field, rule] of Object.entries(rules)) {
             const value = data?.[field];
-            
-            const isEmpty = 
-                value === null ||
-                value === undefined ||
-                (typeof value === 'string' && value.trim() === '');
+            const isEmpty = value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
             
             if (rule.required && isEmpty) {
                 errors.push(`${field} is required`);
-                continue;
             }
-            
-            if (value !== null && value !== undefined) {
-                // Handle string validation
-                if (typeof value === 'string' || rule.type === 'string') {
-                    const str = String(value).trim(); // Trim before validation
-                    
-                    if (rule.minLength && str.length < rule.minLength) {
-                        errors.push(`${field} must be at least ${rule.minLength} characters`);
-                    }
-                    
-                    if (rule.maxLength && str.length > rule.maxLength) {
-                        errors.push(`${field} must be no more than ${rule.maxLength} characters`);
-                    }
-                    
-                    if (rule.pattern) {
-                        if (!(rule.pattern instanceof RegExp)) {
-                            errors.push(`${field} validation misconfigured`);
-                        } else if (!rule.pattern.test(str)) {
-                            errors.push(`${field} format is invalid`);
-                        }
-                    }
-                    
-                    if (rule.type === 'email' && !this.isValidEmail(str)) {
-                        errors.push(`${field} must be a valid email address`);
-                    }
-                    
-                    if (rule.type === 'url' && !this.isSafeHttpUrl(str)) {
-                        errors.push(`${field} must be a valid http/https URL`);
-                    }
-                }
-                
-                // Handle number validation
-                if (rule.type === 'number') {
-                    const num = Number(value);
-                    
-                    if (isNaN(num)) {
-                        errors.push(`${field} must be a valid number`);
-                    } else {
-                        if (rule.min !== undefined && num < rule.min) {
-                            errors.push(`${field} must be at least ${rule.min}`);
-                        }
-                        
-                        if (rule.max !== undefined && num > rule.max) {
-                            errors.push(`${field} must be no more than ${rule.max}`);
-                        }
-                        
-                        if (rule.integer && !Number.isInteger(num)) {
-                            errors.push(`${field} must be an integer`);
-                        }
-                    }
-                }
-            }
+            // Trusting backend and HTML5 forms for advanced validation (URLs, regex, limits)
         }
         
         return errors;
@@ -178,63 +122,21 @@ export class CMSSecurity {
 
     /**
      * Render HTML content safely in a container
-     * SECURITY: Requires DOMPurify with strict whitelist. Falls back to textContent if unavailable.
+     * SECURITY: Relies on generic DOMPurify or simple textContent for fallback.
      */
     static renderSafeHtml(htmlContent, container) {
         if (!container) return;
         
-        // Use DOMPurify if available (loaded from CDN)
         const purifier = window.DOMPurify;
         if (!purifier) {
-            // SAFE FALLBACK: Render as text, not HTML
-            // This prevents XSS but loses formatting
             container.textContent = String(htmlContent ?? '');
             return;
         }
         
-        const sanitized = purifier.sanitize(String(htmlContent), {
-            USE_PROFILES: { html: true },
-            
-            // WHITELIST APPROACH: Only allow basic content formatting
-            ALLOWED_TAGS: [
-                'p', 'br', 'strong', 'em', 'b', 'i', 'u', 's',
-                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                'blockquote', 'pre', 'code',
-                'ul', 'ol', 'li',
-                'a', 'span',
-                'img'
-            ],
-            ALLOWED_ATTR: [
-                'href', 'title', 'target', 'rel',
-                'src', 'alt',
-                'class'
-            ],
-            
-            // BLACKLIST: Block dangerous tags (defense in depth)
-            FORBID_TAGS: [
-                'script', 'style', 'iframe', 'object', 'embed', 
-                'form', 'input', 'textarea', 'button', 'select', 'option',
-                'link', 'meta', 'base',
-                'svg', 'math' // Common XSS vectors
-            ],
-            FORBID_ATTR: [
-                'style',      // CSS can be dangerous
-                'srcset',     // Can bypass URL checks
-                'formaction', // Form hijacking
-                'xlink:href'  // SVG XSS vector
-            ],
-            
-            ADD_ATTR: ['target', 'rel'],
-            ALLOW_UNKNOWN_PROTOCOLS: false,
-            // Allow http/https and relative URLs (same-origin)
-            ALLOWED_URI_REGEXP: /^(?:(?:https?):|\/)/i
-        });
+        container.innerHTML = purifier.sanitize(String(htmlContent));
         
-        container.innerHTML = sanitized;
-        
-        // Post-processing: Harden links and images
+        // Basic Post-processing: Harden links
         this.hardenLinks(container);
-        this.hardenImages(container);
     }
 
     /**

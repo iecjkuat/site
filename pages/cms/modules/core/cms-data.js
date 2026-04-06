@@ -590,6 +590,23 @@ export class CMSData {
     }
 
     // ---------- Media ----------
+    static async getMediaItem(id) {
+        const cacheKey = this.getCacheKey('media-item', { id });
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getMediaItem(id);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.error('API getMediaItem failed:', error);
+            throw error;
+        }
+    }
+
     static async getMedia(filters = {}) {
         const cacheKey = this.getCacheKey('media', filters);
         const cached = this.getFromCache(cacheKey);
@@ -597,7 +614,7 @@ export class CMSData {
 
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getMediaFiles(filters);
+                const data = await CMSAPI.getMediaFiles(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
@@ -621,7 +638,7 @@ export class CMSData {
     static async uploadMedia(file) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.uploadFile(file);
+                const result = await CMSAPI.uploadFile(file);
                 this.clearCache('media');
                 return result;
             }
@@ -653,7 +670,7 @@ export class CMSData {
     static async deleteMedia(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteMediaFile(id);
+                await CMSAPI.deleteMediaFile(id);
                 this.clearCache('media');
                 return true;
             }
@@ -708,7 +725,7 @@ export class CMSData {
     static async createIdea(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.createIdea(data);
+                const result = await CMSAPI.createIdea(data);
                 this.clearCache('ideas');
                 return result;
             }
@@ -800,7 +817,7 @@ export class CMSData {
 
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getChallenges(filters);
+                const data = await CMSAPI.getChallenges(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
@@ -836,7 +853,7 @@ export class CMSData {
     static async createChallenge(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.createChallenge(data);
+                const result = await CMSAPI.createChallenge(data);
                 this.clearCache('challenges');
                 return result;
             }
@@ -878,7 +895,7 @@ export class CMSData {
     static async updateChallenge(id, data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.updateChallenge(id, data);
+                const result = await CMSAPI.updateChallenge(id, data);
                 this.clearCache('challenges');
                 return result;
             }
@@ -911,7 +928,7 @@ export class CMSData {
     static async deleteChallenge(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteChallenge(id);
+                await CMSAPI.deleteChallenge(id);
                 this.clearCache('challenges');
                 return true;
             }
@@ -928,6 +945,43 @@ export class CMSData {
     }
 
     // ---------- Messages ----------
+    static async getAnnouncements(filters = {}) {
+        const cacheKey = this.getCacheKey('announcements', filters);
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getAnnouncements(filters);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.error('API getAnnouncements failed:', error);
+            throw error;
+        }
+    }
+
+    static async deleteAnnouncement(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSAPI.deleteAnnouncement(id);
+                this.clearCache('announcements');
+                return true;
+            }
+        } catch (error) {
+            console.error('API deleteAnnouncement failed:', error);
+            throw error;
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.messages.findIndex(m => m.id === id && m.type === 'announcement');
+        if (idx === -1) return false;
+        this.storage.messages.splice(idx, 1);
+        this.clearCache('announcements');
+        return true;
+    }
+
     static async getMessages(filters = {}) {
         const cacheKey = this.getCacheKey('messages', filters);
         const cached = this.getFromCache(cacheKey);
@@ -935,7 +989,7 @@ export class CMSData {
 
         try {
             if (this.useSupabase) {
-                const data = await CMSSupabase.getMessages(filters);
+                const data = await CMSAPI.getMessages(filters);
                 this.setCache(cacheKey, data);
                 return data;
             }
@@ -966,7 +1020,7 @@ export class CMSData {
     static async sendAnnouncement(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.sendAnnouncement(data);
+                const result = await CMSAPI.sendAnnouncement(data);
                 this.clearCache('messages');
                 return result;
             }
@@ -1007,7 +1061,7 @@ export class CMSData {
     static async sendMessage(data) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.sendMessage(data);
+                const result = await CMSAPI.sendMessage(data);
                 this.clearCache('messages');
                 return result;
             }
@@ -1046,7 +1100,7 @@ export class CMSData {
     static async resendMessage(id) {
         try {
             if (this.useSupabase) {
-                const result = await CMSSupabase.resendMessage(id);
+                const result = await CMSAPI.resendMessage(id);
                 this.clearCache('messages');
                 return result;
             }
@@ -1075,7 +1129,7 @@ export class CMSData {
     static async deleteMessage(id) {
         try {
             if (this.useSupabase) {
-                await CMSSupabase.deleteMessage(id);
+                await CMSAPI.deleteMessage(id);
                 this.clearCache('messages');
                 return true;
             }
@@ -1092,6 +1146,43 @@ export class CMSData {
     }
 
     // ---------- Members ----------
+    static async getMember(id) {
+        const cacheKey = this.getCacheKey('member', { id });
+        const cached = this.getFromCache(cacheKey);
+        if (cached) return cached;
+
+        try {
+            if (this.useSupabase) {
+                const data = await CMSAPI.getMember(id);
+                this.setCache(cacheKey, data);
+                return data;
+            }
+        } catch (error) {
+            console.error('API getMember failed:', error);
+            throw error;
+        }
+    }
+
+    static async deleteMember(id) {
+        try {
+            if (this.useSupabase) {
+                await CMSAPI.deleteMember(id);
+                this.clearCache('members');
+                return true;
+            }
+        } catch (error) {
+            console.error('API deleteMember failed:', error);
+            throw error;
+        }
+
+        this.seedIfEmpty();
+        const idx = this.storage.members.findIndex(m => m.id === id);
+        if (idx === -1) return false;
+        this.storage.members.splice(idx, 1);
+        this.clearCache('members');
+        return true;
+    }
+
     static async getMembers(filters = {}) {
         const cacheKey = this.getCacheKey('members', filters);
         const cached = this.getFromCache(cacheKey);
