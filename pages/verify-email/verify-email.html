@@ -72,24 +72,38 @@
     </div>
   </div>
 
-  <!-- Supabase verification logic -->
-  <script type="module">
-    import { supabase } from "../shared/js/supabase.js";
-
+  <!-- Email verification logic -->
+  <script>
     class VerifyEmailPage {
       async init() {
-        const { data, error } = await supabase.auth.getSession();
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
 
-        if (error || !data.session) {
-          this.showError(
-            "This verification link is invalid or has expired. Please request a new verification email."
-          );
+        if (!token) {
+          this.showError('Invalid verification link. No token provided.');
           return;
         }
 
-        this.showSuccess(
-          "Your email has been successfully verified."
-        );
+        try {
+          // Call backend API to verify email
+          const response = await fetch(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`);
+          const data = await response.json();
+
+          if (response.ok && data.verified) {
+            this.showSuccess(data.message || 'Your email has been successfully verified!');
+          } else if (data.alreadyVerified) {
+            this.showSuccess('Your email is already verified. You can log in now.');
+          } else if (data.expired) {
+            this.showError('This verification link has expired. Please request a new one.');
+          } else {
+            this.showError(data.message || 'Verification failed. Please try again.');
+          }
+        } catch (err) {
+          console.error('Verification error:', err);
+          this.showError('Network error. Please check your connection and try again.');
+        }
+
         this.bindEvents();
       }
 
@@ -109,7 +123,7 @@
             Email Verified!
           </h1>
           <p class="text-white/80 leading-relaxed">
-            ${message} You can now access all club features.
+            ${this.escapeHtml(message)} You can now access all club features.
           </p>
         `;
 
@@ -132,11 +146,17 @@
             Verification Failed
           </h1>
           <p class="text-white/80 leading-relaxed">
-            ${message}
+            ${this.escapeHtml(message)}
           </p>
         `;
 
         actions.classList.remove("hidden");
+      }
+
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
       }
 
       bindEvents() {
@@ -146,7 +166,7 @@
           }
 
           if (e.target.closest("#goToLoginBtn")) {
-            window.location.href = "/#login";
+            window.location.href = "/signin";
           }
         });
       }

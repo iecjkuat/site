@@ -11,6 +11,7 @@
 
 const { body, param, query, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
+const { sendError } = require('../lib/api-response');
 
 // ── Standardised error classes ────────────────────────────────────────────────
 
@@ -44,19 +45,18 @@ class ApiError extends Error {
 const handleValidationErrors = (req, res, next) => {
     const result = validationResult(req);
     if (!result.isEmpty()) {
-        // Log for monitoring — mask values to avoid leaking PII
         if (process.env.NODE_ENV !== 'production') {
             console.warn('Validation failed:', {
                 path: req.path,
                 method: req.method,
-                errors: result.array().map(e => ({ field: e.path, msg: e.msg }))
+                errors: result.array().map((e) => ({ field: e.path, msg: e.msg }))
             });
         }
 
-        // Return field names + messages only — no raw values, no schema internals
-        return res.status(400).json({
+        return sendError(req, res, {
+            status: 400,
             message: 'Invalid request data',
-            errors: result.array().map(err => ({
+            errors: result.array().map((err) => ({
                 field: err.path,
                 message: err.msg
             }))
@@ -78,7 +78,6 @@ const commonValidations = {
         .isLength({ max: 254 })
         .withMessage('Valid email required'),
 
-    // Signup uses min:8 (enforced in signup.js); backend enforces min:8 too
     password: body('password')
         .isLength({ min: 8, max: 128 })
         .withMessage('Password must be 8-128 characters'),
@@ -162,12 +161,6 @@ const rateLimits = {
 };
 
 // ── Sanitization ──────────────────────────────────────────────────────────────
-//
-// NOTE: This is NOT the primary defence against injection attacks.
-// Supabase uses parameterized queries — SQL injection is prevented at the ORM level.
-// This middleware only strips the most obvious XSS payloads as a defence-in-depth
-// measure for any values that might be rendered in HTML responses.
-// It runs AFTER validation so it never corrupts data before it's checked.
 
 const sanitizeInput = (req, res, next) => {
     const sanitizeString = (str) => {
@@ -183,7 +176,7 @@ const sanitizeInput = (req, res, next) => {
     const sanitizeObject = (obj, depth = 0) => {
         if (depth > 10) return obj;
         if (obj === null || typeof obj !== 'object') return obj;
-        if (Array.isArray(obj)) return obj.map(item => sanitizeObject(item, depth + 1));
+        if (Array.isArray(obj)) return obj.map((item) => sanitizeObject(item, depth + 1));
         const clean = {};
         for (const key of Object.keys(obj)) {
             if (['__proto__', 'constructor', 'prototype'].includes(key)) continue;
@@ -197,20 +190,12 @@ const sanitizeInput = (req, res, next) => {
         return clean;
     };
 
-    // Sanitize AFTER body parsing — validation runs before this in route handlers
-    if (req.body)   req.body   = sanitizeObject(req.body);
-    if (req.query)  req.query  = sanitizeObject(req.query);
+    if (req.body) req.body = sanitizeObject(req.body);
+    if (req.query) req.query = sanitizeObject(req.query);
     if (req.params) req.params = sanitizeObject(req.params);
 
     next();
 };
-
-// ── preventSQLInjection — REMOVED ────────────────────────────────────────────
-//
-// Regex-based SQL detection causes false positives on legitimate input
-// (e.g. "SELECT your best work", "DROP by later", "O'Connor").
-// SQL injection is prevented by Supabase's parameterized query layer.
-// Do not use raw string interpolation in queries — that is the real fix.
 
 module.exports = {
     handleValidationErrors,

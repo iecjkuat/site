@@ -1,57 +1,87 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { supabaseAdmin } = require('../lib/supabase');
+const { sendError } = require('../lib/api-response');
 
 // Simple in-memory cache for user profiles
 const userCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Rate limiting handled by Express rate-limit middleware in server.js
+// In-memory token revocation store
+const tokenBlacklist = new Map();
+const TOKEN_BLACKLIST_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-// Function to add token to blacklist
-const blacklistToken = (tokenId) => {
-    if (tokenId) {
-        tokenBlacklist.add(tokenId);
-        console.log(`Token blacklisted: ${tokenId.substring(0, 8)}...`);
+const pruneExpiredBlacklistedTokens = () => {
+    const now = Date.now();
+
+    for (const [tokenId, expiresAt] of tokenBlacklist.entries()) {
+        if (!expiresAt || expiresAt <= now) {
+            tokenBlacklist.delete(tokenId);
+        }
     }
 };
 
-// Function to check if token is blacklisted
+const blacklistToken = (tokenId, expiresAt) => {
+    if (!tokenId) {
+        return;
+    }
+
+    pruneExpiredBlacklistedTokens();
+    tokenBlacklist.set(tokenId, expiresAt || (Date.now() + TOKEN_BLACKLIST_TTL));
+};
+
 const isTokenBlacklisted = (tokenId) => {
-    return tokenBlacklist.has(tokenId);
-};
-
-// Function to clear user cache (for logout, role changes, etc.)
-const clearUserCache = (userId) => {
-    if (userId) {
-        userCache.delete(userId);
-        console.log(`Cache cleared for user: ${userId.substring(0, 8)}...`);
+    if (!tokenId) {
+        return false;
     }
+
+    pruneExpiredBlacklistedTokens();
+    const expiresAt = tokenBlacklist.get(tokenId);
+
+    if (!expiresAt) {
+        return false;
+    }
+
+    if (expiresAt <= Date.now()) {
+        tokenBlacklist.delete(tokenId);
+        return false;
+    }
+
+    return true;
 };
 
-// Function to clear all cache (for security incidents)
+const clearUserCache = (userId) => {
+    if (!userId) {
+        return;
+    }
+
+    userCache.delete(userId);
+};
+
 const clearAllCache = () => {
     userCache.clear();
-    console.log('All user cache cleared');
+    pruneExpiredBlacklistedTokens();
 };
 
-// Function to generate secure JWT token
+const buildFingerprint = (req) => {
+    return crypto
+        .createHash('sha256')
+        .update(`${req.headers['user-agent'] || ''}:${req.ip || ''}`)
+        .digest('hex')
+        .slice(0, 16);
+};
+
 const generateSecureToken = (userId, userRole, options = {}, req = null) => {
     const payload = {
         userId,
         role: userRole,
         iss: 'jkuat-innovation-club',
         aud: 'jkuat-platform',
-        jti: require('crypto').randomUUID()
+        jti: crypto.randomUUID()
     };
 
-    // Bind token to device fingerprint if request context available
     if (req) {
-        const fp = require('crypto')
-            .createHash('sha256')
-            .update((req.headers['user-agent'] || '') + (req.ip || ''))
-            .digest('hex')
-            .slice(0, 16);
-        payload.fp = fp;
+        payload.fp = buildFingerprint(req);
     }
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
@@ -60,240 +90,215 @@ const generateSecureToken = (userId, userRole, options = {}, req = null) => {
     });
 };
 
-// Middleware to authenticate JWT tokens (backend-issued)
+const getBearerToken = (req) => {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+
+    if (!authHeader || typeof authHeader !== 'string') {
+        return null;
+    }
+
+    const [scheme, token] = authHeader.split(' ');
+
+    if (scheme !== 'Bearer' || !token) {
+        return null;
+    }
+
+    return token;
+};
+
+const getCachedUser = (userId) => {
+    const cached = userCache.get(userId);
+
+    if (!cached) {
+        return null;
+    }
+
+    if ((Date.now() - cached.timestamp) >= CACHE_TTL) {
+        userCache.delete(userId);
+        return null;
+    }
+
+    return cached.user;
+};
+
+const setCachedUser = (userId, user) => {
+    userCache.set(userId, {
+        user,
+        timestamp: Date.now()
+    });
+};
+
 const authenticateToken = async (req, res, next) => {
-    const requestId = require('crypto').randomUUID().substring(0, 8);
-    const clientIp = req.ip || req.connection.remoteAddress;
-    
     try {
-        // Rate limiting check
-        if (!checkRateLimit(clientIp)) {
-            console.warn(`⚠️ [${requestId}] Rate limit exceeded for IP: ${clientIp}`);
-            return res.status(429).json({ 
-                message: 'Too many authentication attempts. Please try again later.' 
-            });
-        }
-
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-
-        if (process.env.NODE_ENV !== 'production') {
-            console.log(`🔐 [${requestId}] Auth attempt:`, {
-                hasAuthHeader: !!authHeader,
-                hasToken: !!token,
-                path: req.path,
-                method: req.method,
-                ip: clientIp
-            });
-        }
+        const token = getBearerToken(req);
 
         if (!token) {
-            console.log(`❌ [${requestId}] No token provided`);
-            return res.status(401).json({ message: 'Authentication required' });
+            return sendError(req, res, { status: 401, message: 'Authentication required' });
         }
 
-        // Validate token format (basic check before verification)
         if (typeof token !== 'string' || token.split('.').length !== 3) {
-            console.warn(`⚠️ [${requestId}] Invalid token format`);
-            return res.status(403).json({ message: 'Invalid authentication token' });
+            return sendError(req, res, { status: 403, message: 'Invalid authentication token' });
         }
 
-        // Verify JWT token with proper options
         const decoded = jwt.verify(token, process.env.JWT_SECRET, {
             algorithms: ['HS256'],
-            maxAge: '24h', // Token expires in 24 hours
             issuer: 'jkuat-innovation-club',
             audience: 'jkuat-platform'
         });
 
-        console.log(`✅ [${requestId}] Token verified for user ${decoded.userId.substring(0, 8)}...`);
-
-        // Validate token structure
-        if (!decoded.userId || !decoded.exp || !decoded.jti) {
-            console.warn(`⚠️ [${requestId}] Invalid token structure`);
-            return res.status(401).json({ message: 'Invalid authentication token' });
+        if (!decoded.userId || !decoded.jti) {
+            return sendError(req, res, { status: 401, message: 'Invalid authentication token' });
         }
 
-        // Verify device fingerprint if token was bound to one
-        if (decoded.fp) {
-            const currentFp = require('crypto')
-                .createHash('sha256')
-                .update((req.headers['user-agent'] || '') + (clientIp || ''))
-                .digest('hex')
-                .slice(0, 16);
-            if (currentFp !== decoded.fp) {
-                console.warn(`⚠️ [${requestId}] Device fingerprint mismatch — possible token theft`);
-                return res.status(401).json({ message: 'Session invalid. Please log in again.' });
-            }
+        if (decoded.fp && decoded.fp !== buildFingerprint(req)) {
+            return sendError(req, res, { status: 401, message: 'Session invalid. Please log in again.' });
         }
 
-        // Check if token is blacklisted (logout)
         if (isTokenBlacklisted(decoded.jti)) {
-            console.warn(`⚠️ [${requestId}] Token is blacklisted (logged out)`);
-            return res.status(401).json({ message: 'Token has been revoked' });
+            return sendError(req, res, { status: 401, message: 'Token has been revoked' });
         }
 
-        // Check cache first
-        const now = Date.now();
-        const cached = userCache.get(decoded.userId);
+        let user = getCachedUser(decoded.userId);
 
-        if (cached && (now - cached.timestamp < CACHE_TTL)) {
-            // Validate cached user is still active
-            if (cached.user.membership_status === 'inactive') {
-                userCache.delete(decoded.userId);
-                return res.status(401).json({ message: 'Account inactive' });
+        if (!user) {
+            const { data, error } = await supabaseAdmin
+                .from('users')
+                .select('id, name, email, role, membership_status, email_verified, created_at, updated_at, last_password_change')
+                .eq('id', decoded.userId)
+                .single();
+
+            if (error || !data) {
+                return sendError(req, res, { status: 401, message: 'Invalid authentication token' });
             }
-            
-            // Check if token was issued before password change
-            if (cached.user.last_password_change && 
-                decoded.iat * 1000 < new Date(cached.user.last_password_change).getTime()) {
-                console.warn(`⚠️ [${requestId}] Token issued before password change`);
-                return res.status(401).json({ message: 'Session expired. Please log in again.' });
-            }
-            
-            req.user = cached.user;
-            req.requestId = requestId;
-            return next();
+
+            user = data;
+            setCachedUser(decoded.userId, user);
         }
 
-        // Get user from database with timeout
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Database query timeout')), 30000)
-        );
-        
-        const queryPromise = supabaseAdmin
-            .from('users')
-            .select('id, name, email, role, membership_status, email_verified, created_at, updated_at, last_password_change')
-            .eq('id', decoded.userId)
-            .single();
-
-        const { data: user, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-        if (error || !user) {
-            console.error(`❌ [${requestId}] User not found:`, error?.message);
-            return res.status(401).json({ message: 'Invalid authentication token' });
-        }
-
-        // Check if user account is active
         if (user.membership_status === 'inactive' || user.membership_status === 'suspended') {
-            console.warn(`⚠️ [${requestId}] Account inactive/suspended: ${user.id.substring(0, 8)}...`);
-            return res.status(401).json({ message: 'Account inactive or suspended' });
+            clearUserCache(decoded.userId);
+            return sendError(req, res, { status: 401, message: 'Account inactive or suspended' });
         }
 
-        // Check if token was issued before password change
-        if (user.last_password_change && 
-            decoded.iat * 1000 < new Date(user.last_password_change).getTime()) {
-            console.warn(`⚠️ [${requestId}] Token issued before password change`);
-            return res.status(401).json({ message: 'Session expired. Please log in again.' });
+        if (user.last_password_change) {
+            const passwordChangedAt = new Date(user.last_password_change).getTime();
+            if (decoded.iat && (decoded.iat * 1000) < passwordChangedAt) {
+                return sendError(req, res, { status: 401, message: 'Session expired. Please log in again.' });
+            }
         }
 
-        // Check if email is verified for sensitive operations
-        if (!user.email_verified && req.path.includes('/admin')) {
-            console.warn(`⚠️ [${requestId}] Email not verified for admin access`);
-            return res.status(401).json({ message: 'Email verification required for admin access' });
-        }
+        req.user = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role || decoded.role || 'member',
+            membership_status: user.membership_status,
+            email_verified: user.email_verified,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+            last_password_change: user.last_password_change
+        };
 
-        // Update cache with security timestamp
-        userCache.set(decoded.userId, {
-            user: user,
-            timestamp: now,
-            tokenIssued: decoded.iat * 1000
-        });
-
-        req.user = user;
-        req.requestId = requestId;
-        req.tokenData = {
-            issued: decoded.iat * 1000,
-            expires: decoded.exp * 1000,
-            tokenId: decoded.jti
+        req.auth = {
+            token,
+            tokenId: decoded.jti,
+            issuedAt: decoded.iat ? decoded.iat * 1000 : null,
+            expiresAt: decoded.exp ? decoded.exp * 1000 : null
         };
 
         next();
     } catch (error) {
-        console.error(`❌ [${requestId}] Auth verification failed:`, {
-            errorName: error.name,
-            path: req.path,
-            ip: clientIp
-        });
-
-        // Clear potentially compromised cache entry
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(403).json({ message: 'Invalid authentication token' });
-        }
         if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ message: 'Session expired. Please log in again.' });
-        }
-        if (error.name === 'NotBeforeError') {
-            return res.status(401).json({ message: 'Token not yet valid' });
-        }
-        if (error.message === 'Database query timeout') {
-            return res.status(503).json({ message: 'Service temporarily unavailable' });
+            return sendError(req, res, { status: 401, message: 'Session expired. Please log in again.' });
         }
 
-        return res.status(403).json({ message: 'Authentication failed' });
+        if (error.name === 'JsonWebTokenError' || error.name === 'NotBeforeError') {
+            return sendError(req, res, { status: 403, message: 'Invalid authentication token' });
+        }
+
+        return sendError(req, res, { status: 503, message: 'Authentication service temporarily unavailable' });
     }
 };
 
-// Middleware to check user roles with enhanced security
 const requireRole = (roles) => {
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
     return (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'Authentication required' });
+            return sendError(req, res, { status: 401, message: 'Authentication required' });
         }
 
         const userRole = req.user.role || 'member';
 
-        // Validate role is not null/undefined
-        if (!userRole) {
-            return res.status(403).json({ message: 'User role not defined' });
-        }
-
-        // Check if user has required role
-        if (!roles.includes(userRole)) {
-            // Log unauthorized access attempt
-            console.warn('Unauthorized access attempt:', {
-                userId: req.user.id,
-                userRole: userRole,
-                requiredRoles: roles,
-                path: req.path,
-                method: req.method,
-                ip: req.ip,
-                timestamp: new Date().toISOString()
-            });
-
-            return res.status(403).json({
-                message: `Access denied. Insufficient permissions.`
-            });
-        }
-
-        // Additional security check for admin operations
-        if (roles.includes('admin') && req.path.includes('/admin')) {
-            // Verify admin account is not compromised
-            if (!req.user.email_verified) {
-                return res.status(403).json({ message: 'Admin account requires email verification' });
-            }
-
-            // Check for recent password change (optional additional security)
-            const accountAge = Date.now() - new Date(req.user.created_at).getTime();
-            const daysSinceCreation = accountAge / (1000 * 60 * 60 * 24);
-
-            if (daysSinceCreation < 1 && !req.user.profile_completed) {
-                return res.status(403).json({ message: 'New admin accounts must complete profile setup' });
-            }
+        if (!allowedRoles.includes(userRole)) {
+            return sendError(req, res, { status: 403, message: 'Access denied. Insufficient permissions.' });
         }
 
         next();
     };
 };
 
-// Middleware to check if user is admin
-const requireAdmin = (req, res, next) => {
-    return requireRole(['admin'])(req, res, next);
+const requireAdmin = (req, res, next) => requireRole(['admin'])(req, res, next);
+
+const requireExecutive = (req, res, next) => requireRole(['admin', 'executive'])(req, res, next);
+
+const canActOnBehalf = (req, allowedRoles = ['admin', 'treasurer']) => {
+    if (!req.user) {
+        return false;
+    }
+
+    return allowedRoles.includes(req.user.role);
 };
 
-// Middleware to check if user is executive or admin
-const requireExecutive = (req, res, next) => {
-    return requireRole(['admin', 'executive'])(req, res, next);
+const resolveActingUserId = (req, options = {}) => {
+    const {
+        allowActingOnBehalf = false,
+        allowedRoles = ['admin', 'treasurer'],
+        explicitUserIdFields = ['userId', 'targetUserId', 'memberId']
+    } = options;
+
+    if (!req.user || !req.user.id) {
+        const error = new Error('Authentication required');
+        error.status = 401;
+        throw error;
+    }
+
+    let requestedUserId = null;
+
+    for (const field of explicitUserIdFields) {
+        if (req.body && req.body[field]) {
+            requestedUserId = req.body[field];
+            break;
+        }
+
+        if (req.query && req.query[field]) {
+            requestedUserId = req.query[field];
+            break;
+        }
+
+        if (req.params && req.params[field]) {
+            requestedUserId = req.params[field];
+            break;
+        }
+    }
+
+    if (!requestedUserId || requestedUserId === req.user.id) {
+        return req.user.id;
+    }
+
+    if (!allowActingOnBehalf) {
+        const error = new Error('Authenticated users may only act on their own account');
+        error.status = 403;
+        throw error;
+    }
+
+    if (!canActOnBehalf(req, allowedRoles)) {
+        const error = new Error('Access denied. Acting on behalf of another user is not permitted.');
+        error.status = 403;
+        throw error;
+    }
+
+    return requestedUserId;
 };
 
 module.exports = {
@@ -305,5 +310,7 @@ module.exports = {
     clearUserCache,
     clearAllCache,
     blacklistToken,
-    isTokenBlacklisted
+    isTokenBlacklisted,
+    canActOnBehalf,
+    resolveActingUserId
 };

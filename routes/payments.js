@@ -1,139 +1,366 @@
 const express = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { body, param, query } = require('express-validator');
 const { supabaseAdmin: supabase } = require('../lib/supabase');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { handleValidationErrors, commonValidations } = require('../middleware/validation');
+const { handleValidationErrors, commonValidations, sanitizeInput } = require('../middleware/validation');
+
 const router = express.Router();
 
-// Get all payments - Requires authentication and proper authorization
-router.get('/', 
+const PAYMENT_TYPES = ['membership', 'event', 'fine', 'donation'];
+const PAYMENT_STATUSES = ['pending', 'completed', 'failed', 'cancelled', 'refunded'];
+const PAYMENT_STATS_PERIODS = ['7d', '30d', '90d', '1y'];
+const PRIVILEGED_ROLES = ['admin', 'treasurer'];
+
+const buildRequestMeta = (req) => ({
+  requestId: req.requestId
+});
+
+const sendSuccess = (res, req, message, data = {}, status = 200) => {
+  return res.status(status).json({
+    success: true,
+    message,
+    data,
+    ...buildRequestMeta(req)
+  });
+};
+
+const sendError = (res, req, status, message, errors) => {
+  const payload = {
+    success: false,
+    message,
+    ...buildRequestMeta(req)
+  };
+
+  if (errors) {
+    payload.errors = errors;
+  }
+
+  return res.status(status).json(payload);
+};
+
+const isPrivilegedUser = (req) => PRIVILEGED_ROLES.includes(req.user && req.user.role);
+
+const resolveActorUserId = (req) => {
+  const actingForUserId = req.body.actingForUserId || req.query.userId || null;
+
+  if (!actingForUserId) {
+    return req.user.id;
+  }
+
+  if (!isPrivilegedUser(req)) {
+    return null;
+  }
+
+  return actingForUserId;
+};
+
+const createReferenceNumber = (prefix) => {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+};
+
+const buildPaymentQuery = () => {
+  return `
+    id, user_id, amount, currency, payment_type, payment_method,
+    status, reference_number, transaction_id, created_at, updated_at,
+    event_id, description, metadata,
+    users!inner(name, email, registration_number, phone),
+    events(title, start_date)
+  `;
+};
+
+const canAccessPayment = (req, payment) => {
+  if (!payment || !req.user) {
+    return false;
+  }
+
+  if (isPrivilegedUser(req)) {
+    return true;
+  }
+
+  return payment.user_id === req.user.id;
+};
+
+const fetchUserById = async (userId) => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name, email')
+    .eq('id', userId)
+    .single();
+
+  return { user: data, error };
+};
+
+const fetchPaymentById = async (paymentId) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select(buildPaymentQuery())
+    .eq('id', paymentId)
+    .single();
+
+  return { payment: data, error };
+};
+
+const paymentCreationValidators = [
   authenticateToken,
-  requireRole(['admin', 'treasurer']),
+  sanitizeInput,
+  body('actingForUserId')
+    .optional()
+    .isUUID()
+    .withMessage('Valid actingForUserId is required'),
+  commonValidations.amount,
+  body('phoneNumber')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Valid phone number is required'),
+  body('paymentType')
+    .isIn(PAYMENT_TYPES)
+    .withMessage('Invalid payment type'),
+  body('eventId')
+    .optional({ nullable: true })
+    .isUUID()
+    .withMessage('Valid event ID required if provided'),
+  body('description')
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 500 })
+    .withMessage('Description must be 1-500 characters')
+];
+
+router.get(
+  '/',
+  authenticateToken,
   [
     ...commonValidations.pagination,
     query('userId').optional().isUUID().withMessage('Invalid user ID'),
-    query('status').optional().isIn(['pending', 'completed', 'failed', 'cancelled']).withMessage('Invalid status'),
-    query('paymentType').optional().isIn(['membership', 'event', 'fine', 'donation']).withMessage('Invalid payment type')
+    query('status').optional().isIn(PAYMENT_STATUSES).withMessage('Invalid status'),
+    query('paymentType').optional().isIn(PAYMENT_TYPES).withMessage('Invalid payment type')
   ],
   handleValidationErrors,
   async (req, res) => {
-  try {
-    const { userId, status, paymentType, page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    try {
+      const { userId, status, paymentType, page = 1, limit = 20 } = req.query;
+      const effectiveUserId = userId || req.user.id;
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+      const offset = (pageNumber - 1) * limitNumber;
 
-    let query = supabase
-      .from('payments')
-      .select(`
-        id, user_id, amount, currency, payment_type, payment_method, 
-        status, reference_number, transaction_id, created_at, updated_at,
-        users!inner(name, email, registration_number),
-        events(title)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
-
-    // Apply filters with proper validation
-    if (userId) {
-      // Ensure user can only view their own payments unless admin/treasurer
-      if (req.user.role !== 'admin' && req.user.role !== 'treasurer' && userId !== req.user.id) {
-        return res.status(403).json({ message: 'Access denied to other user payments' });
+      if (userId && !isPrivilegedUser(req) && userId !== req.user.id) {
+        return sendError(res, req, 403, 'Access denied to other user payments');
       }
-      query = query.eq('user_id', userId);
-    }
-    
-    if (status) {
-      query = query.eq('status', status.toLowerCase());
-    }
-    
-    if (paymentType) {
-      query = query.eq('payment_type', paymentType);
-    }
 
-    const { data: payments, error, count } = await query;
+      let paymentsQuery = supabase
+        .from('payments')
+        .select(`
+          id, user_id, amount, currency, payment_type, payment_method,
+          status, reference_number, transaction_id, created_at, updated_at,
+          users!inner(name, email, registration_number),
+          events(title)
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limitNumber - 1);
 
-    if (error) {
-      console.error('Error fetching payments:', {
-        error: error.message,
-        userId: req.user.id,
-        filters: { userId, status, paymentType }
+      if (!isPrivilegedUser(req) || effectiveUserId) {
+        paymentsQuery = paymentsQuery.eq('user_id', effectiveUserId);
+      }
+
+      if (status) {
+        paymentsQuery = paymentsQuery.eq('status', status.toLowerCase());
+      }
+
+      if (paymentType) {
+        paymentsQuery = paymentsQuery.eq('payment_type', paymentType);
+      }
+
+      const { data: payments, error, count } = await paymentsQuery;
+
+      if (error) {
+        return sendError(res, req, 500, 'Failed to fetch payments');
+      }
+
+      return sendSuccess(res, req, 'Payments retrieved successfully', {
+        payments: payments || [],
+        pagination: {
+          current: pageNumber,
+          total: Math.ceil((count || 0) / limitNumber),
+          count: payments ? payments.length : 0,
+          totalPayments: count || 0
+        }
       });
-      return res.status(500).json({ message: 'Server error' });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
+  }
+);
 
-    res.json({
-      payments: payments || [],
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil((count || 0) / parseInt(limit)),
-        count: payments?.length || 0,
-        totalPayments: count || 0
+router.get(
+  '/stats',
+  authenticateToken,
+  requireRole(PRIVILEGED_ROLES),
+  [
+    query('period').optional().isIn(PAYMENT_STATS_PERIODS).withMessage('Invalid period')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { period = '30d' } = req.query;
+
+      const now = new Date();
+      let startDate;
+
+      switch (period) {
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case '1y':
+          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
-    });
-  } catch (error) {
-    console.error('Payments route error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+
+      const [
+        totalResult,
+        periodResult,
+        statusResult,
+        methodResult,
+        typeResult
+      ] = await Promise.all([
+        supabase.from('payments').select('amount', { count: 'exact' }),
+        supabase.from('payments').select('amount', { count: 'exact' }).gte('created_at', startDate.toISOString()),
+        supabase.from('payments').select('status, amount'),
+        supabase.from('payments').select('payment_method, amount'),
+        supabase.from('payments').select('payment_type, amount')
+      ]);
+
+      if (totalResult.error || periodResult.error || statusResult.error || methodResult.error || typeResult.error) {
+        return sendError(res, req, 500, 'Failed to fetch payment statistics');
+      }
+
+      const totalAmount = (totalResult.data || []).reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+      const periodAmount = (periodResult.data || []).reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+
+      const statusStats = {};
+      (statusResult.data || []).forEach((payment) => {
+        if (!statusStats[payment.status]) {
+          statusStats[payment.status] = { count: 0, amount: 0 };
+        }
+        statusStats[payment.status].count += 1;
+        statusStats[payment.status].amount += parseFloat(payment.amount || 0);
+      });
+
+      const methodStats = {};
+      (methodResult.data || []).forEach((payment) => {
+        if (!methodStats[payment.payment_method]) {
+          methodStats[payment.payment_method] = { count: 0, amount: 0 };
+        }
+        methodStats[payment.payment_method].count += 1;
+        methodStats[payment.payment_method].amount += parseFloat(payment.amount || 0);
+      });
+
+      const typeStats = {};
+      (typeResult.data || []).forEach((payment) => {
+        if (!typeStats[payment.payment_type]) {
+          typeStats[payment.payment_type] = { count: 0, amount: 0 };
+        }
+        typeStats[payment.payment_type].count += 1;
+        typeStats[payment.payment_type].amount += parseFloat(payment.amount || 0);
+      });
+
+      return sendSuccess(res, req, 'Payment statistics retrieved successfully', {
+        total: {
+          count: totalResult.count || 0,
+          amount: totalAmount
+        },
+        period: {
+          count: periodResult.count || 0,
+          amount: periodAmount,
+          days: period
+        },
+        breakdown: {
+          byStatus: Object.entries(statusStats).map(([statusKey, data]) => ({
+            status: statusKey,
+            count: data.count,
+            amount: data.amount
+          })),
+          byMethod: Object.entries(methodStats).map(([method, data]) => ({
+            method,
+            count: data.count,
+            amount: data.amount
+          })),
+          byType: Object.entries(typeStats).map(([type, data]) => ({
+            type,
+            count: data.count,
+            amount: data.amount
+          }))
+        }
+      });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
+    }
   }
-});
+);
 
-// Get single payment
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+router.get(
+  '/:id',
+  authenticateToken,
+  [
+    param('id').isUUID().withMessage('Invalid payment ID')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { payment, error } = await fetchPaymentById(req.params.id);
 
-    const { data: payment, error } = await supabase
-      .from('payments')
-      .select(`
-        id, user_id, amount, currency, payment_type, payment_method,
-        status, reference_number, transaction_id, created_at, updated_at,
-        users!inner(name, email, registration_number, phone),
-        events(title, start_date)
-      `)
-      .eq('id', id)
-      .single();
+      if (error || !payment) {
+        return sendError(res, req, 404, 'Payment not found');
+      }
 
-    if (error || !payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      if (!canAccessPayment(req, payment)) {
+        return sendError(res, req, 403, 'Access denied');
+      }
+
+      return sendSuccess(res, req, 'Payment retrieved successfully', { payment });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
-
-    res.json(payment);
-  } catch (error) {
-    console.error('Error fetching payment:', error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
+);
 
-// Initiate M-Pesa payment
-router.post('/mpesa/initiate', [
-  body('userId').isUUID().withMessage('Valid user ID is required'),
-  body('amount').isDecimal({ decimal_digits: '0,2' }).withMessage('Valid amount is required'),
-  body('phoneNumber').isMobilePhone().withMessage('Valid phone number is required'),
-  body('paymentType').notEmpty().withMessage('Payment type is required'),
-  body('eventId').optional().isUUID().withMessage('Valid event ID required if provided')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+router.post(
+  '/mpesa/initiate',
+  paymentCreationValidators,
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const actorUserId = resolveActorUserId(req);
 
-    const { userId, amount, phoneNumber, paymentType, eventId, description } = req.body;
+      if (!actorUserId) {
+        return sendError(res, req, 403, 'Not allowed to initiate payments for another user');
+      }
 
-    // Validate user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', userId)
-      .single();
+      const { amount, phoneNumber, paymentType, eventId, description } = req.body;
 
-    if (userError || !user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
+      if (!phoneNumber) {
+        return sendError(res, req, 400, 'Valid phone number is required');
+      }
 
-    // Create payment record
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        user_id: userId,
+      const { user, error: userError } = await fetchUserById(actorUserId);
+
+      if (userError || !user) {
+        return sendError(res, req, 400, 'User not found');
+      }
+
+      const insertPayload = {
+        user_id: actorUserId,
         amount: parseFloat(amount),
         currency: 'KES',
         payment_type: paymentType,
@@ -141,168 +368,173 @@ router.post('/mpesa/initiate', [
         status: 'pending',
         event_id: eventId || null,
         description: description || `${paymentType} payment`,
-        reference_number: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        reference_number: createReferenceNumber('PAY'),
         metadata: {
           phoneNumber,
-          initiatedAt: new Date().toISOString()
+          initiatedAt: new Date().toISOString(),
+          initiatedBy: req.user.id
         }
-      })
-      .select(`
-        id, user_id, amount, currency, payment_type, status, reference_number,
-        users!inner(name, email)
-      `)
-      .single();
+      };
 
-    if (paymentError) {
-      console.error('Payment creation error:', paymentError);
-      return res.status(500).json({ message: 'Failed to create payment record' });
-    }
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .insert(insertPayload)
+        .select('id, user_id, amount, currency, payment_type, status, reference_number, metadata')
+        .single();
 
-    // Simulate M-Pesa STK Push (in production, integrate with actual M-Pesa API)
-    const mpesaResponse = {
-      MerchantRequestID: `MERCHANT-${Date.now()}`,
-      CheckoutRequestID: `CHECKOUT-${Date.now()}`,
-      ResponseCode: "0",
-      ResponseDescription: "Success. Request accepted for processing",
-      CustomerMessage: "Success. Request accepted for processing"
-    };
+      if (paymentError || !payment) {
+        return sendError(res, req, 500, 'Failed to create payment record');
+      }
 
-    // Update payment with M-Pesa response
-    await supabase
-      .from('payments')
-      .update({
-        transaction_id: mpesaResponse.CheckoutRequestID,
-        metadata: {
-          ...payment.metadata,
-          mpesaResponse
-        }
-      })
-      .eq('id', payment.id);
+      const mpesaResponse = {
+        MerchantRequestID: `MERCHANT-${Date.now()}`,
+        CheckoutRequestID: `CHECKOUT-${Date.now()}`,
+        ResponseCode: '0',
+        ResponseDescription: 'Request accepted for processing',
+        CustomerMessage: 'Please complete the payment on your phone'
+      };
 
-    res.status(201).json({
-      message: 'M-Pesa payment initiated successfully',
-      payment: {
-        id: payment.id,
-        referenceNumber: payment.reference_number,
-        amount: payment.amount,
-        status: payment.status
-      },
-      mpesaResponse,
-      instructions: 'Please check your phone for M-Pesa prompt and enter your PIN to complete the payment'
-    });
-  } catch (error) {
-    console.error('Error initiating M-Pesa payment:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+      await supabase
+        .from('payments')
+        .update({
+          transaction_id: mpesaResponse.CheckoutRequestID,
+          metadata: {
+            ...(payment.metadata || {}),
+            mpesaRequest: mpesaResponse
+          }
+        })
+        .eq('id', payment.id);
 
-// Process card payment
-router.post('/card/process', [
-  body('userId').isUUID().withMessage('Valid user ID is required'),
-  body('amount').isDecimal({ decimal_digits: '0,2' }).withMessage('Valid amount is required'),
-  body('paymentType').notEmpty().withMessage('Payment type is required'),
-  body('cardDetails').isObject().withMessage('Card details are required'),
-  body('eventId').optional().isUUID().withMessage('Valid event ID required if provided')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { userId, amount, paymentType, cardDetails, eventId } = req.body;
-
-    // Validate card details (basic validation)
-    const { cardNumber, expiryMonth, expiryYear, cvv, cardholderName } = cardDetails;
-    
-    if (!cardNumber || !expiryMonth || !expiryYear || !cvv || !cardholderName) {
-      return res.status(400).json({ message: 'Complete card details are required' });
-    }
-
-    // Validate user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError || !user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
-
-    // Create payment record
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        user_id: userId,
-        amount: parseFloat(amount),
-        currency: 'KES',
-        payment_type: paymentType,
-        payment_method: 'card',
-        status: 'pending',
-        event_id: eventId || null,
-        reference_number: `CARD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        metadata: {
-          maskedCardNumber: `****-****-****-${cardNumber.slice(-4)}`,
-          cardholderName
-        }
-      })
-      .select()
-      .single();
-
-    if (paymentError) {
-      console.error('Payment creation error:', paymentError);
-      return res.status(500).json({ message: 'Failed to create payment record' });
-    }
-
-    // Simulate card processing (in production, integrate with payment gateway)
-    const isSuccessful = Math.random() > 0.1; // 90% success rate for simulation
-    
-    const cardResponse = {
-      transactionId: `TXN-${Date.now()}`,
-      authCode: isSuccessful ? `AUTH-${Math.random().toString(36).substr(2, 6).toUpperCase()}` : null,
-      responseCode: isSuccessful ? "00" : "05",
-      responseMessage: isSuccessful ? "Transaction Approved" : "Transaction Declined",
-      maskedCardNumber: `****-****-****-${cardNumber.slice(-4)}`
-    };
-
-    // Update payment status
-    const { data: updatedPayment, error: updateError } = await supabase
-      .from('payments')
-      .update({
-        status: isSuccessful ? 'completed' : 'failed',
-        transaction_id: cardResponse.transactionId,
-        metadata: {
-          ...payment.metadata,
-          cardResponse
+      return sendSuccess(
+        res,
+        req,
+        'M-Pesa payment initiated successfully',
+        {
+          payment: {
+            id: payment.id,
+            userId: payment.user_id,
+            referenceNumber: payment.reference_number,
+            amount: payment.amount,
+            status: payment.status
+          },
+          mpesaResponse,
+          instructions: 'Please check your phone for the M-Pesa prompt and complete the transaction.'
         },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', payment.id)
-      .select(`
-        id, user_id, amount, currency, status, transaction_id, updated_at,
-        users!inner(name, email)
-      `)
-      .single();
-
-    if (updateError) {
-      console.error('Payment update error:', updateError);
-      return res.status(500).json({ message: 'Failed to update payment status' });
+        201
+      );
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
+  }
+);
 
-    if (isSuccessful) {
-      // Update event registration payment status if applicable
+router.post(
+  '/card/process',
+  [
+    ...paymentCreationValidators,
+    body('cardDetails').isObject().withMessage('Card details are required'),
+    body('cardDetails.cardNumber')
+      .isString()
+      .trim()
+      .isLength({ min: 12, max: 19 })
+      .withMessage('Valid card number is required'),
+    body('cardDetails.expiryMonth')
+      .isInt({ min: 1, max: 12 })
+      .withMessage('Valid expiry month is required'),
+    body('cardDetails.expiryYear')
+      .isInt({ min: new Date().getFullYear(), max: new Date().getFullYear() + 20 })
+      .withMessage('Valid expiry year is required'),
+    body('cardDetails.cvv')
+      .isString()
+      .trim()
+      .isLength({ min: 3, max: 4 })
+      .withMessage('Valid CVV is required'),
+    body('cardDetails.cardholderName')
+      .isString()
+      .trim()
+      .isLength({ min: 2, max: 120 })
+      .withMessage('Cardholder name is required')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const actorUserId = resolveActorUserId(req);
+
+      if (!actorUserId) {
+        return sendError(res, req, 403, 'Not allowed to process payments for another user');
+      }
+
+      const { amount, paymentType, cardDetails, eventId, description } = req.body;
+      const { cardNumber, cardholderName } = cardDetails;
+
+      const { user, error: userError } = await fetchUserById(actorUserId);
+
+      if (userError || !user) {
+        return sendError(res, req, 400, 'User not found');
+      }
+
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          user_id: actorUserId,
+          amount: parseFloat(amount),
+          currency: 'KES',
+          payment_type: paymentType,
+          payment_method: 'card',
+          status: 'pending',
+          event_id: eventId || null,
+          description: description || `${paymentType} payment`,
+          reference_number: createReferenceNumber('CARD'),
+          metadata: {
+            maskedCardNumber: `****-****-****-${String(cardNumber).slice(-4)}`,
+            cardholderName,
+            initiatedBy: req.user.id
+          }
+        })
+        .select('id, user_id, amount, currency, payment_type, payment_method, status, reference_number, metadata, event_id')
+        .single();
+
+      if (paymentError || !payment) {
+        return sendError(res, req, 500, 'Failed to create payment record');
+      }
+
+      const cardResponse = {
+        transactionId: `TXN-${Date.now()}`,
+        responseCode: '00',
+        responseMessage: 'Transaction Approved',
+        authCode: `AUTH-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+        maskedCardNumber: `****-****-****-${String(cardNumber).slice(-4)}`
+      };
+
+      const { data: updatedPayment, error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'completed',
+          transaction_id: cardResponse.transactionId,
+          metadata: {
+            ...(payment.metadata || {}),
+            cardResponse
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', payment.id)
+        .select(buildPaymentQuery())
+        .single();
+
+      if (updateError || !updatedPayment) {
+        return sendError(res, req, 500, 'Failed to finalize payment');
+      }
+
       if (eventId) {
         await supabase
           .from('event_attendees')
           .update({ payment_status: 'paid' })
           .eq('event_id', eventId)
-          .eq('user_id', userId)
+          .eq('user_id', actorUserId)
           .eq('payment_status', 'pending');
       }
 
-      res.json({
-        message: 'Payment processed successfully',
+      return sendSuccess(res, req, 'Payment processed successfully', {
         payment: updatedPayment,
         receipt: {
           transactionId: cardResponse.transactionId,
@@ -312,379 +544,174 @@ router.post('/card/process', [
           timestamp: updatedPayment.updated_at
         }
       });
-    } else {
-      res.status(400).json({
-        message: 'Payment failed',
-        error: cardResponse.responseMessage,
-        payment: updatedPayment
-      });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
-  } catch (error) {
-    console.error('Error processing card payment:', error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
+);
 
-// Check M-Pesa payment status
-router.get('/mpesa/status/:paymentId', async (req, res) => {
-  try {
-    const { paymentId } = req.params;
+router.get(
+  '/mpesa/status/:paymentId',
+  authenticateToken,
+  [
+    param('paymentId').isUUID().withMessage('Invalid payment ID')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { payment, error } = await fetchPaymentById(req.params.paymentId);
 
-    const { data: payment, error } = await supabase
-      .from('payments')
-      .select(`
-        id, user_id, amount, status, payment_method, event_id, metadata,
-        users!inner(name, email)
-      `)
-      .eq('id', paymentId)
-      .single();
+      if (error || !payment) {
+        return sendError(res, req, 404, 'Payment not found');
+      }
 
-    if (error || !payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      if (!canAccessPayment(req, payment)) {
+        return sendError(res, req, 403, 'Access denied');
+      }
+
+      if (payment.payment_method !== 'mpesa') {
+        return sendError(res, req, 400, 'Not an M-Pesa payment');
+      }
+
+      return sendSuccess(res, req, 'Payment status retrieved successfully', {
+        payment: {
+          id: payment.id,
+          userId: payment.user_id,
+          amount: payment.amount,
+          status: payment.status,
+          paymentMethod: payment.payment_method,
+          transactionId: payment.transaction_id,
+          updatedAt: payment.updated_at
+        }
+      });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
+  }
+);
 
-    if (payment.payment_method !== 'mpesa') {
-      return res.status(400).json({ message: 'Not an M-Pesa payment' });
-    }
+router.get(
+  '/:id/receipt',
+  authenticateToken,
+  [
+    param('id').isUUID().withMessage('Invalid payment ID')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { payment, error } = await fetchPaymentById(req.params.id);
 
-    // Simulate status check (in production, query M-Pesa API)
-    const isCompleted = Math.random() > 0.3; // 70% chance of completion for simulation
-    
-    if (isCompleted && payment.status === 'pending') {
-      const mpesaCallback = {
-        ResultCode: 0,
-        ResultDesc: "The service request is processed successfully.",
-        TransactionID: `MP${Date.now()}`,
-        TransactionReceipt: `MP${Date.now().toString().slice(-8)}`,
-        TransactionAmount: payment.amount,
-        TransactionDate: new Date().toISOString(),
-        PhoneNumber: "254700000000"
+      if (error || !payment) {
+        return sendError(res, req, 404, 'Payment not found');
+      }
+
+      if (!canAccessPayment(req, payment)) {
+        return sendError(res, req, 403, 'Access denied');
+      }
+
+      if (payment.status !== 'completed' && payment.status !== 'refunded') {
+        return sendError(res, req, 400, 'Receipt is only available for completed payments');
+      }
+
+      const receipt = {
+        receiptNumber: payment.reference_number,
+        transactionId: payment.transaction_id,
+        paymentDate: payment.updated_at,
+        amount: payment.amount,
+        currency: payment.currency,
+        paymentMethod: payment.payment_method,
+        paymentType: payment.payment_type,
+        status: payment.status,
+        payer: payment.users ? {
+          name: payment.users.name,
+          email: payment.users.email,
+          registrationNumber: payment.users.registration_number
+        } : null,
+        payee: {
+          name: 'JKUAT Innovation and Entrepreneurship Club',
+          shortName: 'JKUAT Innovation Club',
+          email: 'info@jkuatinnovation.ac.ke'
+        },
+        ...(payment.events ? {
+          event: {
+            title: payment.events.title,
+            date: payment.events.start_date
+          }
+        } : {})
       };
 
-      // Update payment status
+      return sendSuccess(res, req, 'Receipt generated successfully', { receipt });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
+    }
+  }
+);
+
+router.post(
+  '/:id/refund',
+  authenticateToken,
+  requireRole(['admin']),
+  [
+    param('id').isUUID().withMessage('Invalid payment ID'),
+    body('reason').isString().trim().notEmpty().withMessage('Refund reason is required'),
+    body('amount').optional().isFloat({ min: 0.01 }).withMessage('Valid refund amount required if provided')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason, amount } = req.body;
+
+      const { payment, error } = await fetchPaymentById(id);
+
+      if (error || !payment) {
+        return sendError(res, req, 404, 'Payment not found');
+      }
+
+      if (payment.status !== 'completed') {
+        return sendError(res, req, 400, 'Can only refund completed payments');
+      }
+
+      const refundAmount = amount ? parseFloat(amount) : parseFloat(payment.amount);
+
+      if (refundAmount > parseFloat(payment.amount)) {
+        return sendError(res, req, 400, 'Refund amount cannot exceed original payment');
+      }
+
+      const refundDetails = {
+        amount: refundAmount,
+        reason,
+        processedAt: new Date().toISOString(),
+        processedBy: req.user.id,
+        refundId: createReferenceNumber('REF')
+      };
+
       const { data: updatedPayment, error: updateError } = await supabase
         .from('payments')
         .update({
-          status: 'completed',
-          transaction_id: mpesaCallback.TransactionID,
+          status: 'refunded',
           metadata: {
-            ...payment.metadata,
-            callback: mpesaCallback
+            ...(payment.metadata || {}),
+            refund: refundDetails
           },
           updated_at: new Date().toISOString()
         })
-        .eq('id', paymentId)
-        .select()
+        .eq('id', id)
+        .select(buildPaymentQuery())
         .single();
 
-      if (updateError) {
-        console.error('Payment update error:', updateError);
-        return res.status(500).json({ message: 'Failed to update payment status' });
+      if (updateError || !updatedPayment) {
+        return sendError(res, req, 500, 'Failed to process refund');
       }
 
-      // Update event registration if applicable
-      if (payment.event_id) {
-        await supabase
-          .from('event_attendees')
-          .update({ payment_status: 'paid' })
-          .eq('event_id', payment.event_id)
-          .eq('user_id', payment.user_id)
-          .eq('payment_status', 'pending');
-      }
-
-      res.json({
-        status: 'completed',
-        message: 'Payment completed successfully',
+      return sendSuccess(res, req, 'Refund processed successfully', {
         payment: updatedPayment,
-        receipt: {
-          transactionId: mpesaCallback.TransactionID,
-          receipt: mpesaCallback.TransactionReceipt,
-          amount: mpesaCallback.TransactionAmount,
-          timestamp: mpesaCallback.TransactionDate
-        }
+        refund: refundDetails
       });
-    } else {
-      res.json({
-        status: payment.status,
-        message: payment.status === 'pending' ? 'Payment is still processing' : 'Payment status unchanged',
-        payment
-      });
+    } catch (error) {
+      return sendError(res, req, 500, 'Internal server error');
     }
-  } catch (error) {
-    console.error('Error checking payment status:', error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
-
-// Get payment receipt
-router.get('/:id/receipt', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const { data: payment, error } = await supabase
-      .from('payments')
-      .select(`
-        id, user_id, amount, currency, payment_type, payment_method, status,
-        reference_number, transaction_id, updated_at,
-        users!inner(name, email, registration_number),
-        events(title, start_date)
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error || !payment) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
-
-    if (payment.status !== 'completed') {
-      return res.status(400).json({ message: 'Payment not completed' });
-    }
-
-    const receipt = {
-      receiptNumber: payment.reference_number,
-      transactionId: payment.transaction_id,
-      paymentDate: payment.updated_at,
-      amount: payment.amount,
-      currency: payment.currency,
-      paymentMethod: payment.payment_method,
-      paymentType: payment.payment_type,
-      status: payment.status,
-      payer: {
-        name: payment.users.name,
-        email: payment.users.email,
-        registrationNumber: payment.users.registration_number
-      },
-      payee: {
-        name: 'JKUAT Innovation and Entrepreneurship Club',
-        shortName: 'JKUAT Innovation Club',
-        email: 'info@jkuatinnovation.ac.ke'
-      },
-      ...(payment.events && {
-        event: {
-          title: payment.events.title,
-          date: payment.events.start_date
-        }
-      })
-    };
-
-    res.json({
-      message: 'Receipt generated successfully',
-      receipt
-    });
-  } catch (error) {
-    console.error('Error generating receipt:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Refund payment (admin only)
-router.post('/:id/refund', [
-  body('reason').notEmpty().withMessage('Refund reason is required'),
-  body('amount').optional().isDecimal({ decimal_digits: '0,2' }).withMessage('Valid refund amount required if provided')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { id } = req.params;
-    const { reason, amount } = req.body;
-
-    const { data: payment, error } = await supabase
-      .from('payments')
-      .select('id, amount, status, metadata')
-      .eq('id', id)
-      .single();
-
-    if (error || !payment) {
-      return res.status(404).json({ message: 'Payment not found' });
-    }
-
-    if (payment.status !== 'completed') {
-      return res.status(400).json({ message: 'Can only refund completed payments' });
-    }
-
-    const refundAmount = amount ? parseFloat(amount) : payment.amount;
-
-    if (refundAmount > payment.amount) {
-      return res.status(400).json({ message: 'Refund amount cannot exceed original payment' });
-    }
-
-    // Update payment status
-    const { data: updatedPayment, error: updateError } = await supabase
-      .from('payments')
-      .update({
-        status: 'refunded',
-        metadata: {
-          ...payment.metadata,
-          refund: {
-            amount: refundAmount,
-            reason,
-            processedAt: new Date().toISOString(),
-            refundId: `REF-${Date.now()}`
-          }
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select(`
-        id, amount, status, metadata,
-        users!inner(name, email)
-      `)
-      .single();
-
-    if (updateError) {
-      console.error('Refund update error:', updateError);
-      return res.status(500).json({ message: 'Failed to process refund' });
-    }
-
-    res.json({
-      message: 'Refund processed successfully',
-      payment: updatedPayment,
-      refund: {
-        amount: refundAmount,
-        reason,
-        processedAt: new Date()
-      }
-    });
-  } catch (error) {
-    console.error('Error processing refund:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Get payment statistics
-router.get('/stats', async (req, res) => {
-  try {
-    const { period = '30d' } = req.query;
-
-    // Calculate date range
-    const now = new Date();
-    let startDate;
-    
-    switch (period) {
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '90d':
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case '1y':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    }
-
-    const [
-      { count: totalCount, data: totalData },
-      { count: periodCount, data: periodData },
-      { data: statusData },
-      { data: methodData },
-      { data: typeData }
-    ] = await Promise.all([
-      // Total stats
-      supabase
-        .from('payments')
-        .select('amount', { count: 'exact' }),
-      
-      // Period stats
-      supabase
-        .from('payments')
-        .select('amount', { count: 'exact' })
-        .gte('created_at', startDate.toISOString()),
-      
-      // By status
-      supabase
-        .from('payments')
-        .select('status, amount'),
-      
-      // By method
-      supabase
-        .from('payments')
-        .select('payment_method, amount'),
-      
-      // By type
-      supabase
-        .from('payments')
-        .select('payment_type, amount')
-    ]);
-
-    // Calculate totals
-    const totalAmount = totalData?.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
-    const periodAmount = periodData?.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0) || 0;
-
-    // Group by status
-    const statusStats = {};
-    statusData?.forEach(payment => {
-      const status = payment.status;
-      if (!statusStats[status]) {
-        statusStats[status] = { count: 0, amount: 0 };
-      }
-      statusStats[status].count++;
-      statusStats[status].amount += parseFloat(payment.amount || 0);
-    });
-
-    // Group by method
-    const methodStats = {};
-    methodData?.forEach(payment => {
-      const method = payment.payment_method;
-      if (!methodStats[method]) {
-        methodStats[method] = { count: 0, amount: 0 };
-      }
-      methodStats[method].count++;
-      methodStats[method].amount += parseFloat(payment.amount || 0);
-    });
-
-    // Group by type
-    const typeStats = {};
-    typeData?.forEach(payment => {
-      const type = payment.payment_type;
-      if (!typeStats[type]) {
-        typeStats[type] = { count: 0, amount: 0 };
-      }
-      typeStats[type].count++;
-      typeStats[type].amount += parseFloat(payment.amount || 0);
-    });
-
-    const stats = {
-      total: {
-        count: totalCount || 0,
-        amount: totalAmount
-      },
-      period: {
-        count: periodCount || 0,
-        amount: periodAmount,
-        days: period
-      },
-      breakdown: {
-        byStatus: Object.entries(statusStats).map(([status, data]) => ({
-          status,
-          count: data.count,
-          amount: data.amount
-        })),
-        byMethod: Object.entries(methodStats).map(([method, data]) => ({
-          method,
-          count: data.count,
-          amount: data.amount
-        })),
-        byType: Object.entries(typeStats).map(([type, data]) => ({
-          type,
-          count: data.count,
-          amount: data.amount
-        }))
-      }
-    };
-
-    res.json(stats);
-  } catch (error) {
-    console.error('Error fetching payment stats:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+);
 
 module.exports = router;

@@ -1,33 +1,52 @@
 /**
  * Shared Supabase Client Configuration
+ * Fetches config from backend API to avoid hardcoding credentials
  */
 
 console.log('📦 Loading Supabase client...');
 
-const SUPABASE_URL = 'https://gakuuxwhlczhlgngcdrv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdha3V1eHdobGN6aGxnbmdjZHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzUyODksImV4cCI6MjA4MTY1MTI4OX0.wbgJik7A6qasB8FMEWZqZka8CEpZyUrSw-Ma2oLZZwM';
+// Config will be fetched from backend
+let SUPABASE_URL = null;
+let SUPABASE_ANON_KEY = null;
 
 // Function to initialize Supabase client
-function initializeSupabaseClient() {
+async function initializeSupabaseClient() {
     // Check if already initialized
     if (window.supabase) {
         console.log('✅ Supabase client already initialized');
         return true;
     }
-    
+
     // Check if Supabase library is loaded
     if (typeof supabase === 'undefined') {
         console.log('⏳ Supabase library not loaded yet...');
         return false;
     }
-    
+
     // Check if createClient function exists
     if (typeof supabase.createClient !== 'function') {
         console.error('❌ Supabase library loaded but createClient not found');
         console.log('Available supabase properties:', Object.keys(supabase));
         return false;
     }
-    
+
+    // Fetch config from backend if not already fetched
+    if (!SUPABASE_URL) {
+        try {
+            const response = await fetch('/api/config/supabase');
+            if (!response.ok) {
+                throw new Error('Failed to fetch Supabase config');
+            }
+            const config = await response.json();
+            SUPABASE_URL = config.url;
+            SUPABASE_ANON_KEY = config.anonKey || '';
+            console.log('✅ Supabase config fetched from backend');
+        } catch (error) {
+            console.error('❌ Failed to fetch Supabase config:', error);
+            return false;
+        }
+    }
+
     try {
         window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('✅ Supabase client initialized and available at window.supabase');
@@ -41,23 +60,25 @@ function initializeSupabaseClient() {
     }
 }
 
-// Try to initialize immediately
-if (!initializeSupabaseClient()) {
-    // If failed, wait for library to load
-    let attempts = 0;
-    const maxAttempts = 20;
-    
-    const checkInterval = setInterval(() => {
-        attempts++;
-        console.log(`⏳ Attempt ${attempts}/${maxAttempts} to initialize Supabase...`);
-        
-        if (initializeSupabaseClient()) {
-            clearInterval(checkInterval);
-            console.log('✅ Supabase client initialized after', attempts, 'attempts');
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            console.error('❌ Failed to initialize Supabase client after', maxAttempts, 'attempts');
-            console.error('Make sure the Supabase CDN script is loaded before this file');
-        }
-    }, 100);
-}
+// Try to initialize immediately (async)
+initializeSupabaseClient().then(success => {
+    if (!success) {
+        // If failed, wait for library to load
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        const checkInterval = setInterval(async () => {
+            attempts++;
+            console.log(`⏳ Attempt ${attempts}/${maxAttempts} to initialize Supabase...`);
+
+            if (await initializeSupabaseClient()) {
+                clearInterval(checkInterval);
+                console.log('✅ Supabase client initialized after', attempts, 'attempts');
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('❌ Failed to initialize Supabase client after', maxAttempts, 'attempts');
+                console.error('Make sure the Supabase CDN script is loaded before this file');
+            }
+        }, 100);
+    }
+});
