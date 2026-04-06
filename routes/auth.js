@@ -108,13 +108,7 @@ router.post('/create-profile', authenticateToken, async (req, res) => {
 });
 // Register new user (database-only approach)
 router.post('/register', [
-  body('email').isEmail().withMessage('Valid email is required')
-    .custom((email) => {
-      if (!email.includes('@students.jkuat.ac.ke') && !email.includes('@jkuat.ac.ke')) {
-        throw new Error('Please use your JKUAT email address (@students.jkuat.ac.ke or @jkuat.ac.ke)');
-      }
-      return true;
-    }),
+  body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').notEmpty().withMessage('Name is required')
 ], async (req, res) => {

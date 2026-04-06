@@ -135,12 +135,6 @@ if (signupForm) {
             return;
         }
 
-        if (!isJKUATEmail(email)) {
-            showMessage('Please use your JKUAT email (@students.jkuat.ac.ke or @jkuat.ac.ke)');
-            emailInput?.focus();
-            return;
-        }
-
         if (password.length < MIN_PASSWORD_LEN) {
             showMessage(`Password must be at least ${MIN_PASSWORD_LEN} characters`);
             passwordInput?.focus();

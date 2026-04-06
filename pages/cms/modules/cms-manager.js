@@ -85,14 +85,13 @@ export class SecureCMSManager {
             console.log('🚀 Initializing CMS Manager...');
             
             // Auth is already checked by cms.js before this is called
-            // Just verify we have the user object
-            const user = window.authManager?.getUser();
+            const user = (window.AuthState?.user || window.authManager?.getUser());
             if (!user) {
                 console.warn('⚠️ No user object available, but continuing initialization');
             } else if (!this.checkUserPermissions(user)) {
-                console.error('❌ User does not have CMS access');
+                console.error('❌ User does not have CMS access. Role:', user.role);
                 this.notifications.show('You do not have permission to access the CMS', 'error');
-                setTimeout(() => window.location.href = '/', 3000);
+                setTimeout(() => window.location.href = '/dashboard', 3000);
                 return;
             }
 
@@ -109,14 +108,16 @@ export class SecureCMSManager {
             console.log('✅ CMS Manager initialized successfully');
             
         } catch (error) {
-            console.error('❌ Failed to initialize CMS Manager:', error);
-            this.notifications.show('Failed to initialize CMS', 'error');
+            console.error('❌ Failed to initialize CMS Manager:', error?.message || error);
+            // Don't re-throw — show inline error instead of the full-page popup
+            this.notifications?.show?.('Failed to initialize CMS: ' + (error?.message || 'Unknown error'), 'error');
         }
     }
 
     checkUserPermissions(user) {
-        const allowedRoles = ['admin', 'leader', 'content_manager'];
-        return user && allowedRoles.includes(user.role);
+        // Accept all admin-level roles
+        const allowedRoles = ['admin', 'administrator', 'super_admin', 'superadmin', 'leader', 'content_manager'];
+        return user && allowedRoles.includes((user.role || '').toLowerCase());
     }
 
     // ==================== TAB MANAGEMENT ====================
@@ -374,7 +375,7 @@ export class SecureCMSManager {
     // ==================== SHARED UTILITIES ====================
     
     checkOperationPermissions(operation, type) {
-        const user = window.authManager?.getUser();
+        const user = (window.AuthState?.user || window.authManager?.getUser());
         if (!user) return false;
         
         // Admins can do everything

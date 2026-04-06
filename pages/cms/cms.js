@@ -76,8 +76,8 @@ function showInitializationError(error) {
         console.error('❌ Full CMS initialization error:', error);
         console.error('Stack trace:', error.stack);
     } else {
-        // In production, log minimal info
-        console.error('CMS initialization failed');
+        // Log the actual error in production too — needed for debugging
+        console.error('CMS initialization failed:', error?.message || error);
     }
     
     // Create backdrop for better accessibility and contrast
@@ -339,20 +339,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof window.cmsManager?.switchTab !== 'function') {
             throw new Error('CMS Manager failed to initialize properly (missing switchTab method)');
         }
-        
+
         if (isDevelopment()) {
-            console.log('✅ CMS initialized successfully');
-            
-            // Add debug helpers in development
             window.cmsDebug = {
                 manager: window.cmsManager,
-                actions: cmsActions,
                 reloadCMS: () => window.location.reload(),
                 enableDebug: () => localStorage.setItem('cms-debug', 'true'),
                 disableDebug: () => localStorage.removeItem('cms-debug')
             };
-            
-            console.log('🔧 Debug helpers available at window.cmsDebug');
+            console.log('✅ CMS initialized. Debug: window.cmsDebug');
+        } else {
+            console.log('✅ CMS initialized');
         }
         
     } catch (error) {

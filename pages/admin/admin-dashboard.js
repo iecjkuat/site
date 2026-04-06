@@ -199,8 +199,7 @@ class AdminDashboard {
             });
             
             // Verify token with backend
-            console.log('Verifying token with backend...');
-            const verifyResponse = await fetch('/api/auth/verify', {
+            const verifyResponse = await fetch('/api/v1/auth/verify', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${authToken}`
@@ -209,11 +208,21 @@ class AdminDashboard {
             
             if (!verifyResponse.ok) {
                 console.log('Token verification failed');
-                alert('Session expired. Please login again.');
-                localStorage.removeItem('authToken');
-                sessionStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                return false;
+                // Don't immediately alert — could be a network blip
+                // Try once more after a short delay
+                await new Promise(r => setTimeout(r, 1000));
+                const retryResponse = await fetch('/api/v1/auth/verify', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!retryResponse.ok) {
+                    alert('Session expired. Please login again.');
+                    localStorage.removeItem('authToken');
+                    sessionStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('user');
+                    return false;
+                }
             }
             
             const verifyData = await verifyResponse.json();

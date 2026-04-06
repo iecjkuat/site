@@ -640,7 +640,7 @@ export class CMSMessagesManager {
         const chatArea = document.getElementById('chatWindowArea');
         if (!chatArea) return;
 
-        const currentUser = window.authManager?.getUser();
+        const currentUser = (window.AuthState?.user || window.authManager?.getUser());
 
         chatArea.className = 'chat-window';
         chatArea.innerHTML = `

@@ -184,7 +184,7 @@ export class CMSSupabase {
     }
 
     static async createArticle(data) {
-        const user = window.authManager?.getUser();
+        const user = (window.AuthState?.user || window.authManager?.getUser());
         if (!user) throw new Error('User not authenticated');
 
         const articleData = {
@@ -301,7 +301,7 @@ export class CMSSupabase {
     }
 
     static async createEvent(data) {
-        const user = window.authManager?.getUser();
+        const user = (window.AuthState?.user || window.authManager?.getUser());
         if (!user) throw new Error('User not authenticated');
 
         const eventData = {
@@ -428,7 +428,7 @@ export class CMSSupabase {
     }
 
     static async createOpportunity(data) {
-        const user = window.authManager?.getUser();
+        const user = (window.AuthState?.user || window.authManager?.getUser());
         if (!user) throw new Error('User not authenticated');
 
         const opportunityData = {
@@ -498,7 +498,7 @@ export class CMSSupabase {
 
     // File upload operations - hardened version
     static async uploadFile(file, bucket = 'cms-media', options = {}) {
-        const user = window.authManager?.getUser();
+        const user = (window.AuthState?.user || window.authManager?.getUser());
         if (!user) throw new Error('User not authenticated');
 
         // Basic validation (tweak to your needs)
