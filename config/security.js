@@ -7,15 +7,15 @@
 const helmet = require('helmet');
 const cors = require('cors');
 
-const connectSrc = ["'self'", "https://*.supabase.co", "wss://*.supabase.co"];
+const connectSrc = ["'self'", "https://*.supabase.co", "wss://*.supabase.co", "https://cdnjs.cloudflare.com"];
 if (process.env.SUPABASE_URL) connectSrc.push(process.env.SUPABASE_URL);
 
 const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      scriptSrc:  ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net"],
+      styleSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://cdn.quilljs.com"],
+      scriptSrc:  ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://cdn.quilljs.com"],
       fontSrc:    ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
       imgSrc:     ["'self'", "data:", "https:"],
       connectSrc,

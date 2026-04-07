@@ -91,5 +91,3 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!auth) window.location.href = '/signin';
     });
 });
-
-export default SecureAuthClient;
