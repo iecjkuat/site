@@ -226,13 +226,13 @@
     // Wire global 401 handler — auto-logout when session expires
     setErrorHandler((err) => {
         if (err.status === 401 && window.AuthState) {
-            window.AuthState.clear();
-            // Only redirect if not already on auth pages
+            const authPages = ['/signin', '/signup', '/verify-email', '/reset-password'];
             const path = window.location.pathname;
-            if (!['/signin', '/signup', '/verify-email'].includes(path)) {
-                sessionStorage.setItem('redirectAfterLogin', path);
-                window.location.href = '/signin';
-            }
+            // Don't redirect if already on auth pages — prevents loops
+            if (authPages.includes(path)) return;
+            window.AuthState.clear();
+            sessionStorage.setItem('redirectAfterLogin', path);
+            window.location.href = '/signin';
         }
     });
 

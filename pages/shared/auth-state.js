@@ -84,24 +84,32 @@
         },
 
         async _verifyInBackground(token) {
+            // Don't verify if we're already on an auth page — avoids redirect loops
+            const authPages = ['/signin', '/signup', '/verify-email', '/reset-password'];
+            if (authPages.includes(window.location.pathname)) return;
+
             try {
                 const data = await window.api?.auth.verify();
                 if (data?.user) {
-                    // Refresh user data from server
                     const fresh = data.user;
                     setState(fresh, token);
-                    // Update storage with fresh data
                     const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
                     storage.setItem('user', JSON.stringify(fresh));
                     notify('userUpdated', fresh);
                 }
             } catch (err) {
+                // Only clear on definitive 401 — not network errors or timeouts
                 if (err?.status === 401) {
-                    // Token expired or revoked — log out silently
                     console.warn('AuthState: token invalid, clearing session');
-                    this.clear();
+                    // Clear state but do NOT redirect — let the page handle it
+                    setState(null, null);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('authToken');
+                    sessionStorage.removeItem('user');
+                    notify('userLoggedOut', null);
                 }
-                // Network errors — keep existing session, don't log out
+                // Network errors, timeouts — keep existing session
             }
         },
 
