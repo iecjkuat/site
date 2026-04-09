@@ -11,13 +11,13 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "**/*.js",
-    "pages/**/*.js",
-    "routes/**/*.js",
-    "lib/**/*.js"
+    "server.js",
+    "config/**/*.js",
+    "lib/**/*.js",
+    "api/**/*.js",
+    "pages/**/*.js"
   ],
   "exclude": [
-    "node_modules",
-    "dist"
+    "node_modules"
   ]
 }

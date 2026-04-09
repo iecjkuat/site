@@ -20,66 +20,33 @@
     <script src="/shared/seo-tags.js"></script>
     <script>injectSEO({ title: 'Projects & Innovation', description: 'Explore student-led innovation projects, hackathons and incubation programs at JKUAT Innovation Club.', path: '/projects' });</script>
 
-    <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js" 
-            crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
-
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
           integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
           crossorigin="anonymous" rel="stylesheet">
-    <link href="/shared/core/base.css" rel="stylesheet">
-    <link href="/shared/core/theme.css" rel="stylesheet">
-    <link href="/shared/global-navbar.css" rel="stylesheet">
+    <link href="/shared/styles/navbar.css" rel="stylesheet">
     <link href="/projects/projects.css?v=2025010804" rel="stylesheet">
     
     <!-- Override conflicting navbar styles -->
     <style>
-        /* Remove conflicting navbar styles to allow global navbar */
-        .glass-nav,
-        .nav-club-header,
-        .nav-club-title,
-        .nav-links-container,
-        .nav-center,
-        .nav-auth,
-        .nav-dropdown,
-        .dropdown-toggle,
-        .dropdown-menu,
-        .dropdown-item,
-        .glass-button,
-        .notification-bell {
-            display: none !important;
-        }
-        
-        /* Ensure body has correct padding for global navbar */
         body {
-            padding-top: 110px !important;
+            padding-top: 70px;
             background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
             background-attachment: fixed !important;
-            background-size: cover !important;
-            background-position: center !important;
-            position: relative !important;
+            position: relative;
         }
 
         @media (max-width: 768px) {
-            body { padding-top: 65px !important; }
+            body { padding-top: 65px; }
         }
-        
-        /* Add dark overlay to background */
         body::before {
-            content: '' !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(15, 23, 42, 0.5) !important;
-            z-index: -1 !important;
-            opacity: 1 !important;
-            pointer-events: none !important;
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: -1;
+            pointer-events: none;
         }
     </style>
 
@@ -91,7 +58,27 @@
 </head>
 
 <body class="projects-page bg-pattern">
-    <!-- Shared navbar will be automatically inserted here -->
+
+    <!-- NAVBAR -->
+    <div id="navbar"></div>
+    <script>
+        fetch('/shared/navbar.html')
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('navbar').innerHTML = html;
+                const path = window.location.pathname;
+                document.querySelectorAll('.nav-link').forEach(l => {
+                    if (l.getAttribute('href') === path) l.style.color = '#10b981';
+                });
+                const t = document.getElementById('navToggle');
+                const nl = document.getElementById('navLinks');
+                if (t && nl) t.addEventListener('click', () => nl.classList.toggle('active'));
+                const lb = document.getElementById('navLoginBtn');
+                const jb = document.getElementById('navJoinBtn');
+                if (lb) lb.addEventListener('click', () => window.location.href = '/signin');
+                if (jb) jb.addEventListener('click', () => window.location.href = '/signup');
+            });
+    </script>
 
     <!-- Hero Section -->
     <section class="hero-section-padding">
@@ -399,8 +386,6 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="/shared/supabase-client.js"></script>
-    <script src="/shared/role-ui-controller.js"></script>
     <script src="/projects/projects.js?v=2026021704"></script>
 
     <!-- Minimal Footer -->

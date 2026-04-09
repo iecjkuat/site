@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://iecjkuat.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://iecjkuat.com/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://iecjkuat.com/events</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://iecjkuat.com/blog</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
   <url><loc>https://iecjkuat.com/projects</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://iecjkuat.com/ideas</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://iecjkuat.com/news</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
-  <url><loc>https://iecjkuat.com/leadership</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://iecjkuat.com/opportunities</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://iecjkuat.com/resources</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://iecjkuat.com/signup</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

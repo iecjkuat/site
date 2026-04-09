@@ -1,482 +1,538 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JKUAT Innovation and Entrepreneurship Club</title>
+    <title>JKUAT Innovation & Entrepreneurship Club</title>
 
-    <!-- Security Meta Tags -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;">
-
-    <!-- SEO -->
-    <script src="/shared/seo-tags.js"></script>
-    <script>injectSEO({
-        title: 'Home',
-        description: 'JKUAT Innovation & Entrepreneurship Club — empowering students through hackathons, projects, mentorship and industry partnerships at JKUAT.',
-        path: '/'
-    });</script>
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "JKUAT Innovation and Entrepreneurship Club",
-        "url": "https://iecjkuat.com",
-        "logo": "https://iecjkuat.com/pages/shared/assets/images/logo.png",
-        "description": "Empowering JKUAT students through innovation, entrepreneurship, hackathons and mentorship.",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Juja",
-            "addressRegion": "Kiambu",
-            "addressCountry": "KE"
-        },
-        "sameAs": [
-            "https://twitter.com/JKUATInnovation"
-        ]
-    }
-    </script>
-
-    <!-- Global Systems -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.0/dist/umd/supabase.js"
-        crossorigin="anonymous"></script>
-    <script src="/shared/auth.js"></script>
-    <script src="/shared/global-navbar.js"></script>
-
-    <!-- Stylesheets -->
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-        integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
-        crossorigin="anonymous" rel="stylesheet">
-    <link href="/shared/global-navbar.css" rel="stylesheet">
-    <link href="/home/home.css" rel="stylesheet">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/shared/styles/main.css">
+    <link rel="stylesheet" href="/shared/styles/navbar.css">
+
     <style>
-        body {
-            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
-            background-attachment: fixed !important;
-            background-size: cover !important;
-            background-position: center !important;
-            position: relative !important;
-            padding-top: 110px !important;
+        /* Membership section */
+        .membership-section {
+            background: rgba(16, 185, 129, 0.06);
+            border-top: 1px solid rgba(16, 185, 129, 0.15);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.15);
         }
 
-        @media (max-width: 768px) {
-            body { padding-top: 65px !important; }
+        .membership-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
-        
-        body::before {
-            content: '' !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: rgba(15, 23, 42, 0.5) !important;
-            z-index: -1 !important;
-            opacity: 1 !important;
-            pointer-events: none !important;
+
+        .membership-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .membership-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+        }
+
+        .membership-card.featured {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .membership-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.4rem;
+        }
+
+        .membership-icon.green {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .membership-icon.blue {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .membership-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .membership-card p {
+            font-size: 0.9rem;
+            opacity: 0.75;
+            margin-bottom: 1.5rem;
+        }
+
+        .fee-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 0.35rem 1rem;
+            border-radius: 999px;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .membership-grid { grid-template-columns: 1fr; }
+            .membership-card { padding: 1.5rem; }
         }
     </style>
 </head>
 
 <body>
-    <!-- Hero Section -->
-    <section class="hero-modern">
-        <div class="hero-background">
-            <div class="floating-particles"></div>
-            <div class="animated-gradient"></div>
-        </div>
 
-        <div class="container">
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <div class="pulse"></div>
-                    <span>Welcome to Innovation Hub</span>
-                </div>
+    <!-- NAVBAR -->
+    <div id="navbar"></div>
+    <script>
+        fetch('/shared/navbar.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('navbar').innerHTML = html;
+                const currentPath = window.location.pathname;
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    if (link.getAttribute('href') === currentPath) link.style.color = '#10b981';
+                });
+                const navToggle = document.getElementById('navToggle');
+                const navLinks  = document.getElementById('navLinks');
+                if (navToggle && navLinks) {
+                    navToggle.addEventListener('click', () => navLinks.classList.toggle('active'));
+                }
+            })
+            .catch(err => console.error('Navbar load failed:', err));
+    </script>
 
-                <h1 class="hero-title">
-                    <span class="line-1">JKUAT Innovation &</span>
-                    <span class="line-2">Entrepreneurship</span>
-                    <span class="line-3 highlight">Club</span>
-                </h1>
-
-                <p class="hero-description">
-                    Empowering the next generation of innovators and entrepreneurs through
-                    collaborative learning, cutting-edge projects, and industry partnerships.
-                </p>
-
-                <div class="hero-buttons">
-                    <div class="cta-primary">
-                        <button id="heroRegisterBtn" class="btn-primary-modern">
-                            <span class="btn-icon">
-                                <i class="fas fa-rocket"></i>
-                            </span>
-                            <span class="btn-text">Join Our Community</span>
-                            <span class="btn-shine"></span>
-                        </button>
-                        <p class="cta-caption">Start your innovation journey</p>
-                    </div>
-
-                    <button id="heroLearnMoreBtn" class="btn-glass-modern">
-                        <span class="btn-icon">
-                            <i class="fas fa-play"></i>
-                        </span>
-                        <span class="btn-text">Learn More</span>
-                    </button>
-                </div>
-
-                <!-- Stats -->
-                <div class="stats-modern">
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <span class="stat-number counter" data-target="95">0</span>
-                        <div class="stat-label">Active Members</div>
-                        <div class="stat-trend">+12 this month</div>
-                    </div>
-
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-project-diagram"></i>
-                        </div>
-                        <span class="stat-number counter" data-target="24">0</span>
-                        <div class="stat-label">Active Projects</div>
-                        <div class="stat-trend">+5 this quarter</div>
-                    </div>
-
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <span class="stat-number counter" data-target="8">0</span>
-                        <div class="stat-label">Awards Won</div>
-                        <div class="stat-trend">+3 this year</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Activity Feed Section -->
-    <section class="section-modern" id="activity-feed">
-        <div class="container">
-            <div class="section-header-modern">
-                <div class="section-badge-modern pulse-badge">What's Happening</div>
-                <h2 class="section-title-modern">Latest <span class="highlight-gradient">Updates</span></h2>
-                <p class="section-description-modern">
-                    Stay connected with the latest news, events, and achievements from our vibrant community.
-                </p>
-            </div>
-
-            <!-- Feed Filters -->
-            <div class="feed-filters">
-                <button class="filter-tab active" data-filter="all">
-                    <i class="fas fa-globe"></i>
-                    <span>All Updates</span>
-                </button>
-                <button class="filter-tab" data-filter="events">
-                    <i class="fas fa-calendar"></i>
-                    <span>Events</span>
-                </button>
-                <button class="filter-tab" data-filter="projects">
-                    <i class="fas fa-code"></i>
-                    <span>Projects</span>
-                </button>
-                <button class="filter-tab" data-filter="achievements">
-                    <i class="fas fa-trophy"></i>
-                    <span>Achievements</span>
-                </button>
-                <button class="filter-tab" data-filter="news">
-                    <i class="fas fa-newspaper"></i>
-                    <span>News</span>
-                </button>
-            </div>
-
-            <!-- Activity Feed Carousel -->
-            <div class="activity-feed-carousel">
-                <button class="carousel-btn carousel-btn-prev" id="feedPrevBtn">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                
-                <div class="carousel-track-container">
-                    <div class="activity-feed-track" id="feedContainer">
-                        <!-- Feed items will be loaded here by JavaScript -->
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                    </div>
-                </div>
-                
-                <button class="carousel-btn carousel-btn-next" id="feedNextBtn">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            
-            <!-- Carousel Indicators -->
-            <div class="carousel-indicators" id="feedIndicators"></div>
-        </div>
-    </section>
-
-    <!-- Engagement Section -->
-    <section class="section-modern no-top-padding">
-        <div class="container">
-            <div class="section-header-modern">
-                <div class="section-badge-modern">Get Involved</div>
-                <h2 class="section-title-modern">Choose Your <span class="highlight-gradient">Path</span></h2>
-                <p class="section-description-modern">
-                    Whether you're a student, professional, or alumni, there's a place for you in our community.
-                </p>
-            </div>
-
-            <div class="engagement-grid">
-                <div class="engagement-card">
-                    <div class="card-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <h3>For Students</h3>
-                    <p>Join workshops, hackathons, and collaborative projects. Build your skills and network with
-                        like-minded peers.</p>
-
-                    <div class="card-features">
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Weekly workshops</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Mentorship programs</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Project collaboration</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Industry connections</span>
-                        </div>
-                    </div>
-
-                    <button class="card-cta" data-role="student">
-                        <i class="fas fa-rocket"></i>
-                        <span>Join as Student</span>
-                    </button>
-                </div>
-
-                <div class="engagement-card">
-                    <div class="card-icon">
-                        <i class="fas fa-briefcase"></i>
-                    </div>
-                    <h3>For Professionals</h3>
-                    <p>Share your expertise, mentor students, and discover fresh talent for your organization.</p>
-
-                    <div class="card-features">
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Guest speaking</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Mentorship opportunities</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Talent recruitment</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Partnership programs</span>
-                        </div>
-                    </div>
-
-                    <button class="card-cta" data-role="professional">
-                        <i class="fas fa-handshake"></i>
-                        <span>Partner With Us</span>
-                    </button>
-                </div>
-
-                <div class="engagement-card">
-                    <div class="card-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3>For Alumni</h3>
-                    <p>Stay connected with your alma mater and help shape the next generation of innovators.</p>
-
-                    <div class="card-features">
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Alumni network</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Mentorship roles</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Success story sharing</span>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-check"></i>
-                            <span>Exclusive events</span>
-                        </div>
-                    </div>
-
-                    <button class="card-cta" data-role="alumni">
-                        <i class="fas fa-heart"></i>
-                        <span>Reconnect</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Success Stories Section -->
-    <section class="section-modern no-top-padding no-bottom-padding">
-        <div class="container">
-            <div class="section-header-modern">
-                <div class="section-badge-modern">Innovation Showcase</div>
-                <h2 class="section-title-modern">Success <span class="highlight-gradient">Stories</span></h2>
-                <p class="section-description-modern">
-                    Celebrating the achievements and milestones of our incredible community members.
-                </p>
-            </div>
-
-            <!-- Carousel Container -->
-            <div class="success-stories-carousel">
-                <button class="carousel-btn carousel-btn-prev" id="storiesPrevBtn">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                
-                <div class="carousel-track-container">
-                    <div class="success-stories-track" id="storiesContainer">
-                        <!-- Success stories will be loaded here by JavaScript -->
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                        <div class="skeleton-card"></div>
-                    </div>
-                </div>
-                
-                <button class="carousel-btn carousel-btn-next" id="storiesNextBtn">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            
-            <!-- Carousel Indicators -->
-            <div class="carousel-indicators" id="storiesIndicators"></div>
-        </div>
-    </section>
-
-    <!-- Impact Metrics Section -->
-    <section class="section-modern no-top-padding no-bottom-padding">
-        <div class="container">
-            <div class="section-header-modern">
-                <div class="section-badge-modern">Our Impact</div>
-                <h2 class="section-title-modern">Making a <span class="highlight-gradient">Difference</span></h2>
-                <p class="section-description-modern">
-                    See how our community is driving innovation and creating positive change.
-                </p>
-            </div>
-
-            <div class="impact-metrics">
-                <div class="metric-card">
-                    <div class="metric-icon">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <div class="metric-value counter" data-target="150">0</div>
-                    <div class="metric-label">Ideas Generated</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon">
-                        <i class="fas fa-rocket"></i>
-                    </div>
-                    <div class="metric-value counter" data-target="12">0</div>
-                    <div class="metric-label">Startups Launched</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="metric-value counter" data-target="500">0</div>
-                    <div class="metric-label">K+ Funding Raised</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-icon">
-                        <i class="fas fa-globe"></i>
-                    </div>
-                    <div class="metric-value counter" data-target="25">0</div>
-                    <div class="metric-label">Industry Partners</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer no-top-padding">
-        <div class="container">
-            <div class="footer-content">
-                <div>
-                    <h3>JKUAT Innovation Club</h3>
-                    <p>Empowering the next generation of innovators and entrepreneurs.</p>
-                    <div class="social-links">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
-                    </div>
-                </div>
-
-                <div>
-                    <h3>Quick Links</h3>
-                    <a href="/events">Events</a>
-                    <a href="/projects">Projects</a>
-                    <a href="/opportunities">Opportunities</a>
-                    <a href="/resources">Resources</a>
-                </div>
-
-                <div>
-                    <h3>Community</h3>
-                    <a href="/leadership">Leadership</a>
-                    <a href="/feedback">Feedback</a>
-                    <a href="/support">Support</a>
-                </div>
-
-                <div>
-                    <h3>Connect</h3>
-                    <a href="mailto:info@jkuatinnovation.club">info@jkuatinnovation.club</a>
-                    <a href="tel:+254700000000">+254 700 000 000</a>
-                    <a href="/privacy">Privacy Policy</a>
-                    <a href="/terms">Terms of Service</a>
-                </div>
-            </div>
-
-            <div class="footer-bottom">
-                <p>&copy; 2025 JKUAT Innovation and Entrepreneurship Club. All rights reserved.</p>
-                <a href="#" class="footer-top">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>Back to Top</span>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container text-center">
+            <h1>JKUAT Innovation &amp; Entrepreneurship Club</h1>
+            <p>
+                Empowering students to build real-world solutions through innovation,
+                collaboration, hackathons, and entrepreneurship.
+            </p>
+            <div class="mt-2">
+                <a href="#membership" class="btn btn-primary">
+                    <i class="fas fa-id-card"></i> Become a Member
+                </a>
+                <a href="#about" class="btn btn-secondary">
+                    Learn More
                 </a>
             </div>
         </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about">
+        <div class="container text-center">
+            <h2 class="section-title">About Us</h2>
+            <p>
+                The JKUAT Innovation &amp; Entrepreneurship Club is a student-led community
+                focused on building technical and business skills through hands-on learning,
+                mentorship, and project development.
+            </p>
+        </div>
+    </section>
+
+    <!-- WHAT WE DO -->
+    <section>
+        <div class="container">
+            <h2 class="section-title">What We Do</h2>
+            <div class="grid grid-3">
+                <div class="card text-center">
+                    <i class="fas fa-trophy" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
+                    <h3>Hackathons</h3>
+                    <p>We host innovation challenges where students build real solutions in teams.</p>
+                </div>
+                <div class="card text-center">
+                    <i class="fas fa-rocket" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
+                    <h3>Projects</h3>
+                    <p>Members collaborate on software, hardware, and startup ideas.</p>
+                </div>
+                <div class="card text-center">
+                    <i class="fas fa-users" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
+                    <h3>Mentorship</h3>
+                    <p>We connect students with industry professionals and alumni.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMPACT -->
+    <section>
+        <div class="container text-center">
+            <h2 class="section-title">Our Impact</h2>
+            <div class="grid grid-3 mt-2">
+                <div class="card">
+                    <h3>150+</h3>
+                    <p>Ideas Generated</p>
+                </div>
+                <div class="card">
+                    <h3>12+</h3>
+                    <p>Startups Built</p>
+                </div>
+                <div class="card">
+                    <h3>25+</h3>
+                    <p>Industry Partners</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MEMBERSHIP -->
+    <section id="membership" class="membership-section">
+        <div class="container text-center">
+
+            <h2 class="section-title">Join the Club</h2>
+            <p style="max-width:580px; margin:0 auto;">
+                Membership is open to all JKUAT students. Register your details, then pay your
+                semester fee whenever you're ready — KES 200 per semester.
+            </p>
+
+            <div class="membership-grid">
+
+                <!-- Register -->
+                <div class="membership-card featured">
+                    <div class="membership-icon green">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3>New Member Registration</h3>
+                    <p>First time? Fill in your details to join the club. You can pay the membership fee now or later.</p>
+                    <button class="btn btn-primary" onclick="openModal('register')" style="width:100%;">
+                        <i class="fas fa-id-card"></i> Register
+                    </button>
+                </div>
+
+                <!-- Pay -->
+                <div class="membership-card">
+                    <div class="membership-icon blue">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Pay Membership Fee</h3>
+                    <p>Already registered? Pay your semester membership fee via M-Pesa to activate your membership.</p>
+                    <div class="fee-badge">KES 200 / semester</div>
+                    <button class="btn btn-secondary" onclick="openModal('pay')" style="width:100%;">
+                        <i class="fas fa-mobile-alt"></i> Pay via M-Pesa
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div id="membershipModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:2rem; max-width:480px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
+
+            <button onclick="closeModal()" style="position:absolute; top:1rem; right:1rem; background:rgba(255,255,255,0.08); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem;">×</button>
+
+            <h2 id="modalTitle" style="margin-bottom:0.25rem;"></h2>
+            <p id="modalSubtitle" style="opacity:0.65; font-size:0.875rem; margin-bottom:1.5rem;"></p>
+
+            <!-- ── REGISTER FORM ── -->
+            <form id="registerForm" style="display:none;" onsubmit="submitRegister(event)">
+                <div class="field">
+                    <label>Full Name *</label>
+                    <input type="text" id="r_name" required placeholder="e.g. Jane Doe">
+                </div>
+                <div class="field">
+                    <label>Student Registration Number *</label>
+                    <input type="text" id="r_regno" required placeholder="e.g. ENG/2021/12345">
+                </div>
+                <div class="field">
+                    <label>Course / Department *</label>
+                    <input type="text" id="r_course" required placeholder="e.g. BSc. Computer Science">
+                </div>
+                <div class="field field-row">
+                    <div>
+                        <label>Year of Study *</label>
+                        <select id="r_year" required>
+                            <option value="">Select</option>
+                            <option>1</option><option>2</option><option>3</option>
+                            <option>4</option><option>5</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Phone Number *</label>
+                        <input type="tel" id="r_phone" required placeholder="07XXXXXXXX">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Email <span style="opacity:.5;">(optional)</span></label>
+                    <input type="email" id="r_email" placeholder="you@example.com">
+                </div>
+                <div id="r_error" class="form-error" style="display:none;"></div>
+                <button type="submit" id="r_btn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
+                    <i class="fas fa-id-card"></i> Register
+                </button>
+            </form>
+
+            <!-- ── REGISTER SUCCESS — offer to pay now ── -->
+            <div id="registerSuccess" style="display:none; text-align:center; padding:0.5rem 0;">
+                <div style="font-size:2.5rem; margin-bottom:0.75rem;">🎉</div>
+                <h3 style="margin-bottom:0.5rem;">You're registered!</h3>
+                <p style="opacity:0.75; font-size:0.9rem; margin-bottom:1.5rem;">Your details have been saved. Pay your KES 200 membership fee now to activate your membership, or come back and pay later.</p>
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <button class="btn btn-primary" onclick="switchToPay()" style="width:100%; justify-content:center;">
+                        <i class="fas fa-mobile-alt"></i> Pay Now — KES 200
+                    </button>
+                    <button onclick="closeModal()" class="btn btn-secondary" style="width:100%; justify-content:center;">
+                        Pay Later
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── PAY FORM — step 1: reg number lookup ── -->
+            <div id="payStep1" style="display:none;">
+                <div class="field">
+                    <label>Student Registration Number *</label>
+                    <input type="text" id="p_regno" placeholder="e.g. ENG/2021/12345">
+                </div>
+                <div id="p_found" style="display:none; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:0.75rem 1rem; font-size:0.875rem; margin-bottom:1rem;">
+                    <i class="fas fa-check-circle" style="color:#10b981;"></i>
+                    <span id="p_found_text"></span>
+                </div>
+                <div id="p_error" class="form-error" style="display:none;"></div>
+                <button onclick="lookupForPay()" id="p_lookup_btn" class="btn btn-secondary" style="width:100%; justify-content:center;">
+                    <i class="fas fa-search"></i> Find My Record
+                </button>
+            </div>
+
+            <!-- ── PAY FORM — step 2: phone + submit ── -->
+            <form id="payStep2" style="display:none;" onsubmit="submitPay(event)">
+                <div class="field">
+                    <label>M-Pesa Phone Number *</label>
+                    <input type="tel" id="p_phone" required placeholder="07XXXXXXXX">
+                    <small style="opacity:.5; font-size:.75rem;">Can be any M-Pesa number — payment is tied to your reg number</small>
+                </div>
+                <div id="p_error2" class="form-error" style="display:none;"></div>
+                <button type="submit" id="p_btn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
+                    <i class="fas fa-mobile-alt"></i> Pay KES 200
+                </button>
+                <p style="text-align:center; font-size:0.75rem; opacity:0.45; margin-top:0.6rem;">Secure M-Pesa STK push · KES 200</p>
+            </form>
+
+            <!-- ── PAYMENT SUCCESS ── -->
+            <div id="paySuccess" style="display:none; text-align:center; padding:1rem 0;">
+                <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+                <h3 style="margin-bottom:0.5rem;">Payment Initiated!</h3>
+                <p style="opacity:0.75; font-size:0.9rem;">Check your phone for the M-Pesa prompt and enter your PIN to complete. You'll receive a confirmation SMS once done.</p>
+                <button onclick="closeModal()" class="btn btn-secondary" style="margin-top:1.5rem; width:100%; justify-content:center;">Close</button>
+            </div>
+
+        </div>
+    </div>
+
+    <style>
+        .field { margin-bottom: 1rem; }
+        .field label { display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem; }
+        .field input, .field select {
+            width:100%; padding:.65rem .9rem;
+            background:rgba(255,255,255,.07);
+            border:1px solid rgba(255,255,255,.15);
+            border-radius:8px; color:#fff; font-size:.9rem; outline:none;
+            box-sizing:border-box;
+        }
+        .field select { background:rgba(30,41,59,.9); cursor:pointer; }
+        .field input::placeholder { opacity:.45; }
+        .form-error {
+            background:rgba(239,68,68,.12);
+            border:1px solid rgba(239,68,68,.3);
+            border-radius:8px; padding:.7rem 1rem;
+            font-size:.85rem; color:#fca5a5; margin-bottom:1rem;
+        }
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        @media (max-width: 480px) {
+            .field-row { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container text-center">
+            <p>JKUAT Innovation &amp; Entrepreneurship Club</p>
+            <p class="mt-1">
+                <a href="/events">Events</a> |
+                <a href="/projects">Projects</a> |
+                <a href="/blog">Blog</a> |
+                <a href="/about">About</a>
+            </p>
+            <p class="mt-2">&copy; 2026 JKUAT Innovation Club</p>
+        </div>
     </footer>
 
-    <!-- JavaScript Modules -->
-    <script src="/home/modules/components.js"></script>
-    <script src="/home/modules/animations.js"></script>
-    <script src="/home/modules/activity-feed.js"></script>
-    <script src="/home/home.js"></script>
-</body>
+    <script>
+        const modal = document.getElementById('membershipModal');
+        let payRegNo = ''; // reg number confirmed during pay lookup
 
+        const show     = id => document.getElementById(id).style.display = 'block';
+        const hide     = id => document.getElementById(id).style.display = 'none';
+        const showFlex = id => document.getElementById(id).style.display = 'flex';
+
+        function openModal(type) {
+            // Reset everything
+            ['registerForm','registerSuccess','payStep1','payStep2','paySuccess'].forEach(hide);
+            ['r_error','p_error','p_error2','p_found'].forEach(hide);
+            payRegNo = '';
+
+            if (type === 'register') {
+                document.getElementById('modalTitle').textContent    = 'Register as a Member';
+                document.getElementById('modalSubtitle').textContent = 'Fill in your details to join. You can pay the membership fee now or later.';
+                show('registerForm');
+            } else {
+                document.getElementById('modalTitle').textContent    = 'Pay Membership Fee';
+                document.getElementById('modalSubtitle').textContent = 'Enter your registration number to find your record, then pay via M-Pesa.';
+                show('payStep1');
+            }
+
+            showFlex('membershipModal');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            hide('membershipModal');
+            document.body.style.overflow = '';
+        }
+
+        // "Pay Now" button on register success screen
+        function switchToPay() {
+            const regNo = document.getElementById('r_regno').value.trim();
+            ['registerForm','registerSuccess'].forEach(hide);
+            document.getElementById('modalTitle').textContent    = 'Pay Membership Fee';
+            document.getElementById('modalSubtitle').textContent = 'Enter the M-Pesa number to use for payment.';
+            // Pre-fill reg number and skip lookup
+            payRegNo = regNo;
+            document.getElementById('p_found_text').textContent = ` ${regNo} — ready to pay`;
+            show('p_found');
+            show('payStep2');
+        }
+
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+        // ── Register ──────────────────────────────────────────────────────────
+        async function submitRegister(e) {
+            e.preventDefault();
+            hide('r_error');
+            const btn = document.getElementById('r_btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+
+            try {
+                const res = await fetch('/api/v1/membership/register', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name:     document.getElementById('r_name').value.trim(),
+                        reg_no:        document.getElementById('r_regno').value.trim(),
+                        course:        document.getElementById('r_course').value.trim(),
+                        year_of_study: document.getElementById('r_year').value,
+                        phone:         document.getElementById('r_phone').value.trim(),
+                        email:         document.getElementById('r_email').value.trim()
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) { hide('registerForm'); show('registerSuccess'); }
+                else        { showErr('r_error', data.error); }
+            } catch (_) {
+                showErr('r_error', 'Network error. Please check your connection.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-id-card"></i> Register';
+            }
+        }
+
+        // ── Pay — step 1: lookup ──────────────────────────────────────────────
+        async function lookupForPay() {
+            hide('p_error'); hide('p_found'); hide('payStep2');
+            const regNo = document.getElementById('p_regno').value.trim();
+            if (!regNo) { showErr('p_error', 'Please enter your registration number.'); return; }
+
+            const btn = document.getElementById('p_lookup_btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Looking up...';
+
+            try {
+                const res  = await fetch(`/api/v1/membership/lookup/${encodeURIComponent(regNo)}`);
+                const data = await res.json();
+
+                if (!data.found) {
+                    showErr('p_error', 'Registration number not found. Please register first.');
+                    return;
+                }
+                if (data.paid_current) {
+                    showErr('p_error', `Membership for ${data.semester} is already paid. You're all set!`);
+                    return;
+                }
+
+                payRegNo = regNo;
+                document.getElementById('p_found_text').textContent = ` ${data.full_name} · ${data.course}`;
+                show('p_found');
+                show('payStep2');
+
+            } catch (_) {
+                showErr('p_error', 'Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> Find My Record';
+            }
+        }
+
+        // ── Pay — step 2: submit ──────────────────────────────────────────────
+        async function submitPay(e) {
+            e.preventDefault();
+            hide('p_error2');
+            const btn = document.getElementById('p_btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const res = await fetch('/api/v1/membership/pay', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reg_no:        payRegNo,
+                        payment_phone: document.getElementById('p_phone').value.trim()
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) { hide('payStep1'); hide('payStep2'); hide('p_found'); show('paySuccess'); }
+                else        { showErr('p_error2', data.error); }
+            } catch (_) {
+                showErr('p_error2', 'Network error. Please check your connection.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KES 200';
+            }
+        }
+
+        function showErr(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+    </script>
+
+</body>
 </html>

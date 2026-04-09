@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events - JKUAT Innovation & Entrepreneurship Club</title>
+    <title>Blog - JKUAT Innovation & Entrepreneurship Club</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,10 +14,10 @@
     <!-- Styles -->
     <link rel="stylesheet" href="/shared/styles/main.css">
     <link rel="stylesheet" href="/shared/styles/navbar.css">
-    <link rel="stylesheet" href="/events/events.css">
+    <link rel="stylesheet" href="/blog/blog.css">
 </head>
 
-<body class="events-page">
+<body class="blog-page">
 
     <!-- NAVBAR -->
     <div id="navbar"></div>
@@ -41,67 +41,52 @@
     </script>
 
     <!-- HERO -->
-    <section class="events-hero">
+    <section class="blog-hero">
         <div class="container text-center">
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
-                UPCOMING EVENTS
-            </div>
-            <h1>Events & <span class="text-green">Experiences</span></h1>
-            <p>Hackathons, workshops, networking nights and more — all in one place.</p>
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <span id="upcomingCount">—</span>
-                    <label>Upcoming</label>
-                </div>
-                <div class="hero-stat">
-                    <span id="totalCount">—</span>
-                    <label>Total Events</label>
-                </div>
-                <div class="hero-stat">
-                    <span id="freeCount">—</span>
-                    <label>Free to Attend</label>
-                </div>
-            </div>
+            <h1>Blog & <span class="text-green">Announcements</span></h1>
+            <p>Stories, insights, and updates from the JKUAT Innovation Club community.</p>
         </div>
     </section>
 
     <!-- FILTERS -->
-    <section class="events-filters-section">
+    <section class="blog-filters-section">
         <div class="container">
             <div class="filters-bar">
                 <div class="filter-tabs">
                     <button class="filter-tab active" data-filter="all">All</button>
-                    <button class="filter-tab" data-filter="upcoming">Upcoming</button>
-                    <button class="filter-tab" data-filter="past">Past</button>
-                    <button class="filter-tab" data-filter="hackathon">Hackathons</button>
-                    <button class="filter-tab" data-filter="workshop">Workshops</button>
-                    <button class="filter-tab" data-filter="free">Free</button>
+                    <button class="filter-tab" data-filter="article">Articles</button>
+                    <button class="filter-tab" data-filter="news">News</button>
+                    <button class="filter-tab" data-filter="announcement">Announcements</button>
                 </div>
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="eventsSearch" placeholder="Search events...">
+                    <input type="text" id="blogSearch" placeholder="Search posts...">
+                    <select id="sortSelect">
+                        <option value="date-desc">Newest</option>
+                        <option value="date-asc">Oldest</option>
+                        <option value="title-asc">A–Z</option>
+                    </select>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- EVENTS GRID -->
-    <section class="events-content">
+    <!-- CONTENT -->
+    <section class="blog-content">
         <div class="container">
 
             <div id="loadingState" class="state-box">
                 <div class="spinner"></div>
-                <p>Loading events...</p>
+                <p>Loading posts...</p>
             </div>
 
             <div id="emptyState" class="state-box" style="display:none;">
-                <i class="fas fa-calendar-times empty-icon"></i>
-                <h3>No events found</h3>
+                <i class="fas fa-newspaper empty-icon"></i>
+                <h3>No posts found</h3>
                 <p>Try a different filter or check back soon.</p>
             </div>
 
-            <div id="eventsGrid" class="events-grid" style="display:none;"></div>
+            <div id="blogGrid" class="blog-grid" style="display:none;"></div>
 
             <div id="loadMoreContainer" style="text-align:center; margin-top:2rem; display:none;">
                 <button id="loadMoreBtn" class="btn btn-secondary">Load More</button>
@@ -115,14 +100,14 @@
         <div class="container text-center">
             <p>JKUAT Innovation & Entrepreneurship Club</p>
             <p class="mt-1">
+                <a href="/events">Events</a> |
                 <a href="/projects">Projects</a> |
-                <a href="/blog">Blog</a> |
                 <a href="/about">About</a>
             </p>
             <p class="mt-2">&copy; 2026 JKUAT Innovation Club</p>
         </div>
     </footer>
 
-    <script src="/events/events.js"></script>
+    <script src="/blog/blog.js"></script>
 </body>
 </html>
