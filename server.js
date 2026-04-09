@@ -74,9 +74,12 @@ app.use((req, res) => {
   `);
 });
 
-// ── Start Server ────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`Server running: http://localhost:${PORT}`);
-});
+// ── Start Server (local dev only) ───────────────────────────────────────────
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running: http://localhost:${PORT}`);
+  });
+}
 
+// Vercel needs the app exported directly
 module.exports = app;
