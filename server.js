@@ -22,13 +22,14 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── Static assets ───────────────────────────────────────────────────────────
-app.use('/shared',   express.static(path.join(__dirname, 'shared')));
-app.use('/assets',   express.static(path.join(__dirname, 'shared/assets')));
-app.use('/blog',     express.static(path.join(__dirname, 'pages/blog')));
-app.use('/events',   express.static(path.join(__dirname, 'pages/events')));
-app.use('/projects', express.static(path.join(__dirname, 'pages/projects')));
-app.use('/about',    express.static(path.join(__dirname, 'pages/about')));
-app.use(express.static(path.join(__dirname, 'public')));
+const root = __dirname;
+app.use('/shared',   express.static(path.join(root, 'shared')));
+app.use('/assets',   express.static(path.join(root, 'shared', 'assets')));
+app.use('/blog',     express.static(path.join(root, 'pages', 'blog')));
+app.use('/events',   express.static(path.join(root, 'pages', 'events')));
+app.use('/projects', express.static(path.join(root, 'pages', 'projects')));
+app.use('/about',    express.static(path.join(root, 'pages', 'about')));
+app.use(express.static(path.join(root, 'public')));
 
 // ── Health Check ────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
