@@ -35,10 +35,12 @@ app.use(helmet({
       fontSrc:     ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
       imgSrc:      ["'self'", 'data:', 'https:'],
       connectSrc:  ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co', 'https://api.lipana.dev', 'https://sandbox.lipana.dev'],
-      frameSrc:    ["'none'"],
-      objectSrc:   ["'none'"],
-      baseUri:     ["'self'"],
-      formAction:  ["'self'"],
+      frameSrc:       ["'none'"],
+      objectSrc:      ["'none'"],
+      baseUri:        ["'self'"],
+      formAction:     ["'self'"],
+      // Allow inline event handlers (onclick, onsubmit etc.) on HTML elements.
+      scriptSrcAttr:  ["'unsafe-inline'"],
     },
   },
   // Prevent clickjacking

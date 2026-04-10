@@ -9,36 +9,12 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/iec-admin/admin.css">
     <style>
-        .tab-bar {
-            display: flex;
-            gap: .4rem;
-            margin-bottom: 1.5rem;
-            background: rgba(255,255,255,.05);
-            border-radius: 10px;
-            padding: .3rem;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: .6rem;
-            border: none;
-            border-radius: 8px;
-            background: transparent;
-            color: rgba(255,255,255,.5);
-            font-size: .875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all .2s;
-            font-family: inherit;
-        }
-        .tab-btn.active { background: rgba(16,185,129,.2); color: #10b981; }
-        .form-panel { display: none; }
-        .form-panel.active { display: block; }
-        .init-loading {
-            text-align: center;
-            padding: 2rem 0;
-            color: rgba(255,255,255,.5);
-            font-size: .9rem;
-        }
+        .tab-bar { display:flex; gap:.4rem; margin-bottom:1.5rem; background:rgba(255,255,255,.05); border-radius:10px; padding:.3rem; }
+        .tab-btn { flex:1; padding:.6rem; border:none; border-radius:8px; background:transparent; color:rgba(255,255,255,.5); font-size:.875rem; font-weight:600; cursor:pointer; transition:all .2s; font-family:inherit; }
+        .tab-btn.active { background:rgba(16,185,129,.2); color:#10b981; }
+        .form-panel { display:none; }
+        .form-panel.active { display:block; }
+        .init-loading { text-align:center; padding:2rem 0; color:rgba(255,255,255,.5); font-size:.9rem; }
     </style>
 </head>
 <body class="admin-body">
@@ -51,27 +27,24 @@
             JKUAT IEC Admin
         </div>
 
-        <!-- Loading state while fetching config -->
         <div id="initLoading" class="init-loading">
             <div class="spinner" style="margin:0 auto 1rem;"></div>
             Initialising...
         </div>
 
-        <!-- Main content — shown after config loads -->
         <div id="mainContent" style="display:none;">
 
             <div class="tab-bar">
-                <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">
+                <button class="tab-btn active" id="tab-signin">
                     <i class="fas fa-sign-in-alt"></i> Sign In
                 </button>
-                <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">
+                <button class="tab-btn" id="tab-signup">
                     <i class="fas fa-user-plus"></i> Create Account
                 </button>
             </div>
 
-            <!-- SIGN IN -->
             <div class="form-panel active" id="panel-signin">
-                <form onsubmit="handleSignIn(event)">
+                <form id="signinForm">
                     <div class="field">
                         <label><i class="fas fa-envelope"></i> Email</label>
                         <input type="email" id="si_email" required placeholder="you@example.com" autocomplete="email">
@@ -80,7 +53,7 @@
                         <label><i class="fas fa-lock"></i> Password</label>
                         <div class="pw-wrap">
                             <input type="password" id="si_password" required placeholder="••••••••" autocomplete="current-password">
-                            <button type="button" class="pw-toggle" onclick="togglePw('si_password','si_eye')">
+                            <button type="button" class="pw-toggle" id="si_toggle">
                                 <i class="fas fa-eye" id="si_eye"></i>
                             </button>
                         </div>
@@ -92,20 +65,17 @@
                 </form>
             </div>
 
-            <!-- CREATE ACCOUNT -->
             <div class="form-panel" id="panel-signup">
-                <form onsubmit="handleSignUp(event)">
+                <form id="signupForm">
                     <div class="field">
                         <label><i class="fas fa-key"></i> Admin Secret *</label>
                         <div class="pw-wrap">
                             <input type="password" id="su_secret" required placeholder="Enter the admin secret key">
-                            <button type="button" class="pw-toggle" onclick="togglePw('su_secret','su_seye')">
+                            <button type="button" class="pw-toggle" id="su_stoggle">
                                 <i class="fas fa-eye" id="su_seye"></i>
                             </button>
                         </div>
-                        <small style="opacity:.45;font-size:.75rem;display:block;margin-top:.3rem;">
-                            Required to create an admin account.
-                        </small>
+                        <small style="opacity:.45;font-size:.75rem;display:block;margin-top:.3rem;">Required to create an admin account.</small>
                     </div>
                     <div class="field">
                         <label><i class="fas fa-envelope"></i> Email *</label>
@@ -115,7 +85,7 @@
                         <label><i class="fas fa-lock"></i> Password *</label>
                         <div class="pw-wrap">
                             <input type="password" id="su_password" required placeholder="Min 8 characters" autocomplete="new-password" minlength="8">
-                            <button type="button" class="pw-toggle" onclick="togglePw('su_password','su_eye')">
+                            <button type="button" class="pw-toggle" id="su_ptoggle">
                                 <i class="fas fa-eye" id="su_eye"></i>
                             </button>
                         </div>
@@ -128,7 +98,7 @@
                 </form>
             </div>
 
-        </div><!-- /mainContent -->
+        </div>
 
         <div id="configError" class="form-error" style="display:none; margin-top:1rem;"></div>
 
@@ -139,45 +109,50 @@
 <script>
 let sb = null;
 
-// Fetch config from server API — works on Vercel and localhost
 async function init() {
     try {
-        const res  = await fetch('/api/v1/admin/config');
-        const cfg  = await res.json();
-
-        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
-            throw new Error('SUPABASE_URL or SUPABASE_ANON_KEY not set in environment variables.');
-        }
-
+        const res = await fetch('/api/v1/admin/config');
+        const cfg = await res.json();
+        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('SUPABASE_URL or SUPABASE_ANON_KEY not set in Vercel environment variables.');
         sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
-        // Check if already logged in
         const { data } = await sb.auth.getSession();
         if (data?.session) {
             const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
-            if (role === 'admin') {
-                window.location.href = '/iec-admin/dashboard';
-                return;
-            }
+            if (role === 'admin') { window.location.href = '/iec-admin/dashboard'; return; }
         }
 
         document.getElementById('initLoading').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
+        bindEvents();
 
     } catch (err) {
         document.getElementById('initLoading').style.display = 'none';
-        const errEl = document.getElementById('configError');
-        errEl.textContent = 'Setup error: ' + err.message;
-        errEl.style.display = 'block';
+        const el = document.getElementById('configError');
+        el.textContent = 'Setup error: ' + err.message;
+        el.style.display = 'block';
     }
 }
 
-init();
+function bindEvents() {
+    // Tab switching
+    document.getElementById('tab-signin').addEventListener('click', () => switchTab('signin'));
+    document.getElementById('tab-signup').addEventListener('click', () => switchTab('signup'));
+
+    // Form submissions
+    document.getElementById('signinForm').addEventListener('submit', handleSignIn);
+    document.getElementById('signupForm').addEventListener('submit', handleSignUp);
+
+    // Password toggles
+    document.getElementById('si_toggle').addEventListener('click',  () => togglePw('si_password', 'si_eye'));
+    document.getElementById('su_stoggle').addEventListener('click', () => togglePw('su_secret',   'su_seye'));
+    document.getElementById('su_ptoggle').addEventListener('click', () => togglePw('su_password', 'su_eye'));
+}
 
 function switchTab(tab) {
     ['signin','signup'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
-        document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+        document.getElementById('tab-'   + t).classList.toggle('active', t === tab);
+        document.getElementById('panel-' + t).classList.toggle('active', t === tab);
     });
 }
 
@@ -187,23 +162,15 @@ async function handleSignIn(e) {
     const err = document.getElementById('si_error');
     err.style.display = 'none';
     setLoading(btn, true, 'Signing in...');
-
     try {
         const { data, error } = await sb.auth.signInWithPassword({
             email:    document.getElementById('si_email').value.trim(),
             password: document.getElementById('si_password').value,
         });
-
         if (error) throw new Error('Invalid email or password.');
-
         const role = data.user?.user_metadata?.role || data.user?.app_metadata?.role;
-        if (role !== 'admin') {
-            await sb.auth.signOut();
-            throw new Error('This account does not have admin access.');
-        }
-
+        if (role !== 'admin') { await sb.auth.signOut(); throw new Error('This account does not have admin access.'); }
         window.location.href = '/iec-admin/dashboard';
-
     } catch (ex) {
         showErr('si_error', ex.message);
         setLoading(btn, false, '<i class="fas fa-sign-in-alt"></i> Sign In');
@@ -215,38 +182,25 @@ async function handleSignUp(e) {
     const btn    = document.getElementById('su_btn');
     const errEl  = document.getElementById('su_error');
     const succEl = document.getElementById('su_success');
-    errEl.style.display  = 'none';
-    succEl.style.display = 'none';
+    errEl.style.display = succEl.style.display = 'none';
     setLoading(btn, true, 'Creating account...');
-
     try {
         const secret   = document.getElementById('su_secret').value;
         const email    = document.getElementById('su_email').value.trim();
         const password = document.getElementById('su_password').value;
 
         const check = await fetch('/api/v1/admin/verify-secret', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ secret }),
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secret }),
         });
+        if (!check.ok) { const d = await check.json().catch(() => ({})); throw new Error(d.error || 'Invalid admin secret.'); }
 
-        if (!check.ok) {
-            const d = await check.json().catch(() => ({}));
-            throw new Error(d.error || 'Invalid admin secret.');
-        }
-
-        const { error } = await sb.auth.signUp({
-            email,
-            password,
-            options: { data: { role: 'admin' } },
-        });
-
+        const { error } = await sb.auth.signUp({ email, password, options: { data: { role: 'admin' } } });
         if (error) throw new Error(error.message);
 
         succEl.textContent = 'Account created! Check your email to confirm it, then sign in.';
         succEl.style.display = 'block';
         e.target.reset();
-
     } catch (ex) {
         showErr('su_error', ex.message);
     } finally {
@@ -254,24 +208,16 @@ async function handleSignUp(e) {
     }
 }
 
-function showErr(id, msg) {
-    const el = document.getElementById(id);
-    el.textContent = msg;
-    el.style.display = 'block';
-}
-
-function setLoading(btn, loading, label) {
-    btn.disabled = loading;
-    btn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> ' + label : label;
-}
-
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+function setLoading(btn, loading, label) { btn.disabled = loading; btn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> ' + label : label; }
 function togglePw(inputId, iconId) {
     const input = document.getElementById(inputId);
     const icon  = document.getElementById(iconId);
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    input.type = input.type === 'password' ? 'text' : 'password';
+    icon.className = input.type === 'text' ? 'fas fa-eye-slash' : 'fas fa-eye';
 }
+
+init();
 </script>
 </body>
 </html>

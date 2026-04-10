@@ -14,7 +14,11 @@ const pages = (app) => {
     app.get('/projects',         (_, res) => { noCache(res); res.sendFile(p('projects/projects.html')); });
 
     // Legacy redirect
-    app.get('/news',             (_, res) => res.redirect(301, '/blog'));
+    app.get('/news', (_, res) => res.redirect(301, '/blog'));
+
+    // Admin — hidden URL, no-index
+    app.get(['/iec-admin', '/iec-admin/'], (_, res) => { noCache(res); res.sendFile(p('iec-admin/login.html')); });
+    app.get('/iec-admin/dashboard',        (_, res) => { noCache(res); res.sendFile(p('iec-admin/dashboard.html')); });
 };
 
 module.exports = { pages };
