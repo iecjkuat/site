@@ -11,6 +11,7 @@ const { supabaseAdmin } = require('../lib/supabase');
 
 // ── GET /api/v1/content/events ────────────────────────────────────────────────
 router.get('/events', async (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     try {
         const { data, error } = await supabaseAdmin
             .from('events')
@@ -28,6 +29,7 @@ router.get('/events', async (req, res) => {
 
 // ── GET /api/v1/content/articles ──────────────────────────────────────────────
 router.get('/articles', async (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     try {
         const { data, error } = await supabaseAdmin
             .from('articles')
@@ -64,6 +66,7 @@ router.get('/articles/:id', async (req, res) => {
 
 // ── GET /api/v1/content/projects ──────────────────────────────────────────────
 router.get('/projects', async (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     try {
         const { data, error } = await supabaseAdmin
             .from('projects')

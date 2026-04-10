@@ -99,15 +99,20 @@ app.get('/api/v1/admin/config', (req, res) => {
 });
 
 // ── Admin static files — served directly, no injection needed ─────────────────
-app.use('/iec-admin', express.static(path.join(root, 'pages', 'iec-admin'), { maxAge: '0' }));
+app.use('/iec-admin', express.static(path.join(root, 'pages', 'iec-admin'), { maxAge: '0', etag: true }));
 
-app.use('/shared',   express.static(path.join(root, 'shared'),           { maxAge: '1h' }));
-app.use('/assets',   express.static(path.join(root, 'shared', 'assets'), { maxAge: '1h' }));
-app.use('/blog',     express.static(path.join(root, 'pages', 'blog'),    { maxAge: '1h' }));
-app.use('/events',   express.static(path.join(root, 'pages', 'events'),  { maxAge: '1h' }));
-app.use('/projects', express.static(path.join(root, 'pages', 'projects'),{ maxAge: '1h' }));
-app.use('/about',    express.static(path.join(root, 'pages', 'about'),   { maxAge: '1h' }));
-app.use(express.static(path.join(root, 'public'), { maxAge: '1h' }));
+// JS and CSS: no-cache (revalidate every request, use 304 if unchanged)
+// This means users always get fresh content without needing a hard refresh
+const jsOptions  = { maxAge: '0', etag: true, lastModified: true };
+const imgOptions = { maxAge: '7d', etag: true };  // images rarely change
+
+app.use('/shared',   express.static(path.join(root, 'shared'),            jsOptions));
+app.use('/assets',   express.static(path.join(root, 'shared', 'assets'),  imgOptions));
+app.use('/blog',     express.static(path.join(root, 'pages', 'blog'),     jsOptions));
+app.use('/events',   express.static(path.join(root, 'pages', 'events'),   jsOptions));
+app.use('/projects', express.static(path.join(root, 'pages', 'projects'), jsOptions));
+app.use('/about',    express.static(path.join(root, 'pages', 'about'),    jsOptions));
+app.use(express.static(path.join(root, 'public'), imgOptions));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 // Defined after static middleware but before page routes so it doesn't
