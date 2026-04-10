@@ -129,10 +129,10 @@ p {
    CARDS
    ========================= */
 .card {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
     padding: 1.5rem;
     transition: 0.3s ease;
@@ -140,9 +140,8 @@ p {
 
 .card:hover {
     transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255,255,255,0.18);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255,255,255,0.1);
 }
 
 /* =========================
