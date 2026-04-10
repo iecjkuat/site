@@ -1,7 +1,7 @@
 'use strict';
-
 /**
- * Projects Page — fetches from /api/v1/content/projects
+ * Projects Page
+ * Cards use shared .content-card CSS from main.css
  */
 
 class ProjectsManager {
@@ -10,6 +10,8 @@ class ProjectsManager {
         this.filtered = [];
         this.filter   = 'all';
         this.tab      = 'showcase';
+        this.page     = 1;
+        this.perPage  = 12;
         this.init();
     }
 
@@ -20,11 +22,12 @@ class ProjectsManager {
             this.render();
         } catch (err) {
             console.error('ProjectsManager init failed:', err);
-            this.showEmpty('projectsGrid', 'Failed to load projects. Please try again later.');
+            this.showEmpty('Failed to load projects. Please try again later.');
         }
     }
 
     async load() {
+        this.showLoading();
         const res = await fetch('/api/v1/content/projects');
         if (!res.ok) throw new Error('Projects fetch failed');
         const data = await res.json();
@@ -42,11 +45,9 @@ class ProjectsManager {
                 });
                 btn.classList.add('active');
                 btn.setAttribute('aria-selected', 'true');
-
                 this.tab = btn.dataset.tab;
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(`${this.tab}-tab`)?.classList.add('active');
-
                 if (this.tab === 'showcase') this.render();
             });
         });
@@ -61,112 +62,142 @@ class ProjectsManager {
             });
         });
 
-        // Quick action buttons
-        document.getElementById('submitProjectBtn')?.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.tab === 'submit');
-                b.setAttribute('aria-selected', b.dataset.tab === 'submit');
-            });
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('submit-tab')?.classList.add('active');
-        });
+        // Quick actions
+        document.getElementById('submitProjectBtn')?.addEventListener('click', () => this.switchTab('submit'));
+        document.getElementById('joinProjectBtn')?.addEventListener('click',   () => this.switchTab('showcase'));
 
-        document.getElementById('joinProjectBtn')?.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.tab === 'showcase');
-            });
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('showcase-tab')?.classList.add('active');
-        });
-
-        // Project submission form
+        // Submission form
         document.getElementById('projectSubmissionForm')?.addEventListener('submit', e => this.handleSubmit(e));
 
-        // Modal close via backdrop
-        document.addEventListener('click', e => {
-            if (e.target.classList.contains('modal-backdrop')) {
-                e.target.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-            if (e.target.matches('.modal-close') || e.target.closest('.modal-close') ||
-                e.target.matches('[data-action="close-modal"]')) {
-                const modal = e.target.closest('.modal-backdrop');
-                if (modal) { modal.classList.remove('active'); document.body.style.overflow = ''; }
-            }
+        // Load more
+        document.getElementById('loadMoreBtn')?.addEventListener('click', () => {
+            this.page++;
+            this.renderGrid();
+            this.updateLoadMore();
         });
+    }
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-backdrop.active').forEach(m => {
-                    m.classList.remove('active');
-                    document.body.style.overflow = '';
-                });
-            }
+    switchTab(name) {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tab === name);
+            b.setAttribute('aria-selected', b.dataset.tab === name);
         });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${name}-tab`)?.classList.add('active');
+        this.tab = name;
+        if (name === 'showcase') this.render();
     }
 
     applyFilter() {
         this.filtered = this.filter === 'all'
             ? [...this.all]
             : this.all.filter(p => p.category?.toLowerCase() === this.filter);
+        this.page = 1;
         this.render();
     }
 
     render() {
+        this.hideLoading();
         const grid = document.getElementById('projectsGrid');
         if (!grid) return;
 
         if (this.filtered.length === 0) {
             grid.innerHTML = `
-                <div class="empty-state" style="grid-column:1/-1; text-align:center; padding:3rem; opacity:.6;">
-                    <i class="fas fa-search" style="font-size:2.5rem; margin-bottom:1rem; display:block; opacity:.4;"></i>
+                <div class="state-box" style="grid-column:1/-1;">
+                    <i class="fas fa-search empty-icon"></i>
                     <h3>No projects found</h3>
-                    <p>Try adjusting your filter or check back later for new projects.</p>
+                    <p>Try adjusting your filter or check back later.</p>
                 </div>`;
             return;
         }
 
-        grid.innerHTML = this.filtered.map(p => this.card(p)).join('');
+        grid.style.display = 'grid';
+        this.renderGrid();
+        this.updateLoadMore();
+    }
+
+    renderGrid() {
+        const grid  = document.getElementById('projectsGrid');
+        const items = this.filtered.slice(0, this.page * this.perPage);
+        grid.innerHTML = items.map(p => this.card(p)).join('');
+        grid.querySelectorAll('[data-action="view"]').forEach(btn => {
+            btn.addEventListener('click', () => this.openModal(btn.dataset.id));
+        });
     }
 
     card(p) {
-        const statusColors = { active: '#10b981', completed: '#3b82f6', planning: '#f59e0b' };
-        const color = statusColors[p.status] || '#9ca3af';
-        const stack = (p.tech_stack || []).slice(0, 4).map(t =>
-            `<span class="tech-tag">${t}</span>`).join('');
+        const statusBadge = { active: 'badge-green', completed: 'badge-blue', planning: 'badge-yellow' };
+        const badge = statusBadge[p.status] || 'badge-gray';
+        const label = p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Active';
+
+        const imgHtml = p.image
+            ? `<img src="${p.image}" alt="${p.title}" loading="lazy">`
+            : `<div class="card-img-placeholder"><i class="fas fa-rocket"></i></div>`;
+
+        const stackHtml = (p.tech_stack || []).length
+            ? `<div class="card-tags">${(p.tech_stack || []).slice(0,4).map(t => `<span class="card-tag">${t}</span>`).join('')}</div>`
+            : '';
 
         return `
-        <div class="project-card">
-            <div class="project-header">
-                <div>
-                    <h3 class="project-title">${p.title}</h3>
-                    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem;">
-                        <span class="project-status ${p.status}" style="color:${color};">${p.status}</span>
-                        <span style="font-size:.72rem;padding:.2rem .6rem;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);">${p.category}</span>
+        <article class="content-card" data-id="${p.id}">
+            <div class="card-img-wrap">
+                ${imgHtml}
+                <span class="card-badge ${badge}">
+                    <i class="fas fa-circle" style="font-size:.5rem;"></i> ${label}
+                </span>
+                <span class="card-badge-right">${p.category || 'innovation'}</span>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">${p.title}</h3>
+                <p class="card-text">${p.description || ''}</p>
+                <div class="card-meta">
+                    <div class="card-meta-row">
+                        <i class="fas fa-users"></i>
+                        <span>${p.team_size || 1} member${(p.team_size || 1) !== 1 ? 's' : ''}</span>
                     </div>
+                    ${p.github_url ? `<div class="card-meta-row"><i class="fab fa-github"></i><a href="${p.github_url}" target="_blank" rel="noopener" style="color:inherit;">GitHub</a></div>` : ''}
+                </div>
+                ${stackHtml}
+                <div class="card-actions">
+                    <button class="btn btn-primary" data-action="view" data-id="${p.id}">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    ${p.demo_url ? `<a href="${p.demo_url}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-external-link-alt"></i> Demo</a>` : ''}
                 </div>
             </div>
-            <p class="project-description">${p.description || ''}</p>
-            ${stack ? `<div class="project-tech">${stack}</div>` : ''}
-            <div class="project-stats">
-                <div class="project-stat team">
-                    <i class="fas fa-users"></i>
-                    <span>${p.team_size || 1} member${(p.team_size || 1) !== 1 ? 's' : ''}</span>
+        </article>`;
+    }
+
+    openModal(id) {
+        const p = this.all.find(x => x.id === id);
+        if (!p) return;
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+            <div class="modal-box">
+                <button class="modal-close" aria-label="Close">×</button>
+                ${p.image ? `<img src="${p.image}" alt="${p.title}" class="modal-img">` : ''}
+                <h2 class="modal-title">${p.title}</h2>
+                <div class="modal-meta">
+                    <div class="modal-meta-row"><i class="fas fa-tag"></i><span>${p.category}</span></div>
+                    <div class="modal-meta-row"><i class="fas fa-circle" style="font-size:.5rem;"></i><span>${p.status}</span></div>
+                    <div class="modal-meta-row"><i class="fas fa-users"></i><span>${p.team_size || 1} member${(p.team_size||1)!==1?'s':''}</span></div>
                 </div>
-                ${p.github_url ? `<div class="project-stat"><i class="fab fa-github"></i><a href="${p.github_url}" target="_blank" rel="noopener" style="color:inherit;">GitHub</a></div>` : ''}
-            </div>
-            <div class="project-actions">
-                ${p.demo_url ? `<a href="${p.demo_url}" target="_blank" rel="noopener" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt"></i> Demo</a>` : ''}
-                ${p.github_url ? `<a href="${p.github_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><i class="fab fa-github"></i> Code</a>` : ''}
-                ${!p.demo_url && !p.github_url ? `<span style="font-size:.8rem;opacity:.5;">No links yet</span>` : ''}
-            </div>
-        </div>`;
+                <p class="modal-body">${p.description || ''}</p>
+                ${(p.tech_stack||[]).length ? `<div class="card-tags" style="margin-top:1rem;">${p.tech_stack.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
+                <div class="modal-actions">
+                    ${p.github_url ? `<a href="${p.github_url}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fab fa-github"></i> GitHub</a>` : ''}
+                    ${p.demo_url   ? `<a href="${p.demo_url}"   target="_blank" rel="noopener" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Live Demo</a>` : ''}
+                </div>
+            </div>`;
+        modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        document.body.appendChild(modal);
     }
 
     async handleSubmit(e) {
         e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        const msgEl = document.getElementById('submissionMessage');
+        const btn    = e.target.querySelector('button[type="submit"]');
         const textEl = document.getElementById('messageText');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
@@ -190,40 +221,45 @@ class ProjectsManager {
 
         try {
             const res = await fetch('/api/v1/content/projects', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify(payload)
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-
             if (res.ok) {
-                if (textEl) { textEl.textContent = 'Project submitted successfully!'; textEl.style.color = '#6ee7b7'; }
+                if (textEl) { textEl.textContent = 'Project submitted!'; textEl.style.color = '#6ee7b7'; }
                 e.target.reset();
                 await this.load();
-                setTimeout(() => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'showcase'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    document.getElementById('showcase-tab')?.classList.add('active');
-                    this.render();
-                }, 1500);
+                setTimeout(() => this.switchTab('showcase'), 1500);
             } else {
                 const d = await res.json();
                 if (textEl) { textEl.textContent = d.error || 'Submission failed.'; textEl.style.color = '#fca5a5'; }
             }
         } catch (_) {
-            if (textEl) { textEl.textContent = 'Network error. Please try again.'; textEl.style.color = '#fca5a5'; }
+            if (textEl) { textEl.textContent = 'Network error.'; textEl.style.color = '#fca5a5'; }
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane"></i>Submit Project Idea';
         }
     }
 
-    showEmpty(gridId, msg) {
-        const grid = document.getElementById(gridId);
+    showLoading() {
+        const grid = document.getElementById('projectsGrid');
+        if (grid) grid.innerHTML = `<div class="state-box" style="grid-column:1/-1;"><div class="spinner"></div><p>Loading projects...</p></div>`;
+    }
+
+    hideLoading() {}
+
+    showEmpty(msg) {
+        const grid = document.getElementById('projectsGrid');
         if (grid) grid.innerHTML = `
-            <div style="grid-column:1/-1;text-align:center;padding:3rem;opacity:.6;">
-                <i class="fas fa-inbox" style="font-size:2.5rem;margin-bottom:1rem;display:block;opacity:.4;"></i>
+            <div class="state-box" style="grid-column:1/-1;">
+                <i class="fas fa-inbox empty-icon"></i>
                 <p>${msg}</p>
             </div>`;
+    }
+
+    updateLoadMore() {
+        const c = document.getElementById('loadMoreContainer');
+        if (c) c.style.display = this.page * this.perPage < this.filtered.length ? 'block' : 'none';
     }
 }
 

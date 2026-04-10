@@ -1,5 +1,7 @@
+'use strict';
 /**
  * Blog Page — articles, news, announcements
+ * Cards use shared .content-card CSS from main.css
  */
 
 class BlogManager {
@@ -27,10 +29,10 @@ class BlogManager {
 
     async load() {
         this.showLoading();
-        const res = await fetch('/api/v1/content/articles?status=published&limit=100');
+        const res = await fetch('/api/v1/content/articles');
         if (!res.ok) throw new Error('Articles fetch failed');
         const data = await res.json();
-        this.all = (data.articles || []).map(a => this.normalise(a));
+        this.all      = (data.articles || []).map(a => this.normalise(a));
         this.filtered = [...this.all];
     }
 
@@ -39,13 +41,12 @@ class BlogManager {
             id:      a.id,
             type:    a.category || 'article',
             title:   a.title,
-            excerpt: a.excerpt || (a.content || '').substring(0, 160) + '...',
+            excerpt: a.excerpt || '',
             image:   a.featured_image || null,
             date:    a.published_at || a.created_at,
-            author:  a.author?.name || 'JKUAT Innovation Club',
+            author:  a.author_name || 'JKUAT IEC',
             tags:    a.tags || [],
             content: a.content || '',
-            raw:     a
         };
     }
 
@@ -81,11 +82,7 @@ class BlogManager {
 
     applyFilters() {
         let items = [...this.all];
-
-        if (this.filter !== 'all') {
-            items = items.filter(i => i.type === this.filter);
-        }
-
+        if (this.filter !== 'all') items = items.filter(i => i.type === this.filter);
         if (this.search) {
             items = items.filter(i =>
                 i.title.toLowerCase().includes(this.search) ||
@@ -93,23 +90,18 @@ class BlogManager {
                 i.tags.some(t => t.toLowerCase().includes(this.search))
             );
         }
-
         items.sort((a, b) => {
             if (this.sort === 'date-asc')  return new Date(a.date) - new Date(b.date);
             if (this.sort === 'title-asc') return a.title.localeCompare(b.title);
             return new Date(b.date) - new Date(a.date);
         });
-
         this.filtered = items;
         this.render();
     }
 
     render() {
         this.hideLoading();
-        if (this.filtered.length === 0) {
-            this.showEmpty('No posts match your filter.');
-            return;
-        }
+        if (this.filtered.length === 0) { this.showEmpty('No posts match your filter.'); return; }
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('blogGrid').style.display   = 'grid';
         this.renderGrid();
@@ -120,11 +112,20 @@ class BlogManager {
         const grid  = document.getElementById('blogGrid');
         const items = this.filtered.slice(0, this.page * this.perPage);
         grid.innerHTML = items.map(i => this.card(i)).join('');
+        // Bind card buttons
+        grid.querySelectorAll('[data-action="read"]').forEach(btn => {
+            btn.addEventListener('click', () => this.openPost(btn.dataset.id));
+        });
+        grid.querySelectorAll('[data-action="share"]').forEach(btn => {
+            btn.addEventListener('click', () => this.share(btn.dataset.id));
+        });
     }
 
     card(item) {
-        const typeIcons = { article: 'file-alt', news: 'newspaper', announcement: 'bullhorn' };
-        const icon  = typeIcons[item.type] || 'file-alt';
+        const typeIcons  = { article: 'file-alt', news: 'newspaper', announcement: 'bullhorn' };
+        const typeBadges = { article: 'badge-purple', news: 'badge-blue', announcement: 'badge-yellow' };
+        const icon  = typeIcons[item.type]  || 'file-alt';
+        const badge = typeBadges[item.type] || 'badge-blue';
         const label = item.type.charAt(0).toUpperCase() + item.type.slice(1);
 
         const imgHtml = item.image
@@ -132,30 +133,36 @@ class BlogManager {
             : `<div class="card-img-placeholder"><i class="fas fa-${icon}"></i></div>`;
 
         const tagsHtml = item.tags.length
-            ? `<div class="card-tags">${item.tags.slice(0,3).map(t => `<span class="tag">#${t}</span>`).join('')}</div>`
+            ? `<div class="card-tags">${item.tags.slice(0,3).map(t => `<span class="card-tag">#${t}</span>`).join('')}</div>`
             : '';
 
         return `
-        <article class="blog-card" data-id="${item.id}">
+        <article class="content-card" data-id="${item.id}">
             <div class="card-img-wrap">
                 ${imgHtml}
-                <span class="card-type-badge badge-${item.type}">
+                <span class="card-badge ${badge}">
                     <i class="fas fa-${icon}"></i> ${label}
                 </span>
             </div>
             <div class="card-body">
                 <h3 class="card-title">${item.title}</h3>
-                <p class="card-excerpt">${item.excerpt}</p>
+                <p class="card-text">${item.excerpt}</p>
                 <div class="card-meta">
-                    <span><i class="fas fa-calendar"></i> ${this.fmtDate(item.date)}</span>
-                    <span><i class="fas fa-user"></i> ${item.author}</span>
+                    <div class="card-meta-row">
+                        <i class="fas fa-calendar"></i>
+                        <span>${this.fmtDate(item.date)}</span>
+                    </div>
+                    <div class="card-meta-row">
+                        <i class="fas fa-user"></i>
+                        <span>${item.author}</span>
+                    </div>
                 </div>
                 ${tagsHtml}
                 <div class="card-actions">
-                    <button class="btn btn-primary" onclick="blogManager.openPost('${item.id}')">
+                    <button class="btn btn-primary" data-action="read" data-id="${item.id}">
                         <i class="fas fa-book-open"></i> Read More
                     </button>
-                    <button class="btn btn-ghost" onclick="blogManager.share('${item.id}')">
+                    <button class="btn btn-ghost" data-action="share" data-id="${item.id}">
                         <i class="fas fa-share"></i>
                     </button>
                 </div>
@@ -166,7 +173,6 @@ class BlogManager {
     openPost(id) {
         const item = this.all.find(i => i.id === id);
         if (!item) return;
-
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
         modal.innerHTML = `
@@ -175,12 +181,11 @@ class BlogManager {
                 ${item.image ? `<img src="${item.image}" alt="${item.title}" class="modal-img">` : ''}
                 <h2 class="modal-title">${item.title}</h2>
                 <div class="modal-meta">
-                    <span><i class="fas fa-calendar"></i> ${this.fmtDate(item.date)}</span>
-                    <span><i class="fas fa-user"></i> ${item.author}</span>
+                    <div class="modal-meta-row"><i class="fas fa-calendar"></i><span>${this.fmtDate(item.date)}</span></div>
+                    <div class="modal-meta-row"><i class="fas fa-user"></i><span>${item.author}</span></div>
                 </div>
                 <div class="modal-body">${item.content || item.excerpt}</div>
             </div>`;
-
         modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
         document.body.appendChild(modal);
@@ -189,11 +194,8 @@ class BlogManager {
     share(id) {
         const item = this.all.find(i => i.id === id);
         const url  = `${window.location.origin}/blog?id=${id}`;
-        if (navigator.share && item) {
-            navigator.share({ title: item.title, url }).catch(() => {});
-        } else {
-            navigator.clipboard.writeText(url).then(() => alert('Link copied!'));
-        }
+        if (navigator.share && item) navigator.share({ title: item.title, url }).catch(() => {});
+        else navigator.clipboard.writeText(url).then(() => alert('Link copied!'));
     }
 
     fmtDate(d) {
@@ -212,9 +214,7 @@ class BlogManager {
         document.getElementById('emptyState').style.display   = 'none';
     }
 
-    hideLoading() {
-        document.getElementById('loadingState').style.display = 'none';
-    }
+    hideLoading() { document.getElementById('loadingState').style.display = 'none'; }
 
     showEmpty(msg) {
         document.getElementById('blogGrid').style.display   = 'none';

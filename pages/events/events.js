@@ -1,5 +1,7 @@
+'use strict';
 /**
  * Events Page
+ * Cards use shared .content-card CSS from main.css
  */
 
 class EventsManager {
@@ -27,36 +29,33 @@ class EventsManager {
 
     async load() {
         this.showLoading();
-        const res = await fetch('/api/v1/content/events?limit=100');
+        const res = await fetch('/api/v1/content/events');
         if (!res.ok) throw new Error('Events fetch failed');
         const data = await res.json();
-        this.all = (data.events || []).map(e => this.normalise(e));
+        this.all      = (data.events || []).map(e => this.normalise(e));
         this.filtered = [...this.all];
     }
 
     normalise(e) {
-        const startDate = e.start_date || e.date || e.created_at;
+        const startDate = e.start_date || e.created_at;
         const now       = new Date();
         const start     = new Date(startDate);
         const diffDays  = Math.floor((start - now) / 86400000);
-
         let status = 'upcoming';
         if (e.status === 'completed' || start < now) status = 'past';
         else if (diffDays === 0) status = 'today';
-
         return {
-            id:        e.id,
-            title:     e.title,
-            desc:      e.description || '',
-            image:     e.banner_image || e.image || null,
-            date:      startDate,
-            endDate:   e.end_date || null,
-            location:  e.location || e.venue || null,
-            type:      (e.event_type || e.type || 'event').toLowerCase(),
-            tags:      e.tags || [],
-            fee:       e.fee || e.price || 0,
+            id:       e.id,
+            title:    e.title,
+            desc:     e.description || '',
+            image:    e.banner_image || null,
+            date:     startDate,
+            endDate:  e.end_date || null,
+            location: e.location || null,
+            type:     (e.event_type || 'general').toLowerCase(),
+            tags:     e.tags || [],
+            fee:      e.fee || 0,
             status,
-            raw:       e
         };
     }
 
@@ -71,8 +70,7 @@ class EventsManager {
             });
         });
 
-        const searchInput = document.getElementById('eventsSearch');
-        searchInput?.addEventListener('input', e => {
+        document.getElementById('eventsSearch')?.addEventListener('input', e => {
             this.search = e.target.value.toLowerCase().trim();
             clearTimeout(this._st);
             this._st = setTimeout(() => { this.page = 1; this.applyFilters(); }, 280);
@@ -87,15 +85,13 @@ class EventsManager {
 
     applyFilters() {
         let items = [...this.all];
-
         switch (this.filter) {
             case 'upcoming':  items = items.filter(e => e.status !== 'past'); break;
             case 'past':      items = items.filter(e => e.status === 'past'); break;
-            case 'free':      items = items.filter(e => !e.fee || e.fee === 0); break;
-            case 'hackathon': items = items.filter(e => e.type.includes('hackathon')); break;
-            case 'workshop':  items = items.filter(e => e.type.includes('workshop')); break;
+            case 'free':      items = items.filter(e => e.fee === 0); break;
+            case 'hackathon': items = items.filter(e => e.type === 'hackathon'); break;
+            case 'workshop':  items = items.filter(e => e.type === 'workshop'); break;
         }
-
         if (this.search) {
             items = items.filter(e =>
                 e.title.toLowerCase().includes(this.search) ||
@@ -103,21 +99,18 @@ class EventsManager {
                 e.tags.some(t => t.toLowerCase().includes(this.search))
             );
         }
-
-        // Upcoming first, then by date desc
         items.sort((a, b) => {
             if (a.status !== 'past' && b.status === 'past') return -1;
             if (a.status === 'past' && b.status !== 'past') return 1;
             return new Date(a.date) - new Date(b.date);
         });
-
         this.filtered = items;
         this.render();
     }
 
     updateStats() {
         const upcoming = this.all.filter(e => e.status !== 'past').length;
-        const free     = this.all.filter(e => !e.fee || e.fee === 0).length;
+        const free     = this.all.filter(e => e.fee === 0).length;
         const el = id => document.getElementById(id);
         if (el('upcomingCount')) el('upcomingCount').textContent = upcoming;
         if (el('totalCount'))    el('totalCount').textContent    = this.all.length;
@@ -126,12 +119,9 @@ class EventsManager {
 
     render() {
         this.hideLoading();
-        if (this.filtered.length === 0) {
-            this.showEmpty('No events match your filter.');
-            return;
-        }
-        document.getElementById('emptyState').style.display  = 'none';
-        document.getElementById('eventsGrid').style.display  = 'grid';
+        if (this.filtered.length === 0) { this.showEmpty('No events match your filter.'); return; }
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('eventsGrid').style.display = 'grid';
         this.renderGrid();
         this.updateLoadMore();
     }
@@ -140,57 +130,63 @@ class EventsManager {
         const grid  = document.getElementById('eventsGrid');
         const items = this.filtered.slice(0, this.page * this.perPage);
         grid.innerHTML = items.map(e => this.card(e)).join('');
+        grid.querySelectorAll('[data-action="details"]').forEach(btn => {
+            btn.addEventListener('click', () => this.openModal(btn.dataset.id));
+        });
+        grid.querySelectorAll('[data-action="register"]').forEach(btn => {
+            btn.addEventListener('click', () => this.openModal(btn.dataset.id));
+        });
     }
 
     card(e) {
-        const isPast   = e.status === 'past';
-        const isToday  = e.status === 'today';
-        const badgeCls = isPast ? 'badge-past' : isToday ? 'badge-today' : 'badge-upcoming';
-        const badgeLbl = isPast ? 'Past' : isToday ? 'Today' : 'Upcoming';
+        const isPast    = e.status === 'past';
+        const isToday   = e.status === 'today';
+        const badgeCls  = isPast ? 'badge-gray' : isToday ? 'badge-yellow' : 'badge-green';
+        const badgeLbl  = isPast ? 'Past' : isToday ? 'Today' : 'Upcoming';
         const badgeIcon = isPast ? 'check-circle' : isToday ? 'fire' : 'calendar-alt';
 
         const imgHtml = e.image
             ? `<img src="${e.image}" alt="${e.title}" loading="lazy">`
-            : `<div class="card-img-placeholder"><i class="fas fa-calendar-star"></i></div>`;
+            : `<div class="card-img-placeholder"><i class="fas fa-calendar-alt"></i></div>`;
 
         const tagsHtml = e.tags.length
-            ? `<div class="card-tags">${e.tags.slice(0,3).map(t => `<span class="tag">#${t}</span>`).join('')}</div>`
+            ? `<div class="card-tags">${e.tags.slice(0,3).map(t => `<span class="card-tag">#${t}</span>`).join('')}</div>`
             : '';
 
         const feeHtml = e.fee > 0
-            ? `<div class="card-fee fee-paid"><i class="fas fa-tag"></i> KES ${e.fee.toLocaleString()}</div>`
-            : `<div class="card-fee fee-free"><i class="fas fa-check-circle"></i> Free to Attend</div>`;
+            ? `<div class="card-meta-row fee-paid"><i class="fas fa-tag"></i> KES ${e.fee.toLocaleString()}</div>`
+            : `<div class="card-meta-row fee-free"><i class="fas fa-check-circle"></i> Free to Attend</div>`;
 
         const actionHtml = isPast
-            ? `<span class="btn btn-disabled"><i class="fas fa-lock"></i> Event Ended</span>`
-            : `<button class="btn btn-primary" onclick="eventsManager.openModal('${e.id}')">
+            ? `<button class="btn btn-ghost" disabled style="opacity:.4;cursor:not-allowed;"><i class="fas fa-lock"></i> Ended</button>`
+            : `<button class="btn btn-primary" data-action="register" data-id="${e.id}">
                    <i class="fas fa-calendar-plus"></i> Register
                </button>`;
 
         return `
-        <article class="event-card ${isPast ? 'is-past' : ''}" data-id="${e.id}">
+        <article class="content-card${isPast ? ' is-past' : ''}" data-id="${e.id}">
             <div class="card-img-wrap">
                 ${imgHtml}
-                <span class="card-status-badge ${badgeCls}">
+                <span class="card-badge ${badgeCls}">
                     <i class="fas fa-${badgeIcon}"></i> ${badgeLbl}
                 </span>
-                ${e.type !== 'event' ? `<span class="card-type-badge">${e.type}</span>` : ''}
+                ${e.type !== 'general' ? `<span class="card-badge-right">${e.type}</span>` : ''}
             </div>
             <div class="card-body">
                 <h3 class="card-title">${e.title}</h3>
-                <p class="card-desc">${e.desc}</p>
+                <p class="card-text">${e.desc}</p>
                 <div class="card-meta">
                     <div class="card-meta-row">
                         <i class="fas fa-clock"></i>
                         <span>${this.fmtDate(e.date)}${e.endDate ? ' – ' + this.fmtDate(e.endDate) : ''}</span>
                     </div>
                     ${e.location ? `<div class="card-meta-row"><i class="fas fa-map-marker-alt"></i><span>${e.location}</span></div>` : ''}
+                    ${feeHtml}
                 </div>
                 ${tagsHtml}
-                ${feeHtml}
                 <div class="card-actions">
                     ${actionHtml}
-                    <button class="btn btn-ghost" onclick="eventsManager.openModal('${e.id}')">
+                    <button class="btn btn-ghost" data-action="details" data-id="${e.id}">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
                 </div>
@@ -201,7 +197,6 @@ class EventsManager {
     openModal(id) {
         const e = this.all.find(ev => ev.id === id);
         if (!e) return;
-
         const isPast = e.status === 'past';
         const modal  = document.createElement('div');
         modal.className = 'modal-backdrop';
@@ -216,29 +211,22 @@ class EventsManager {
                     ${e.location ? `<div class="modal-meta-row"><i class="fas fa-map-marker-alt"></i><span>${e.location}</span></div>` : ''}
                     <div class="modal-meta-row"><i class="fas fa-tag"></i><span>${e.fee > 0 ? 'KES ' + e.fee.toLocaleString() : 'Free'}</span></div>
                 </div>
-                <p class="modal-desc">${e.desc || 'No description available.'}</p>
+                <p class="modal-body">${e.desc || 'No description available.'}</p>
                 <div class="modal-actions">
                     ${!isPast
                         ? `<button class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Register Now</button>`
-                        : `<span class="btn btn-disabled">Event Ended</span>`}
-                    <button class="btn btn-ghost modal-share-btn"><i class="fas fa-share"></i> Share</button>
+                        : `<button class="btn btn-ghost" disabled style="opacity:.4;">Event Ended</button>`}
+                    <button class="btn btn-ghost modal-share"><i class="fas fa-share"></i> Share</button>
                 </div>
             </div>`;
-
         modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
         modal.addEventListener('click', ev => { if (ev.target === modal) modal.remove(); });
-        modal.querySelector('.modal-share-btn').addEventListener('click', () => this.share(id));
+        modal.querySelector('.modal-share').addEventListener('click', () => {
+            const url = `${window.location.origin}/events#${id}`;
+            if (navigator.share) navigator.share({ title: e.title, url }).catch(() => {});
+            else navigator.clipboard.writeText(url).then(() => alert('Link copied!'));
+        });
         document.body.appendChild(modal);
-    }
-
-    share(id) {
-        const e   = this.all.find(ev => ev.id === id);
-        const url = `${window.location.origin}/events#${id}`;
-        if (navigator.share && e) {
-            navigator.share({ title: e.title, url }).catch(() => {});
-        } else {
-            navigator.clipboard.writeText(url).then(() => alert('Link copied!'));
-        }
     }
 
     fmtDate(d) {
@@ -258,9 +246,7 @@ class EventsManager {
         document.getElementById('emptyState').style.display   = 'none';
     }
 
-    hideLoading() {
-        document.getElementById('loadingState').style.display = 'none';
-    }
+    hideLoading() { document.getElementById('loadingState').style.display = 'none'; }
 
     showEmpty(msg) {
         document.getElementById('eventsGrid').style.display   = 'none';
