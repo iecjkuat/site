@@ -4,6 +4,28 @@ const express  = require('express');
 const router   = express.Router();
 const { supabaseAdmin } = require('../lib/supabase');
 
+// ── Rate limiting (in-memory, resets on server restart) ──────────────────────
+const hits = new Map();
+function rateLimit(key, maxPerWindow = 5, windowMs = 60000) {
+    const now  = Date.now();
+    const entry = hits.get(key) || { count: 0, start: now };
+    if (now - entry.start > windowMs) { entry.count = 0; entry.start = now; }
+    entry.count++;
+    hits.set(key, entry);
+    return entry.count > maxPerWindow;
+}
+
+// ── Input validation ──────────────────────────────────────────────────────────
+function sanitiseStr(val, maxLen = 100) {
+    if (typeof val !== 'string') return '';
+    return val.trim().substring(0, maxLen);
+}
+
+function validRegNo(val) {
+    // Accepts formats like ENG/2021/12345 — letters, digits, slashes, hyphens only
+    return /^[A-Z0-9\/\-]{3,30}$/i.test(val.trim());
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Current semester string e.g. "2026-S1" (S1 = Jan–Jun, S2 = Jul–Dec) */
@@ -65,13 +87,28 @@ async function stkPush({ phone, amount, accountRef, description }) {
 }
 
 // ── POST /api/v1/membership/register ─────────────────────────────────────────
-// First-time registration — saves details only, no payment
 router.post('/register', async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (rateLimit(`reg:${ip}`, 5, 60000)) {
+        return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
+    }
+
     try {
-        const { reg_no, full_name, course, year_of_study, phone, email } = req.body;
+        const reg_no       = sanitiseStr(req.body.reg_no, 30).toUpperCase();
+        const full_name    = sanitiseStr(req.body.full_name, 100);
+        const course       = sanitiseStr(req.body.course, 120);
+        const year_of_study = parseInt(req.body.year_of_study);
+        const phone        = sanitiseStr(req.body.phone, 20);
+        const email        = sanitiseStr(req.body.email || '', 150);
 
         if (!reg_no || !full_name || !course || !year_of_study || !phone) {
             return res.status(400).json({ error: 'All required fields must be provided.' });
+        }
+        if (!validRegNo(reg_no)) {
+            return res.status(400).json({ error: 'Invalid registration number format.' });
+        }
+        if (isNaN(year_of_study) || year_of_study < 1 || year_of_study > 6) {
+            return res.status(400).json({ error: 'Year of study must be between 1 and 6.' });
         }
 
         const normPhone = normalisePhone(phone);
@@ -79,11 +116,10 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Invalid phone number. Use format 07XXXXXXXX.' });
         }
 
-        // Check if reg_no already exists
         const { data: existing } = await supabaseAdmin
             .from('members')
             .select('id')
-            .eq('reg_no', reg_no.trim().toUpperCase())
+            .eq('reg_no', reg_no)
             .maybeSingle();
 
         if (existing) {
@@ -92,16 +128,15 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // Insert member record only — no payment yet
         const { error: memberErr } = await supabaseAdmin
             .from('members')
             .insert({
-                reg_no:        reg_no.trim().toUpperCase(),
-                full_name:     full_name.trim(),
-                course:        course.trim(),
-                year_of_study: parseInt(year_of_study),
-                phone:         normPhone,
-                email:         email?.trim() || null
+                reg_no,
+                full_name,
+                course,
+                year_of_study,
+                phone:  normPhone,
+                email:  email || null
             });
 
         if (memberErr) throw memberErr;
@@ -112,19 +147,27 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Registration error:', err);
+        console.error('Registration error:', err.message);
         return res.status(500).json({ error: 'Registration failed. Please try again.' });
     }
 });
 
 // ── POST /api/v1/membership/pay ───────────────────────────────────────────────
-// Pay membership fee — works for any registered member
 router.post('/pay', async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (rateLimit(`pay:${ip}`, 5, 60000)) {
+        return res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
+    }
+
     try {
-        const { reg_no, payment_phone } = req.body;
+        const reg_no       = sanitiseStr(req.body.reg_no, 30).toUpperCase();
+        const payment_phone = sanitiseStr(req.body.payment_phone, 20);
 
         if (!reg_no || !payment_phone) {
             return res.status(400).json({ error: 'Registration number and phone number are required.' });
+        }
+        if (!validRegNo(reg_no)) {
+            return res.status(400).json({ error: 'Invalid registration number format.' });
         }
 
         const normPhone = normalisePhone(payment_phone);
@@ -134,26 +177,21 @@ router.post('/pay', async (req, res) => {
 
         const semester = currentSemester();
 
-        // Look up member
         const { data: member, error: lookupErr } = await supabaseAdmin
             .from('members')
             .select('id, reg_no, full_name')
-            .eq('reg_no', reg_no.trim().toUpperCase())
+            .eq('reg_no', reg_no)
             .maybeSingle();
 
         if (lookupErr) throw lookupErr;
-
         if (!member) {
-            return res.status(404).json({
-                error: 'Registration number not found. Please register first.'
-            });
+            return res.status(404).json({ error: 'Registration number not found. Please register first.' });
         }
 
-        // Check if already paid this semester
         const { data: existingPayment } = await supabaseAdmin
             .from('membership_payments')
             .select('id')
-            .eq('reg_no', reg_no.trim().toUpperCase())
+            .eq('reg_no', reg_no)
             .eq('semester', semester)
             .eq('status', 'completed')
             .maybeSingle();
@@ -164,12 +202,11 @@ router.post('/pay', async (req, res) => {
             });
         }
 
-        // Insert pending payment
         const { data: payment, error: payErr } = await supabaseAdmin
             .from('membership_payments')
             .insert({
                 member_id:     member.id,
-                reg_no:        reg_no.trim().toUpperCase(),
+                reg_no,
                 semester,
                 amount:        200,
                 payment_phone: normPhone,
@@ -180,22 +217,19 @@ router.post('/pay', async (req, res) => {
 
         if (payErr) throw payErr;
 
-        // Trigger STK push
         let checkoutId = null;
         try {
             const stk = await stkPush({
                 phone:       normPhone,
                 amount:      200,
-                accountRef:  reg_no.trim().toUpperCase(),
+                accountRef:  reg_no,
                 description: `JKUAT IEC Membership ${semester}`
             });
             checkoutId = stk.checkoutId;
-
             await supabaseAdmin
                 .from('membership_payments')
                 .update({ checkout_id: checkoutId })
                 .eq('id', payment.id);
-
         } catch (stkErr) {
             console.error('STK push failed:', stkErr.message);
         }
@@ -208,7 +242,7 @@ router.post('/pay', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Payment error:', err);
+        console.error('Payment error:', err.message);
         return res.status(500).json({ error: 'Payment failed. Please try again.' });
     }
 });
@@ -261,13 +295,23 @@ router.post('/webhook', async (req, res) => {
 });
 
 // ── GET /api/v1/membership/lookup/:reg_no ────────────────────────────────────
-// Check if a reg_no exists (used by renewal form to confirm before showing payment field)
+// Returns only enough to confirm the record exists — no personal data exposed
 router.get('/lookup/:reg_no', async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    if (rateLimit(`lookup:${ip}`, 10, 60000)) {
+        return res.status(429).json({ error: 'Too many requests.' });
+    }
+
     try {
+        const reg_no = sanitiseStr(req.params.reg_no, 30).toUpperCase();
+        if (!validRegNo(reg_no)) {
+            return res.status(400).json({ found: false });
+        }
+
         const { data: member } = await supabaseAdmin
             .from('members')
-            .select('reg_no, full_name, course, year_of_study')
-            .eq('reg_no', req.params.reg_no.trim().toUpperCase())
+            .select('reg_no, full_name, course')
+            .eq('reg_no', reg_no)
             .maybeSingle();
 
         if (!member) {
@@ -278,21 +322,22 @@ router.get('/lookup/:reg_no', async (req, res) => {
         const { data: paid } = await supabaseAdmin
             .from('membership_payments')
             .select('id')
-            .eq('reg_no', req.params.reg_no.trim().toUpperCase())
+            .eq('reg_no', reg_no)
             .eq('semester', semester)
             .eq('status', 'completed')
             .maybeSingle();
 
+        // Return first name only — not full name, not course
+        const firstName = member.full_name.split(' ')[0];
         return res.json({
             found:        true,
-            full_name:    member.full_name,
-            course:       member.course,
+            display:      `${firstName} · ${member.course}`,
             paid_current: !!paid,
             semester
         });
 
     } catch (err) {
-        console.error('Lookup error:', err);
+        console.error('Lookup error:', err.message);
         return res.status(500).json({ error: 'Lookup failed' });
     }
 });
