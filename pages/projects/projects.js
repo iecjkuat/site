@@ -28,11 +28,16 @@ class ProjectsManager {
 
     async load() {
         this.showLoading();
-        const res = await fetch('/api/v1/content/projects');
-        if (!res.ok) throw new Error('Projects fetch failed');
-        const data = await res.json();
-        this.all      = data.projects || [];
-        this.filtered = [...this.all];
+        try {
+            const res = await fetch('/api/v1/content/projects');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            this.all      = data.projects || [];
+            this.filtered = [...this.all];
+        } catch (err) {
+            console.error('Projects load error:', err);
+            throw err;
+        }
     }
 
     bindEvents() {
@@ -102,6 +107,7 @@ class ProjectsManager {
         if (!grid) return;
 
         if (this.filtered.length === 0) {
+            grid.style.display = 'grid';
             grid.innerHTML = `
                 <div class="state-box" style="grid-column:1/-1;">
                     <i class="fas fa-search empty-icon"></i>
@@ -114,6 +120,10 @@ class ProjectsManager {
         grid.style.display = 'grid';
         this.renderGrid();
         this.updateLoadMore();
+    }
+
+    hideLoading() {
+        // showLoading writes into the grid — render() overwrites it
     }
 
     renderGrid() {

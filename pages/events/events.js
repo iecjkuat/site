@@ -29,11 +29,20 @@ class EventsManager {
 
     async load() {
         this.showLoading();
-        const res = await fetch('/api/v1/content/events');
-        if (!res.ok) throw new Error('Events fetch failed');
-        const data = await res.json();
-        this.all      = (data.events || []).map(e => this.normalise(e));
-        this.filtered = [...this.all];
+        try {
+            const res = await fetch('/api/v1/content/events');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const raw = data.events || [];
+            this.all = raw.map(e => {
+                try { return this.normalise(e); }
+                catch (err) { console.warn('Failed to normalise event:', e.id, err); return null; }
+            }).filter(Boolean);
+            this.filtered = [...this.all];
+        } catch (err) {
+            console.error('Events load error:', err);
+            throw err;
+        }
     }
 
     normalise(e) {
