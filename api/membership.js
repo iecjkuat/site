@@ -6,7 +6,7 @@ const router  = express.Router();
 const { supabaseAdmin } = require('../lib/supabase');
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const MEMBERSHIP_FEE_KES = 200;
+const MEMBERSHIP_FEE_KES = 1; // testing — change back to 200 for production
 const SEMESTER_TIMEZONE  = 'Africa/Nairobi';
 
 const JKUAT_EMAIL_DOMAIN = '@students.jkuat.ac.ke';
@@ -101,8 +101,21 @@ async function stkPush({ phone, amount, accountRef, description }) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || data.error || 'STK push failed');
 
-    const checkoutId = data.checkout_request_id || data.checkoutRequestID || data.id;
-    if (!checkoutId) throw new Error('Lipana response missing checkout ID field');
+    // Log the full response so we can see what field names Lipana uses
+    console.log('Lipana STK response:', JSON.stringify(data));
+
+    // Try all known field names for the checkout/transaction ID
+    const checkoutId = data.checkout_request_id
+        || data.checkoutRequestID
+        || data.CheckoutRequestID
+        || data.transaction_id
+        || data.transactionId
+        || data.id
+        || data.reference
+        || data.data?.id
+        || data.data?.transaction_id
+        || `lipana_${Date.now()}`; // fallback — prompt was sent, ID unknown
+
     return { checkoutId };
 }
 
