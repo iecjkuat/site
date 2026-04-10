@@ -6,7 +6,7 @@ const router  = express.Router();
 const { supabaseAdmin } = require('../lib/supabase');
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const MEMBERSHIP_FEE_KES = 1; // testing — change back to 200 for production
+const MEMBERSHIP_FEE_KES = 10; // testing — change back to 200 for production
 const SEMESTER_TIMEZONE  = 'Africa/Nairobi';
 
 const JKUAT_EMAIL_DOMAIN = '@students.jkuat.ac.ke';
