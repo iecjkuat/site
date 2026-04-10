@@ -76,10 +76,10 @@ async function stkPush({ phone, amount, accountRef, description }) {
     }
 
     const base = process.env.LIPANA_ENVIRONMENT === 'production'
-        ? 'https://lipana.dev'
-        : 'https://sandbox.lipana.dev';
+        ? 'https://api.lipana.dev/v1'
+        : 'https://sandbox.lipana.dev/v1';
 
-    const res = await fetch(`${base}/api/transactions/push-stk`, {
+    const res = await fetch(`${base}/transactions/push-stk`, {
         method:  'POST',
         headers: {
             'Content-Type': 'application/json',
