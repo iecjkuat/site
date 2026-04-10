@@ -85,30 +85,19 @@ app.use((req, res, next) => {
 
 // ── Static assets ─────────────────────────────────────────────────────────────
 const root = __dirname;
-const fs   = require('fs');
-
-// Inject Supabase credentials into admin files at request time.
-// These routes MUST come before any static middleware so Express hits them first.
-function injectSupabaseConfig(filePath, res) {
-    fs.readFile(filePath, 'utf8', (err, content) => {
-        if (err) return res.status(404).end();
-        const injected = content
-            .replace(/__SUPABASE_URL__/g,      process.env.SUPABASE_URL      || '')
-            .replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
-        const ext = filePath.endsWith('.js') ? 'js' : 'html';
-        res.set('Cache-Control', 'no-store').type(ext).send(injected);
+// ── Admin config endpoint — serves Supabase public config to admin pages ──────
+// This replaces the file injection approach which is unreliable on Vercel.
+// The anon key is safe to expose (it's public by design — RLS protects the data).
+app.get('/api/v1/admin/config', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({
+        supabaseUrl:     process.env.SUPABASE_URL     || '',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
     });
-}
+});
 
-app.get('/iec-admin',                (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/login.html'), res));
-app.get('/iec-admin/',               (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/login.html'), res));
-app.get('/iec-admin/login.html',     (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/login.html'), res));
-app.get('/iec-admin/dashboard',      (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/dashboard.html'), res));
-app.get('/iec-admin/dashboard.html', (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/dashboard.html'), res));
-app.get('/iec-admin/admin.js',       (req, res) => injectSupabaseConfig(path.join(root, 'pages/iec-admin/admin.js'), res));
-
-// All other /iec-admin static assets (CSS, fonts, etc.)
-app.use('/iec-admin', express.static(path.join(root, 'pages', 'iec-admin'), { maxAge: '1h' }));
+// ── Admin static files — served directly, no injection needed ─────────────────
+app.use('/iec-admin', express.static(path.join(root, 'pages', 'iec-admin'), { maxAge: '0' }));
 
 app.use('/shared',   express.static(path.join(root, 'shared'),           { maxAge: '1h' }));
 app.use('/assets',   express.static(path.join(root, 'shared', 'assets'), { maxAge: '1h' }));

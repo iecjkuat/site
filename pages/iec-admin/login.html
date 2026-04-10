@@ -30,12 +30,15 @@
             transition: all .2s;
             font-family: inherit;
         }
-        .tab-btn.active {
-            background: rgba(16,185,129,.2);
-            color: #10b981;
-        }
+        .tab-btn.active { background: rgba(16,185,129,.2); color: #10b981; }
         .form-panel { display: none; }
         .form-panel.active { display: block; }
+        .init-loading {
+            text-align: center;
+            padding: 2rem 0;
+            color: rgba(255,255,255,.5);
+            font-size: .9rem;
+        }
     </style>
 </head>
 <body class="admin-body">
@@ -48,100 +51,129 @@
             JKUAT IEC Admin
         </div>
 
-        <div class="tab-bar">
-            <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">
-                <i class="fas fa-sign-in-alt"></i> Sign In
-            </button>
-            <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">
-                <i class="fas fa-user-plus"></i> Create Account
-            </button>
+        <!-- Loading state while fetching config -->
+        <div id="initLoading" class="init-loading">
+            <div class="spinner" style="margin:0 auto 1rem;"></div>
+            Initialising...
         </div>
 
-        <!-- ── SIGN IN ── -->
-        <div class="form-panel active" id="panel-signin">
-            <form onsubmit="handleSignIn(event)">
-                <div class="field">
-                    <label><i class="fas fa-envelope"></i> Email</label>
-                    <input type="email" id="si_email" required placeholder="you@example.com" autocomplete="email">
-                </div>
-                <div class="field">
-                    <label><i class="fas fa-lock"></i> Password</label>
-                    <div class="pw-wrap">
-                        <input type="password" id="si_password" required placeholder="••••••••" autocomplete="current-password">
-                        <button type="button" class="pw-toggle" onclick="togglePw('si_password','si_eye')">
-                            <i class="fas fa-eye" id="si_eye"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="si_error" class="form-error" style="display:none;"></div>
-                <button type="submit" id="si_btn" class="btn btn-primary btn-full">
+        <!-- Main content — shown after config loads -->
+        <div id="mainContent" style="display:none;">
+
+            <div class="tab-bar">
+                <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">
                     <i class="fas fa-sign-in-alt"></i> Sign In
                 </button>
-            </form>
-        </div>
-
-        <!-- ── CREATE ACCOUNT ── -->
-        <div class="form-panel" id="panel-signup">
-            <form onsubmit="handleSignUp(event)">
-                <div class="field">
-                    <label><i class="fas fa-key"></i> Admin Secret *</label>
-                    <div class="pw-wrap">
-                        <input type="password" id="su_secret" required placeholder="Enter the admin secret key">
-                        <button type="button" class="pw-toggle" onclick="togglePw('su_secret','su_seye')">
-                            <i class="fas fa-eye" id="su_seye"></i>
-                        </button>
-                    </div>
-                    <small style="opacity:.45;font-size:.75rem;display:block;margin-top:.3rem;">
-                        Required to create an admin account. Get this from the system administrator.
-                    </small>
-                </div>
-                <div class="field">
-                    <label><i class="fas fa-envelope"></i> Email *</label>
-                    <input type="email" id="su_email" required placeholder="you@example.com" autocomplete="email">
-                </div>
-                <div class="field">
-                    <label><i class="fas fa-lock"></i> Password *</label>
-                    <div class="pw-wrap">
-                        <input type="password" id="su_password" required placeholder="Min 8 characters" autocomplete="new-password" minlength="8">
-                        <button type="button" class="pw-toggle" onclick="togglePw('su_password','su_eye')">
-                            <i class="fas fa-eye" id="su_eye"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="su_error"   class="form-error"    style="display:none;"></div>
-                <div id="su_success" class="alert-success" style="display:none;"></div>
-                <button type="submit" id="su_btn" class="btn btn-primary btn-full">
-                    <i class="fas fa-user-plus"></i> Create Admin Account
+                <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">
+                    <i class="fas fa-user-plus"></i> Create Account
                 </button>
-            </form>
-        </div>
+            </div>
+
+            <!-- SIGN IN -->
+            <div class="form-panel active" id="panel-signin">
+                <form onsubmit="handleSignIn(event)">
+                    <div class="field">
+                        <label><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email" id="si_email" required placeholder="you@example.com" autocomplete="email">
+                    </div>
+                    <div class="field">
+                        <label><i class="fas fa-lock"></i> Password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="si_password" required placeholder="••••••••" autocomplete="current-password">
+                            <button type="button" class="pw-toggle" onclick="togglePw('si_password','si_eye')">
+                                <i class="fas fa-eye" id="si_eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="si_error" class="form-error" style="display:none;"></div>
+                    <button type="submit" id="si_btn" class="btn btn-primary btn-full">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+            </div>
+
+            <!-- CREATE ACCOUNT -->
+            <div class="form-panel" id="panel-signup">
+                <form onsubmit="handleSignUp(event)">
+                    <div class="field">
+                        <label><i class="fas fa-key"></i> Admin Secret *</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="su_secret" required placeholder="Enter the admin secret key">
+                            <button type="button" class="pw-toggle" onclick="togglePw('su_secret','su_seye')">
+                                <i class="fas fa-eye" id="su_seye"></i>
+                            </button>
+                        </div>
+                        <small style="opacity:.45;font-size:.75rem;display:block;margin-top:.3rem;">
+                            Required to create an admin account.
+                        </small>
+                    </div>
+                    <div class="field">
+                        <label><i class="fas fa-envelope"></i> Email *</label>
+                        <input type="email" id="su_email" required placeholder="you@example.com" autocomplete="email">
+                    </div>
+                    <div class="field">
+                        <label><i class="fas fa-lock"></i> Password *</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="su_password" required placeholder="Min 8 characters" autocomplete="new-password" minlength="8">
+                            <button type="button" class="pw-toggle" onclick="togglePw('su_password','su_eye')">
+                                <i class="fas fa-eye" id="su_eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="su_error"   class="form-error"    style="display:none;"></div>
+                    <div id="su_success" class="alert-success" style="display:none;"></div>
+                    <button type="submit" id="su_btn" class="btn btn-primary btn-full">
+                        <i class="fas fa-user-plus"></i> Create Admin Account
+                    </button>
+                </form>
+            </div>
+
+        </div><!-- /mainContent -->
+
+        <div id="configError" class="form-error" style="display:none; margin-top:1rem;"></div>
 
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-// ── Config injected by server ─────────────────────────────────────────────────
-const SUPABASE_URL      = '__SUPABASE_URL__';
-const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+let sb = null;
 
-// Guard: if placeholders weren't replaced, show a clear error instead of crashing
-if (SUPABASE_URL.includes('__') || SUPABASE_ANON_KEY.includes('__')) {
-    document.querySelector('.login-card').innerHTML =
-        '<div class="form-error" style="margin:0;">Server configuration error: Supabase credentials not injected. Check server logs.</div>';
-    throw new Error('Supabase config not injected');
+// Fetch config from server API — works on Vercel and localhost
+async function init() {
+    try {
+        const res  = await fetch('/api/v1/admin/config');
+        const cfg  = await res.json();
+
+        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+            throw new Error('SUPABASE_URL or SUPABASE_ANON_KEY not set in environment variables.');
+        }
+
+        sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+        // Check if already logged in
+        const { data } = await sb.auth.getSession();
+        if (data?.session) {
+            const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
+            if (role === 'admin') {
+                window.location.href = '/iec-admin/dashboard';
+                return;
+            }
+        }
+
+        document.getElementById('initLoading').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+
+    } catch (err) {
+        document.getElementById('initLoading').style.display = 'none';
+        const errEl = document.getElementById('configError');
+        errEl.textContent = 'Setup error: ' + err.message;
+        errEl.style.display = 'block';
+    }
 }
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+init();
 
-// Redirect if already logged in as admin
-sb.auth.getSession().then(({ data }) => {
-    if (!data?.session) return;
-    const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
-    if (role === 'admin') window.location.href = '/iec-admin/dashboard';
-});
-
-// ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
     ['signin','signup'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
@@ -149,7 +181,6 @@ function switchTab(tab) {
     });
 }
 
-// ── Sign In ───────────────────────────────────────────────────────────────────
 async function handleSignIn(e) {
     e.preventDefault();
     const btn = document.getElementById('si_btn');
@@ -179,12 +210,11 @@ async function handleSignIn(e) {
     }
 }
 
-// ── Sign Up ───────────────────────────────────────────────────────────────────
 async function handleSignUp(e) {
     e.preventDefault();
-    const btn     = document.getElementById('su_btn');
-    const errEl   = document.getElementById('su_error');
-    const succEl  = document.getElementById('su_success');
+    const btn    = document.getElementById('su_btn');
+    const errEl  = document.getElementById('su_error');
+    const succEl = document.getElementById('su_success');
     errEl.style.display  = 'none';
     succEl.style.display = 'none';
     setLoading(btn, true, 'Creating account...');
@@ -194,7 +224,6 @@ async function handleSignUp(e) {
         const email    = document.getElementById('su_email').value.trim();
         const password = document.getElementById('su_password').value;
 
-        // Verify admin secret server-side first
         const check = await fetch('/api/v1/admin/verify-secret', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -206,7 +235,6 @@ async function handleSignUp(e) {
             throw new Error(d.error || 'Invalid admin secret.');
         }
 
-        // Create Supabase Auth account with admin role in metadata
         const { error } = await sb.auth.signUp({
             email,
             password,
@@ -226,7 +254,6 @@ async function handleSignUp(e) {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function showErr(id, msg) {
     const el = document.getElementById(id);
     el.textContent = msg;
@@ -235,9 +262,7 @@ function showErr(id, msg) {
 
 function setLoading(btn, loading, label) {
     btn.disabled = loading;
-    btn.innerHTML = loading
-        ? '<i class="fas fa-spinner fa-spin"></i> ' + label
-        : label;
+    btn.innerHTML = loading ? '<i class="fas fa-spinner fa-spin"></i> ' + label : label;
 }
 
 function togglePw(inputId, iconId) {

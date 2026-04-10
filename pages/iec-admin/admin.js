@@ -1,27 +1,40 @@
 'use strict';
 
-// ── Supabase client (injected by server at runtime) ───────────────────────────
-const SUPABASE_URL      = '__SUPABASE_URL__';
-const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ── State ─────────────────────────────────────────────────────────────────────
-let session     = null;
-let activePanel = 'events';
-let editingId   = null;
+// ── Supabase client — fetched from server API (works on Vercel + localhost) ───
+let sb      = null;
+let session = null;
+let activePanel    = 'events';
+let editingId      = null;
 let deleteCallback = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
-    const { data } = await sb.auth.getSession();
-    if (!data.session) { window.location.href = '/iec-admin'; return; }
+    try {
+        const res = await fetch('/api/v1/admin/config');
+        const cfg = await res.json();
 
-    const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
-    if (role !== 'admin') { await sb.auth.signOut(); window.location.href = '/iec-admin'; return; }
+        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+            throw new Error('Supabase config missing from server.');
+        }
 
-    session = data.session;
-    bindNav();
-    loadPanel('events');
+        sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+        const { data } = await sb.auth.getSession();
+        if (!data.session) { window.location.href = '/iec-admin'; return; }
+
+        const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
+        if (role !== 'admin') { await sb.auth.signOut(); window.location.href = '/iec-admin'; return; }
+
+        session = data.session;
+        bindNav();
+        loadPanel('events');
+
+    } catch (err) {
+        console.error('Dashboard init failed:', err);
+        document.body.innerHTML = `<div style="color:#fca5a5;padding:2rem;font-family:sans-serif;">
+            Dashboard error: ${err.message}<br><a href="/iec-admin" style="color:#10b981;">Back to login</a>
+        </div>`;
+    }
 })();
 
 // ── Auth header ───────────────────────────────────────────────────────────────

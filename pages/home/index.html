@@ -451,9 +451,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) { hide('registerForm'); show('registerSuccess'); }
-                else        { showErr('r_error', data.error); }
-            } catch (_) {
-                showErr('r_error', 'Network error. Please check your connection.');
+                else        { showErr('r_error', data.error || `Error ${res.status}: Registration failed.`); }
+            } catch (err) {
+                showErr('r_error', 'Network error: ' + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-id-card"></i> Register';
