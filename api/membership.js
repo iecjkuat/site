@@ -79,17 +79,15 @@ async function stkPush({ phone, amount, accountRef, description }) {
         ? 'https://api.lipana.dev'
         : 'https://sandbox.lipana.dev';
 
-    const res = await fetch(`${base}/v1/stk-push`, {
+    const res = await fetch(`${base}/api/transactions/push-stk`, {
         method:  'POST',
         headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'x-api-key':    apiKey,
         },
         body: JSON.stringify({
-            phone,
+            phone:        '+' + phone,   // Lipana expects +254XXXXXXXXX format
             amount,
-            account_ref:  accountRef,
-            description,
             callback_url: process.env.LIPANA_CALLBACK_URL,
         }),
     });
