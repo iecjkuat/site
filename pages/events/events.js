@@ -27,7 +27,7 @@ class EventsManager {
 
     async load() {
         this.showLoading();
-        const res = await fetch('/api/v1/events?limit=100');
+        const res = await fetch('/api/v1/content/events?limit=100');
         if (!res.ok) throw new Error('Events fetch failed');
         const data = await res.json();
         this.all = (data.events || []).map(e => this.normalise(e));
