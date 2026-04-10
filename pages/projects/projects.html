@@ -28,13 +28,13 @@
     <style>
         body {
             padding-top: 70px;
-            background: #0f172a url('/pages/shared/assets/images/backgrounds/tech-meeting-flatlay.jpg') center/cover fixed !important;
+            background: #0f172a url('/tech-meeting-flatlay.jpg') center/cover fixed !important;
             background-attachment: fixed !important;
             position: relative;
         }
 
         @media (max-width: 768px) {
-            body { padding-top: 65px; }
+            body { padding-top: 0; }
         }
         body::before {
             content: '';
@@ -88,29 +88,6 @@
                 <button id="joinProjectBtn" class="btn btn-outline btn-lg">
                     <i class="fas fa-users"></i>Join a Project
                 </button>
-                <button id="viewHackathonsBtn" class="btn btn-outline btn-lg">
-                    <i class="fas fa-trophy"></i>View Hackathons
-                </button>
-            </div>
-
-            <!-- Stats -->
-            <div class="stats-container">
-                <div>
-                    <div id="activeProjectsCount" class="stat-number stat-number-active">24</div>
-                    <div class="stat-label">Active Projects</div>
-                </div>
-                <div>
-                    <div id="completedProjectsCount" class="stat-number stat-number-completed">67</div>
-                    <div class="stat-label">Completed Projects</div>
-                </div>
-                <div>
-                    <div id="incubationProjectsCount" class="stat-number stat-number-incubation">8</div>
-                    <div class="stat-label">In Incubation</div>
-                </div>
-                <div>
-                    <div id="hackathonsCount" class="stat-number stat-number-hackathons">12</div>
-                    <div class="stat-label">Hackathons Hosted</div>
-                </div>
             </div>
         </div>
     </section>
@@ -366,6 +343,17 @@
 
     <!-- JavaScript -->
     <script src="/projects/projects.js?v=2026021704"></script>
+
+    <footer>
+        <div class="container" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.8rem;opacity:.6;padding:1rem;">
+            <span>&copy; 2026 JKUAT Innovation &amp; Entrepreneurship Club</span>
+            <span>
+                <a href="/events" style="color:rgba(255,255,255,.7);text-decoration:none;">Events</a> &nbsp;·&nbsp;
+                <a href="/blog"   style="color:rgba(255,255,255,.7);text-decoration:none;">Blog</a> &nbsp;·&nbsp;
+                <a href="/about"  style="color:rgba(255,255,255,.7);text-decoration:none;">About</a>
+            </span>
+        </div>
+    </footer>
 </body>
 
 </html>
