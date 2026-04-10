@@ -102,23 +102,7 @@
 
     <!-- NAVBAR -->
     <div id="navbar"></div>
-    <script>
-        fetch('/shared/navbar.html')
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('navbar').innerHTML = html;
-                const currentPath = window.location.pathname;
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    if (link.getAttribute('href') === currentPath) link.style.color = '#10b981';
-                });
-                const navToggle = document.getElementById('navToggle');
-                const navLinks  = document.getElementById('navLinks');
-                if (navToggle && navLinks) {
-                    navToggle.addEventListener('click', () => navLinks.classList.toggle('active'));
-                }
-            })
-            .catch(err => console.error('Navbar load failed:', err));
-    </script>
+    <script src="/shared/navbar-init.js"></script>
 
     <!-- HERO -->
     <section class="hero">
@@ -258,6 +242,17 @@
                     <input type="text" id="r_regno" required placeholder="e.g. ENG/2021/12345">
                 </div>
                 <div class="field">
+                    <label>College *</label>
+                    <select id="r_college" required>
+                        <option value="">Select your college</option>
+                        <option value="COPAS">COPAS — Pure &amp; Applied Sciences</option>
+                        <option value="COETEC">COETEC — Engineering &amp; Technology</option>
+                        <option value="COHES">COHES — Health Sciences</option>
+                        <option value="COANRE">COANRE — Agriculture, Natural Resources &amp; Environment</option>
+                        <option value="COHRED">COHRED — Human Resource &amp; Enterprise Development</option>
+                    </select>
+                </div>
+                <div class="field">
                     <label>Course / Department *</label>
                     <input type="text" id="r_course" required placeholder="e.g. BSc. Computer Science">
                 </div>
@@ -276,8 +271,9 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label>Email <span style="opacity:.5;">(optional)</span></label>
-                    <input type="email" id="r_email" placeholder="you@example.com">
+                    <label>JKUAT Student Email <span style="opacity:.5;">(optional)</span></label>
+                    <input type="email" id="r_email" placeholder="jm001@students.jkuat.ac.ke">
+                    <small style="opacity:.45; font-size:.75rem;">Must be your @students.jkuat.ac.ke address if provided</small>
                 </div>
                 <div id="r_error" class="form-error" style="display:none;"></div>
                 <button type="submit" id="r_btn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
@@ -446,6 +442,7 @@
                     body: JSON.stringify({
                         full_name:     document.getElementById('r_name').value.trim(),
                         reg_no:        document.getElementById('r_regno').value.trim(),
+                        college:       document.getElementById('r_college').value,
                         course:        document.getElementById('r_course').value.trim(),
                         year_of_study: document.getElementById('r_year').value,
                         phone:         document.getElementById('r_phone').value.trim(),

@@ -16,10 +16,6 @@
 
     <title>Projects & Innovation - JKUAT Innovation and Entrepreneurship Club</title>
 
-        <!-- SEO -->
-    <script src="/shared/seo-tags.js"></script>
-    <script>injectSEO({ title: 'Projects & Innovation', description: 'Explore student-led innovation projects, hackathons and incubation programs at JKUAT Innovation Club.', path: '/projects' });</script>
-
     <!-- Stylesheets -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
@@ -61,24 +57,7 @@
 
     <!-- NAVBAR -->
     <div id="navbar"></div>
-    <script>
-        fetch('/shared/navbar.html')
-            .then(r => r.text())
-            .then(html => {
-                document.getElementById('navbar').innerHTML = html;
-                const path = window.location.pathname;
-                document.querySelectorAll('.nav-link').forEach(l => {
-                    if (l.getAttribute('href') === path) l.style.color = '#10b981';
-                });
-                const t = document.getElementById('navToggle');
-                const nl = document.getElementById('navLinks');
-                if (t && nl) t.addEventListener('click', () => nl.classList.toggle('active'));
-                const lb = document.getElementById('navLoginBtn');
-                const jb = document.getElementById('navJoinBtn');
-                if (lb) lb.addEventListener('click', () => window.location.href = '/signin');
-                if (jb) jb.addEventListener('click', () => window.location.href = '/signup');
-            });
-    </script>
+    <script src="/shared/navbar-init.js"></script>
 
     <!-- Hero Section -->
     <section class="hero-section-padding">
@@ -387,10 +366,6 @@
 
     <!-- JavaScript -->
     <script src="/projects/projects.js?v=2026021704"></script>
-
-    <!-- Minimal Footer -->
-    <div id="footer-placeholder"></div>
-    <script src="/shared/minimal-footer.js?v=2026022802"></script>
 </body>
 
 </html>

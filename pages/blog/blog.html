@@ -21,24 +21,7 @@
 
     <!-- NAVBAR -->
     <div id="navbar"></div>
-    <script>
-        fetch('/shared/navbar.html')
-            .then(r => r.text())
-            .then(html => {
-                document.getElementById('navbar').innerHTML = html;
-                const path = window.location.pathname;
-                document.querySelectorAll('.nav-link').forEach(l => {
-                    if (l.getAttribute('href') === path) l.style.color = '#10b981';
-                });
-                const t = document.getElementById('navToggle');
-                const nl = document.getElementById('navLinks');
-                if (t && nl) t.addEventListener('click', () => nl.classList.toggle('active'));
-                const lb = document.getElementById('navLoginBtn');
-                const jb = document.getElementById('navJoinBtn');
-                if (lb) lb.addEventListener('click', () => window.location.href = '/signin');
-                if (jb) jb.addEventListener('click', () => window.location.href = '/signup');
-            });
-    </script>
+    <script src="/shared/navbar-init.js"></script>
 
     <!-- HERO -->
     <section class="blog-hero">

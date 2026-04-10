@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — JKUAT IEC Admin</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/iec-admin/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-dot"></span>
+            IEC Admin
+        </div>
+
+        <button class="nav-item active" data-panel="events">
+            <i class="fas fa-calendar-alt"></i> Events
+        </button>
+        <button class="nav-item" data-panel="articles">
+            <i class="fas fa-newspaper"></i> Blog
+        </button>
+        <button class="nav-item" data-panel="projects">
+            <i class="fas fa-rocket"></i> Projects
+        </button>
+
+        <div class="sidebar-spacer"></div>
+
+        <button class="nav-item" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="admin-main">
+
+        <div class="admin-header">
+            <h1 id="panelTitle">Events</h1>
+            <button class="btn btn-primary" id="createBtn">
+                <i class="fas fa-plus"></i> <span id="createLabel">New Event</span>
+            </button>
+        </div>
+
+        <!-- EVENTS PANEL -->
+        <div class="panel active" id="panel-events">
+            <div id="events-loading" class="spinner"></div>
+            <div id="events-empty" class="empty-state" style="display:none;">
+                <i class="fas fa-calendar-times"></i>
+                <p>No events yet. Create your first one.</p>
+            </div>
+            <div class="content-list" id="events-list"></div>
+        </div>
+
+        <!-- ARTICLES PANEL -->
+        <div class="panel" id="panel-articles">
+            <div id="articles-loading" class="spinner"></div>
+            <div id="articles-empty" class="empty-state" style="display:none;">
+                <i class="fas fa-newspaper"></i>
+                <p>No posts yet. Write your first one.</p>
+            </div>
+            <div class="content-list" id="articles-list"></div>
+        </div>
+
+        <!-- PROJECTS PANEL -->
+        <div class="panel" id="panel-projects">
+            <div id="projects-loading" class="spinner"></div>
+            <div id="projects-empty" class="empty-state" style="display:none;">
+                <i class="fas fa-rocket"></i>
+                <p>No projects yet. Add your first one.</p>
+            </div>
+            <div class="content-list" id="projects-list"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ── MODAL ── -->
+<div id="modal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="modalTitle">Create</h2>
+            <button class="modal-close" id="modalClose">×</button>
+        </div>
+        <div id="modalAlert" style="display:none;"></div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- ── DELETE CONFIRM ── -->
+<div id="confirmModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-box" style="max-width:400px;">
+        <div class="modal-header">
+            <h2>Confirm Delete</h2>
+            <button class="modal-close" onclick="closeConfirm()">×</button>
+        </div>
+        <p style="margin-bottom:1.5rem; opacity:.8;">This cannot be undone. Are you sure?</p>
+        <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+            <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/iec-admin/admin.js"></script>
+</body>
+</html>

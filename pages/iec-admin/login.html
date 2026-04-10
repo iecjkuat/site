@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — JKUAT IEC</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/iec-admin/admin.css">
+    <style>
+        .tab-bar {
+            display: flex;
+            gap: .4rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255,255,255,.05);
+            border-radius: 10px;
+            padding: .3rem;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: .6rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: rgba(255,255,255,.5);
+            font-size: .875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            font-family: inherit;
+        }
+        .tab-btn.active {
+            background: rgba(16,185,129,.2);
+            color: #10b981;
+        }
+        .form-panel { display: none; }
+        .form-panel.active { display: block; }
+    </style>
+</head>
+<body class="admin-body">
+
+<div class="login-wrap">
+    <div class="login-card glass-card">
+
+        <div class="login-logo">
+            <span class="logo-dot"></span>
+            JKUAT IEC Admin
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-signin" onclick="switchTab('signin')">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+            <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">
+                <i class="fas fa-user-plus"></i> Create Account
+            </button>
+        </div>
+
+        <!-- ── SIGN IN ── -->
+        <div class="form-panel active" id="panel-signin">
+            <form onsubmit="handleSignIn(event)">
+                <div class="field">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="si_email" required placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="field">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <div class="pw-wrap">
+                        <input type="password" id="si_password" required placeholder="••••••••" autocomplete="current-password">
+                        <button type="button" class="pw-toggle" onclick="togglePw('si_password','si_eye')">
+                            <i class="fas fa-eye" id="si_eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="si_error" class="form-error" style="display:none;"></div>
+                <button type="submit" id="si_btn" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+        </div>
+
+        <!-- ── CREATE ACCOUNT ── -->
+        <div class="form-panel" id="panel-signup">
+            <form onsubmit="handleSignUp(event)">
+                <div class="field">
+                    <label><i class="fas fa-key"></i> Admin Secret *</label>
+                    <div class="pw-wrap">
+                        <input type="password" id="su_secret" required placeholder="Enter the admin secret key">
+                        <button type="button" class="pw-toggle" onclick="togglePw('su_secret','su_seye')">
+                            <i class="fas fa-eye" id="su_seye"></i>
+                        </button>
+                    </div>
+                    <small style="opacity:.45;font-size:.75rem;display:block;margin-top:.3rem;">
+                        Required to create an admin account. Get this from the system administrator.
+                    </small>
+                </div>
+                <div class="field">
+                    <label><i class="fas fa-envelope"></i> Email *</label>
+                    <input type="email" id="su_email" required placeholder="you@example.com" autocomplete="email">
+                </div>
+                <div class="field">
+                    <label><i class="fas fa-lock"></i> Password *</label>
+                    <div class="pw-wrap">
+                        <input type="password" id="su_password" required placeholder="Min 8 characters" autocomplete="new-password" minlength="8">
+                        <button type="button" class="pw-toggle" onclick="togglePw('su_password','su_eye')">
+                            <i class="fas fa-eye" id="su_eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="su_error"   class="form-error"    style="display:none;"></div>
+                <div id="su_success" class="alert-success" style="display:none;"></div>
+                <button type="submit" id="su_btn" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i> Create Admin Account
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ── Config injected by server ─────────────────────────────────────────────────
+const SUPABASE_URL      = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+
+// Guard: if placeholders weren't replaced, show a clear error instead of crashing
+if (SUPABASE_URL.includes('__') || SUPABASE_ANON_KEY.includes('__')) {
+    document.querySelector('.login-card').innerHTML =
+        '<div class="form-error" style="margin:0;">Server configuration error: Supabase credentials not injected. Check server logs.</div>';
+    throw new Error('Supabase config not injected');
+}
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Redirect if already logged in as admin
+sb.auth.getSession().then(({ data }) => {
+    if (!data?.session) return;
+    const role = data.session.user?.user_metadata?.role || data.session.user?.app_metadata?.role;
+    if (role === 'admin') window.location.href = '/iec-admin/dashboard';
+});
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    ['signin','signup'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+        document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+    });
+}
+
+// ── Sign In ───────────────────────────────────────────────────────────────────
+async function handleSignIn(e) {
+    e.preventDefault();
+    const btn = document.getElementById('si_btn');
+    const err = document.getElementById('si_error');
+    err.style.display = 'none';
+    setLoading(btn, true, 'Signing in...');
+
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({
+            email:    document.getElementById('si_email').value.trim(),
+            password: document.getElementById('si_password').value,
+        });
+
+        if (error) throw new Error('Invalid email or password.');
+
+        const role = data.user?.user_metadata?.role || data.user?.app_metadata?.role;
+        if (role !== 'admin') {
+            await sb.auth.signOut();
+            throw new Error('This account does not have admin access.');
+        }
+
+        window.location.href = '/iec-admin/dashboard';
+
+    } catch (ex) {
+        showErr('si_error', ex.message);
+        setLoading(btn, false, '<i class="fas fa-sign-in-alt"></i> Sign In');
+    }
+}
+
+// ── Sign Up ───────────────────────────────────────────────────────────────────
+async function handleSignUp(e) {
+    e.preventDefault();
+    const btn     = document.getElementById('su_btn');
+    const errEl   = document.getElementById('su_error');
+    const succEl  = document.getElementById('su_success');
+    errEl.style.display  = 'none';
+    succEl.style.display = 'none';
+    setLoading(btn, true, 'Creating account...');
+
+    try {
+        const secret   = document.getElementById('su_secret').value;
+        const email    = document.getElementById('su_email').value.trim();
+        const password = document.getElementById('su_password').value;
+
+        // Verify admin secret server-side first
+        const check = await fetch('/api/v1/admin/verify-secret', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ secret }),
+        });
+
+        if (!check.ok) {
+            const d = await check.json().catch(() => ({}));
+            throw new Error(d.error || 'Invalid admin secret.');
+        }
+
+        // Create Supabase Auth account with admin role in metadata
+        const { error } = await sb.auth.signUp({
+            email,
+            password,
+            options: { data: { role: 'admin' } },
+        });
+
+        if (error) throw new Error(error.message);
+
+        succEl.textContent = 'Account created! Check your email to confirm it, then sign in.';
+        succEl.style.display = 'block';
+        e.target.reset();
+
+    } catch (ex) {
+        showErr('su_error', ex.message);
+    } finally {
+        setLoading(btn, false, '<i class="fas fa-user-plus"></i> Create Admin Account');
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function setLoading(btn, loading, label) {
+    btn.disabled = loading;
+    btn.innerHTML = loading
+        ? '<i class="fas fa-spinner fa-spin"></i> ' + label
+        : label;
+}
+
+function togglePw(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon  = document.getElementById(iconId);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
+</script>
+</body>
+</html>
