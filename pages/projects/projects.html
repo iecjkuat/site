@@ -21,28 +21,20 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
           integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
           crossorigin="anonymous" rel="stylesheet">
+    <link href="/shared/styles/main.css" rel="stylesheet">
     <link href="/shared/styles/navbar.css" rel="stylesheet">
     <link href="/projects/projects.css?v=2025010804" rel="stylesheet">
     
-    <!-- Override conflicting navbar styles -->
     <style>
-        body {
-            padding-top: 70px;
-            background: #0f172a url('/tech-meeting-flatlay.jpg') center/cover fixed !important;
+        /* Ensure projects.css body overrides don't fight main.css */
+        body, .projects-page, .bg-pattern {
+            background-image: url('/tech-meeting-flatlay.jpg') !important;
+            background-size: cover !important;
+            background-position: center !important;
             background-attachment: fixed !important;
-            position: relative;
         }
-
         @media (max-width: 768px) {
-            body { padding-top: 0; }
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.5);
-            z-index: -1;
-            pointer-events: none;
+            body { padding-top: 0 !important; }
         }
     </style>
 
@@ -344,13 +336,14 @@
     <!-- JavaScript -->
     <script src="/projects/projects.js?v=2026021704"></script>
 
+    <!-- FOOTER -->
     <footer>
-        <div class="container" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.8rem;opacity:.6;padding:1rem;">
+        <div class="container">
             <span>&copy; 2026 JKUAT Innovation &amp; Entrepreneurship Club</span>
             <span>
-                <a href="/events" style="color:rgba(255,255,255,.7);text-decoration:none;">Events</a> &nbsp;·&nbsp;
-                <a href="/blog"   style="color:rgba(255,255,255,.7);text-decoration:none;">Blog</a> &nbsp;·&nbsp;
-                <a href="/about"  style="color:rgba(255,255,255,.7);text-decoration:none;">About</a>
+                <a href="/events">Events</a> &nbsp;·&nbsp;
+                <a href="/blog">Blog</a> &nbsp;·&nbsp;
+                <a href="/about">About</a>
             </span>
         </div>
     </footer>
