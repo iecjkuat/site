@@ -86,8 +86,10 @@ async function stkPush({ phone, amount, accountRef, description }) {
             'x-api-key':    apiKey,
         },
         body: JSON.stringify({
-            phone:        '+' + phone,   // Lipana expects +254XXXXXXXXX format
+            phone:        '+' + phone,
             amount,
+            account_ref:  accountRef,    // shows as account reference on M-Pesa prompt
+            description,                 // shows as transaction description
             callback_url: process.env.LIPANA_CALLBACK_URL,
         }),
     });
