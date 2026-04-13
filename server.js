@@ -14,45 +14,52 @@ app.set('trust proxy', 1);
 
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet({
-  // Content-Security-Policy: lock down what can run on each page
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
       scriptSrc:   [
         "'self'",
-        "'unsafe-inline'",           // required for inline scripts in HTML pages
+        "'unsafe-inline'",                    // needed for inline scripts — mitigated by strict host allowlist
         'https://cdnjs.cloudflare.com',
         'https://cdn.jsdelivr.net',
-        'https://fonts.googleapis.com',
       ],
       styleSrc:    [
         "'self'",
-        "'unsafe-inline'",           // required for inline styles
+        "'unsafe-inline'",                    // needed for inline styles + Google Fonts
         'https://fonts.googleapis.com',
         'https://cdnjs.cloudflare.com',
         'https://cdn.jsdelivr.net',
       ],
+      scriptSrcAttr: ["'unsafe-inline'"],     // needed for onclick/onsubmit attributes
       fontSrc:     ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
       imgSrc:      ["'self'", 'data:', 'https:'],
-      connectSrc:  ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co', 'https://api.lipana.dev', 'https://sandbox.lipana.dev'],
-      frameSrc:       ["'none'"],
-      objectSrc:      ["'none'"],
-      baseUri:        ["'self'"],
-      formAction:     ["'self'"],
-      // Allow inline event handlers (onclick, onsubmit etc.) on HTML elements.
-      scriptSrcAttr:  ["'unsafe-inline'"],
+      connectSrc:  [
+        "'self'",
+        'https://*.supabase.co',
+        'wss://*.supabase.co',
+        'https://api.lipana.dev',
+        'https://sandbox.lipana.dev',
+      ],
+      frameSrc:    ["'none'"],
+      objectSrc:   ["'none'"],
+      baseUri:     ["'self'"],
+      formAction:  ["'self'"],
+      upgradeInsecureRequests: [],            // force HTTPS for all sub-resources
     },
   },
-  // Prevent clickjacking
-  frameguard:           { action: 'deny' },
-  // Force HTTPS for 1 year (Vercel always serves HTTPS)
-  hsts:                 { maxAge: 31536000, includeSubDomains: true, preload: true },
-  // Prevent MIME sniffing
-  noSniff:              true,
-  // Block reflected XSS in older browsers
-  xssFilter:            true,
-  // Don't send Referrer on cross-origin requests
-  referrerPolicy:       { policy: 'strict-origin-when-cross-origin' },
+  frameguard:     { action: 'deny' },
+  hsts:           { maxAge: 31536000, includeSubDomains: true, preload: true },
+  noSniff:        true,
+  xssFilter:      true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Remove X-Powered-By (fingerprinting)
+  hidePoweredBy:  true,
+  // Prevent IE from opening downloads in site context
+  ieNoOpen:       true,
+  // Disable DNS prefetching (minor privacy/security improvement)
+  dnsPrefetchControl: { allow: false },
+  // Permissions policy — disable features we don't use
+  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
 }));
 
 // ── CORS — only allow your own domain to call the API ────────────────────────
@@ -118,7 +125,8 @@ app.use(express.static(path.join(root, 'public'), imgOptions));
 // Defined after static middleware but before page routes so it doesn't
 // interfere with the route tree. GET only.
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  if (req.method !== 'GET') return res.status(405).end();
+  res.json({ status: 'ok' });
 });
 
 // ── Retry-After middleware ────────────────────────────────────────────────────
