@@ -12,6 +12,16 @@ const pages = (app) => {
     app.get('/events',           (_, res) => { noCache(res); res.sendFile(p('events/events.html')); });
     app.get('/projects',         (_, res) => { noCache(res); res.sendFile(p('projects/projects.html')); });
     app.get('/merchandise',      (_, res) => { noCache(res); res.sendFile(p('merchandise/merchandise.html')); });
+    app.get('/privacy-policy',   (_, res) => { 
+        noCache(res); 
+        console.log('Privacy policy route accessed');
+        res.sendFile(p('privacy-policy.html')); 
+    });
+    app.get('/terms-of-use',     (_, res) => { 
+        noCache(res); 
+        console.log('Terms of use route accessed');
+        res.sendFile(p('terms-of-use.html')); 
+    });
 
     // Legacy redirects
     app.get('/news', (_, res) => res.redirect(301, '/blog'));
