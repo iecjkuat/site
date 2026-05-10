@@ -8,13 +8,14 @@ const pages = (app) => {
 
     app.get('/',                 (_, res) => { noCache(res); res.sendFile(p('home/index.html')); });
     app.get(['/home', '/home/'], (_, res) => res.redirect(301, '/'));
-    app.get('/about',            (_, res) => { noCache(res); res.sendFile(p('about/about.html')); });
     app.get('/blog',             (_, res) => { noCache(res); res.sendFile(p('blog/blog.html')); });
     app.get('/events',           (_, res) => { noCache(res); res.sendFile(p('events/events.html')); });
     app.get('/projects',         (_, res) => { noCache(res); res.sendFile(p('projects/projects.html')); });
+    app.get('/merchandise',      (_, res) => { noCache(res); res.sendFile(p('merchandise/merchandise.html')); });
 
-    // Legacy redirect
+    // Legacy redirects
     app.get('/news', (_, res) => res.redirect(301, '/blog'));
+    app.get('/about', (_, res) => res.redirect(301, '/'));
 
     // Admin — hidden URL, no-index
     app.get(['/iec-admin', '/iec-admin/'], (_, res) => { noCache(res); res.sendFile(p('iec-admin/login.html')); });

@@ -24,81 +24,213 @@
         .membership-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            gap: 1.25rem;
             margin-top: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .membership-card {
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 16px;
-            padding: 2rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
             text-align: center;
             transition: transform 0.3s;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .membership-card:hover {
             transform: translateY(-4px);
-            background: rgba(255, 255, 255, 0.07);
-            border-color: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
 
         .membership-card.featured {
-            border-color: rgba(16, 185, 129, 0.2);
-            background: rgba(16, 185, 129, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
         .membership-icon {
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
         }
 
-        .membership-icon.green {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-        }
-
-        .membership-icon.blue {
-            background: rgba(59, 130, 246, 0.2);
+        .membership-icon.primary {
+            background: rgba(59, 130, 246, 0.3);
             color: #60a5fa;
         }
 
+        .membership-icon.secondary {
+            background: rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
         .membership-card h3 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             margin-bottom: 0.5rem;
+            color: #ffffff;
+            font-weight: 700;
         }
 
         .membership-card p {
-            font-size: 0.9rem;
-            opacity: 0.75;
-            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
         }
 
         .fee-badge {
             display: inline-block;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #10b981;
+            background: rgba(14, 165, 233, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #0284c7;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 1rem;
             padding: 0.35rem 1rem;
             border-radius: 999px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
         }
 
         @media (max-width: 640px) {
-            .membership-grid { grid-template-columns: 1fr; }
-            .membership-card { padding: 1.5rem; }
+            .membership-grid { 
+                grid-template-columns: 1fr; 
+                max-width: 400px;
+            }
+            .membership-card { 
+                padding: 1.25rem; 
+            }
+        }
+
+        /* Modal Form Styling */
+        .field {
+            margin-bottom: 1rem;
+        }
+
+        .field label {
+            display: block;
+            color: #f1f5f9;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .field input::placeholder {
+            color: #94a3b8;
+        }
+
+        .field select option {
+            background: #1e293b;
+            color: #ffffff;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(71, 85, 105, 0.8);
+            color: #e2e8f0;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(71, 85, 105, 1);
+            transform: translateY(-1px);
+        }
+
+        /* Success message styling */
+        #registerSuccess h3 {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        #registerSuccess p {
+            color: #cbd5e1;
+        }
+
+        /* Small text styling */
+        small {
+            color: #94a3b8;
+        }
+
+        @media (max-width: 640px) {
+            .field-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -109,81 +241,59 @@
     <div id="navbar"></div>
     <script src="/shared/navbar-init.js"></script>
 
-    <!-- HERO -->
-    <section class="hero">
-        <div class="container text-center">
-            <h1>JKUAT Innovation &amp; Entrepreneurship Club</h1>
-            <p>
-                Empowering students to build real-world solutions through innovation,
-                collaboration, hackathons, and entrepreneurship.
-            </p>
-            <div class="mt-2">
-                <a href="#membership" class="btn btn-primary">
-                    <i class="fas fa-id-card"></i> Become a Member
-                </a>
-                <a href="#about" class="btn btn-secondary">
-                    Learn More
-                </a>
-            </div>
-        </div>
-    </section>
 
-    <!-- ABOUT -->
-    <section id="about">
-        <div class="container text-center">
-            <h2 class="section-title">About Us</h2>
-            <p>
-                The JKUAT Innovation &amp; Entrepreneurship Club is a student-led community
-                focused on building technical and business skills through hands-on learning,
-                mentorship, and project development.
-            </p>
+
+    <!-- WELCOME SECTION -->
+    <section class="welcome-section">
+        <div class="container">
+            <!-- Full width header content -->
+            <div class="welcome-header">
+                <h2>Welcome to JKUAT Innovation & Entrepreneurship Club</h2>
+                <p>At IEC, we believe that innovation combined with entrepreneurial spirit equips students with the knowledge, values, and skills they need to excel in their pursuit of excellence.</p>
+                
+                <p>Founded in 2020, IEC is a student-led community located in <strong>JKUAT, Kenya</strong>. We offer the <strong style="color: #fbbf24;">Innovation Track, Entrepreneurship Track, Technology Track, and Leadership Program</strong>, providing a holistic education that blends technical rigor with business values. We are dedicated to raising future leaders with strong character, technical excellence, and a global outlook, prepared to make a positive impact in the world.</p>
+            </div>
+            
+            <!-- Image and community section side by side -->
+            <div class="welcome-bottom">
+                <div class="welcome-image">
+                    <img src="/tech-meeting-flatlay.jpg" alt="Innovation Hub" />
+                    <div class="image-overlay">
+                        <button class="tour-btn">Club Tour ></button>
+                    </div>
+                </div>
+                <div class="community-section">
+                    <h3>The IEC Community</h3>
+                    <p>The IEC community is vibrant and diverse, bringing together students from JKUAT, Nairobi, and beyond. With a blend of cultures, perspectives, and backgrounds, we cultivate a truly collaborative environment that broadens horizons and nurtures a global mindset.</p>
+                    
+                    <p>We are equally proud to be active members of our local community. Through outreach, community service, hackathons, and innovation events, we engage with families and organizations around us. From tech competitions and startup pitches to volunteer initiatives and mentorship programs, these connections strengthen our roots and enrich the learning experience, preparing students not only for higher education and careers but also for meaningful contributions to society.</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- WHAT WE DO -->
-    <section>
-        <div class="container">
+    <section class="what-we-do-section">
+        <div class="full-width-container">
             <h2 class="section-title">What We Do</h2>
-            <div class="grid grid-3">
-                <div class="card text-center">
-                    <i class="fas fa-trophy" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
-                    <h3>Hackathons</h3>
-                    <p>We host innovation challenges where students build real solutions in teams.</p>
+            <div class="three-column-content">
+                <div class="content-column">
+                    <h3>Innovation Challenges & Hackathons</h3>
+                    <p>We organize regular hackathons and innovation challenges that bring together students from different disciplines to solve real-world problems. These events foster creativity, teamwork, and rapid prototyping skills while covering diverse themes including fintech, healthtech, agritech, and social impact solutions. We provide mentorship from industry experts, access to cutting-edge tools, and opportunities to present solutions to potential investors and employers.</p>
                 </div>
-                <div class="card text-center">
-                    <i class="fas fa-rocket" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
-                    <h3>Projects</h3>
-                    <p>Members collaborate on software, hardware, and startup ideas.</p>
+                <div class="content-column">
+                    <h3>Collaborative Projects & Startups</h3>
+                    <p>Members collaborate on long-term projects that span software development, hardware innovation, and startup ventures in a structured environment with cross-functional teams. We support project teams with workspace access, technical equipment, funding opportunities, and connections to industry partners through our project incubation program that helps promising ideas transition from concept to market-ready solutions.</p>
                 </div>
-                <div class="card text-center">
-                    <i class="fas fa-users" style="font-size:1.8rem; color:#10b981; margin-bottom:.75rem;"></i>
-                    <h3>Mentorship</h3>
-                    <p>We connect students with industry professionals and alumni.</p>
+                <div class="content-column">
+                    <h3>Mentorship & Professional Development</h3>
+                    <p>We connect students with industry professionals, successful entrepreneurs, and alumni who provide guidance on career development, technical skills, and business acumen through one-on-one sessions, group workshops, and networking events. Our program focuses on developing leadership capabilities, communication skills, and entrepreneurial mindset while building valuable professional relationships within our extensive alumni network.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- IMPACT -->
-    <section>
-        <div class="container text-center">
-            <h2 class="section-title">Our Impact</h2>
-            <div class="grid grid-3 mt-2">
-                <div class="card">
-                    <h3>150+</h3>
-                    <p>Ideas Generated</p>
-                </div>
-                <div class="card">
-                    <h3>12+</h3>
-                    <p>Startups Built</p>
-                </div>
-                <div class="card">
-                    <h3>25+</h3>
-                    <p>Industry Partners</p>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- MEMBERSHIP -->
     <section id="membership" class="membership-section">
@@ -199,25 +309,25 @@
 
                 <!-- Register -->
                 <div class="membership-card featured">
-                    <div class="membership-icon green">
+                    <div class="membership-icon primary">
                         <i class="fas fa-user-plus"></i>
                     </div>
                     <h3>New Member Registration</h3>
                     <p>First time? Fill in your details to join the club. You can pay the membership fee now or later.</p>
-                    <button class="btn btn-primary" onclick="openModal('register')" style="width:100%;">
+                    <button class="btn" onclick="openModal('register')" style="width:100%; background: #0ea5e9; color: #ffffff; border: none;">
                         <i class="fas fa-id-card"></i> Register
                     </button>
                 </div>
 
                 <!-- Pay -->
                 <div class="membership-card">
-                    <div class="membership-icon blue">
+                    <div class="membership-icon secondary">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
                     <h3>Pay Membership Fee</h3>
                     <p>Already registered? Pay your semester membership fee via M-Pesa to activate your membership.</p>
-                    <div class="fee-badge">KES 200 / semester</div>
-                    <button class="btn btn-secondary" onclick="openModal('pay')" style="width:100%;">
+                    <div class="fee-badge" style="background: #0ea5e9; color: #ffffff; border: none; padding: 0.5rem 1.5rem; border-radius: 25px; font-weight: 700; font-size: 1rem; margin-bottom: 1.25rem; display: inline-block;">KES 200 / semester</div>
+                    <button class="btn" onclick="openModal('pay')" style="width:100%; background: #0ea5e9; color: #ffffff; border: none;">
                         <i class="fas fa-mobile-alt"></i> Pay via M-Pesa
                     </button>
                 </div>
@@ -228,13 +338,13 @@
     </section>
 
     <!-- MODAL -->
-    <div id="membershipModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
-        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:2rem; max-width:480px; width:100%; position:relative; max-height:90vh; overflow-y:auto;">
+    <div id="membershipModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:rgba(30, 41, 59, 0.95); border:1px solid rgba(59, 130, 246, 0.3); border-radius:16px; padding:2rem; max-width:480px; width:100%; position:relative; max-height:90vh; overflow-y:auto; box-shadow: 0 20px 40px rgba(0,0,0,0.4); backdrop-filter: blur(20px);">
 
-            <button onclick="closeModal()" style="position:absolute; top:1rem; right:1rem; background:rgba(255,255,255,0.08); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem;">×</button>
+            <button onclick="closeModal()" style="position:absolute; top:1rem; right:1rem; background:rgba(59, 130, 246, 0.2); border:none; color:#ffffff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem; transition: all 0.3s ease;">×</button>
 
-            <h2 id="modalTitle" style="margin-bottom:0.25rem;"></h2>
-            <p id="modalSubtitle" style="opacity:0.65; font-size:0.875rem; margin-bottom:1.5rem;"></p>
+            <h2 id="modalTitle" style="margin-bottom:0.25rem; color: #ffffff;"></h2>
+            <p id="modalSubtitle" style="opacity:0.8; font-size:0.875rem; margin-bottom:1.5rem; color: #e2e8f0;"></p>
 
             <!-- ── REGISTER FORM ── -->
             <form id="registerForm" style="display:none;" onsubmit="submitRegister(event)">
@@ -276,9 +386,9 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label>JKUAT Student Email <span style="opacity:.5;">(optional)</span></label>
-                    <input type="email" id="r_email" placeholder="jm001@students.jkuat.ac.ke">
-                    <small style="opacity:.45; font-size:.75rem;">Must be your @students.jkuat.ac.ke address if provided</small>
+                    <label>JKUAT Student Email *</label>
+                    <input type="email" id="r_email" required placeholder="jm001@students.jkuat.ac.ke">
+                    <small style="opacity:.45; font-size:.75rem;">Must be your @students.jkuat.ac.ke address</small>
                 </div>
                 <div id="r_error" class="form-error" style="display:none;"></div>
                 <button type="submit" id="r_btn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:0.5rem;">
@@ -342,44 +452,84 @@
         </div>
     </div>
 
-    <style>
-        .field { margin-bottom: 1rem; }
-        .field label { display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem; }
-        .field input, .field select {
-            width:100%; padding:.65rem .9rem;
-            background:rgba(255,255,255,.07);
-            border:1px solid rgba(255,255,255,.15);
-            border-radius:8px; color:#fff; font-size:.9rem; outline:none;
-            box-sizing:border-box;
-        }
-        .field select { background:rgba(30,41,59,.9); cursor:pointer; }
-        .field input::placeholder { opacity:.45; }
-        .form-error {
-            background:rgba(239,68,68,.12);
-            border:1px solid rgba(239,68,68,.3);
-            border-radius:8px; padding:.7rem 1rem;
-            font-size:.85rem; color:#fca5a5; margin-bottom:1rem;
-        }
-        .field-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-        }
-        @media (max-width: 480px) {
-            .field-row { grid-template-columns: 1fr; }
-        }
-    </style>
+
 
     <!-- FOOTER -->
-    <footer>
+    <footer class="main-footer">
         <div class="container">
-            <span>&copy; 2026 JKUAT Innovation &amp; Entrepreneurship Club</span>
-            <span>
-                <a href="/events">Events</a> &nbsp;·&nbsp;
-                <a href="/projects">Projects</a> &nbsp;·&nbsp;
-                <a href="/blog">Blog</a> &nbsp;·&nbsp;
-                <a href="/about">About</a>
-            </span>
+            <div class="footer-content">
+                <!-- Logo and Tagline Section -->
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <span class="logo-dot"></span>
+                        <span class="logo-text">JKUAT IEC</span>
+                    </div>
+                    <p class="footer-tagline">"Be an innovator, a creator and problem solver"</p>
+                    <div class="footer-buttons">
+                        <button class="footer-btn primary">Join Now ></button>
+                        <button class="footer-btn secondary">Request Info ></button>
+                    </div>
+                </div>
+
+                <!-- Combined Our Club and Stay Connected Section -->
+                <div class="footer-columns-combined">
+                    <!-- Our Club Section -->
+                    <div class="footer-column">
+                        <h4>Our Club</h4>
+                        <ul>
+                            <li><a href="/">Home</a></li>
+                            <li><a href="/events">Events</a></li>
+                            <li><a href="/blog">Blog</a></li>
+                            <li><a href="/projects">Projects</a></li>
+                            <li><a href="/merchandise">Merchandise</a></li>
+                            <li><a href="/iec-admin">Admin</a></li>
+                            <li><a href="#membership">Membership</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Stay Connected Section -->
+                    <div class="footer-column">
+                        <h4>Stay Connected</h4>
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Club Location: JKUAT Main Campus, Kiambu, Kenya</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>Information Office: Student Center, Room 201</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>0712 345 678</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>info@jkuatiec.com</span>
+                            </div>
+                        </div>
+                        <div class="social-icons">
+                            <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="footer-bottom-content">
+                    <span>Copyright © 2026 JKUAT Innovation & Entrepreneurship Club</span>
+                    <div class="footer-links">
+                        <a href="#">Privacy Policy</a>
+                        <a href="#">Terms of Use</a>
+                        <a href="#">Website Terms of Use</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
 

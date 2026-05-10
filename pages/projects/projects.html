@@ -51,12 +51,6 @@
     <section class="hero-section-padding">
         <div class="container hero-content-container">
 
-            <!-- Badge -->
-            <div class="hero-badge-container">
-                <span class="pulse hero-badge-dot"></span>
-                PROJECTS & INNOVATION
-            </div>
-
             <!-- Main Heading -->
             <h1 class="gradient-text hero-heading">
                 Build the <span class="gradient-text accent">Future</span>
@@ -67,39 +61,31 @@
                 Transform your ideas into reality through <strong class="hero-accent-text">collaborative projects,
                     hackathons, and innovation challenges</strong>
             </p>
-
-            <!-- Quick Actions -->
-            <div class="quick-actions-container">
-                <button id="submitProjectBtn" class="btn btn-primary btn-lg">
-                    <i class="fas fa-lightbulb"></i>Submit Project Idea
-                </button>
-                <button id="joinProjectBtn" class="btn btn-outline btn-lg">
-                    <i class="fas fa-users"></i>Join a Project
-                </button>
-            </div>
         </div>
     </section>
 
-    <!-- Navigation Tabs -->
+    <!-- Navigation Tabs and Filters Combined -->
     <section class="tab-buttons-section tab-section-relative">
         <div class="container">
-            <div class="tab-buttons-container" role="tablist" aria-label="Project sections">
+            <div class="combined-nav-container" role="tablist" aria-label="Project sections">
+                <!-- Tab Buttons -->
                 <button class="tab-btn active" data-tab="showcase" role="tab" aria-selected="true"
                     aria-controls="showcase-tab" id="tab-showcase">
-                    <i class="fas fa-rocket"></i> Project Showcase
+                    <i class="fas fa-rocket"></i> Projects
                 </button>
                 <button class="tab-btn" data-tab="submit" role="tab" aria-selected="false" aria-controls="submit-tab"
                     id="tab-submit">
                     <i class="fas fa-plus"></i> Submit Project
                 </button>
-                <button class="tab-btn" data-tab="hackathons" role="tab" aria-selected="false"
-                    aria-controls="hackathons-tab" id="tab-hackathons">
-                    <i class="fas fa-trophy"></i> Hackathons
-                </button>
-                <button class="tab-btn" data-tab="incubation" role="tab" aria-selected="false"
-                    aria-controls="incubation-tab" id="tab-incubation">
-                    <i class="fas fa-seedling"></i> Incubation
-                </button>
+                
+                <!-- Filter Buttons -->
+                <div class="filter-separator"></div>
+                <button class="filter-btn active" data-filter="all" aria-label="Filter by all projects">All
+                    Projects</button>
+                <button class="filter-btn" data-filter="innovation"
+                    aria-label="Filter by innovation projects">Innovation</button>
+                <button class="filter-btn" data-filter="startup"
+                    aria-label="Filter by startup projects">Startup</button>
             </div>
         </div>
     </section>
@@ -110,20 +96,6 @@
 
             <!-- Project Showcase Tab -->
             <div id="showcase-tab" class="tab-content active" role="tabpanel" aria-labelledby="tab-showcase">
-                <!-- Filters -->
-                <div class="filter-buttons-container" role="group" aria-label="Project filters">
-                    <button class="filter-btn active" data-filter="all" aria-label="Filter by all projects">All
-                        Projects</button>
-                    <button class="filter-btn" data-filter="innovation"
-                        aria-label="Filter by innovation projects">Innovation</button>
-                    <button class="filter-btn" data-filter="research"
-                        aria-label="Filter by research projects">Research</button>
-                    <button class="filter-btn" data-filter="startup"
-                        aria-label="Filter by startup projects">Startup</button>
-                    <button class="filter-btn" data-filter="hackathon"
-                        aria-label="Filter by hackathon projects">Hackathon</button>
-                </div>
-
                 <!-- Projects Grid -->
                 <div id="projectsGrid" class="content-grid">
                     <!-- Projects will be loaded here -->
@@ -206,78 +178,6 @@
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hackathons Tab -->
-            <div id="hackathons-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-hackathons">
-                <div class="text-center mb-12">
-                    <h2 class="form-title-main">Upcoming Hackathons & Challenges</h2>
-                    <p class="form-subtitle-main max-w-2xl mx-auto">Join exciting
-                        hackathons and innovation challenges to test your skills and win amazing prizes.</p>
-                </div>
-
-                <div id="hackathonsGrid" class="projects-grid">
-                    <!-- Hackathons will be loaded here -->
-                    <div class="loading-container">
-                        <div class="loading-wrapper">
-                            <i class="fas fa-spinner fa-spin loading-spinner-purple"></i>
-                            Loading hackathons...
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Incubation Tab -->
-            <div id="incubation-tab" class="tab-content" role="tabpanel" aria-labelledby="tab-incubation">
-                <div class="text-center mb-12">
-                    <h2 class="form-title-main">Incubation Program</h2>
-                    <p class="form-subtitle-main max-w-2xl mx-auto">Transform your
-                        innovative ideas into viable startups with our comprehensive incubation program.</p>
-                </div>
-
-                <!-- Incubation Info Cards -->
-                <div class="incubation-info-grid">
-                    <div class="glass-card p-8 text-center">
-                        <div class="incubation-icon-container incubation-icon-idea">
-                            <i class="fas fa-lightbulb text-2xl text-white"></i>
-                        </div>
-                        <h3 class="form-label-white mb-4">Idea Validation</h3>
-                        <p class="form-help-text">Get expert feedback on your
-                            business idea and validate market demand through structured research.</p>
-                    </div>
-
-                    <div class="glass-card p-8 text-center">
-                        <div class="incubation-icon-container incubation-icon-mentor">
-                            <i class="fas fa-users text-2xl text-white"></i>
-                        </div>
-                        <h3 class="form-label-white mb-4">Mentorship</h3>
-                        <p class="form-help-text">Connect with experienced
-                            entrepreneurs and industry experts for guidance and support.</p>
-                    </div>
-
-                    <div class="glass-card p-8 text-center">
-                        <div class="incubation-icon-container incubation-icon-launch">
-                            <i class="fas fa-rocket text-2xl text-white"></i>
-                        </div>
-                        <h3 class="form-label-white mb-4">Launch Support</h3>
-                        <p class="form-help-text">Access resources, funding
-                            opportunities, and launch support to bring your startup to market.</p>
-                    </div>
-                </div>
-
-                <!-- Current Incubation Projects -->
-                <div>
-                    <h3 class="incubation-title-secondary">Current Incubation Projects</h3>
-                    <div id="incubationProjectsGrid" class="projects-grid">
-                        <!-- Incubation projects will be loaded here -->
-                        <div class="loading-container">
-                            <div class="loading-wrapper">
-                                <i class="fas fa-spinner fa-spin loading-spinner-orange"></i>
-                                Loading incubation projects...
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

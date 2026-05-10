@@ -113,12 +113,13 @@ app.use('/iec-admin', express.static(path.join(root, 'pages', 'iec-admin'), { ma
 const jsOptions  = { maxAge: '0', etag: true, lastModified: true };
 const imgOptions = { maxAge: '7d', etag: true };  // images rarely change
 
-app.use('/shared',   express.static(path.join(root, 'shared'),            jsOptions));
-app.use('/assets',   express.static(path.join(root, 'shared', 'assets'),  imgOptions));
-app.use('/blog',     express.static(path.join(root, 'pages', 'blog'),     jsOptions));
-app.use('/events',   express.static(path.join(root, 'pages', 'events'),   jsOptions));
-app.use('/projects', express.static(path.join(root, 'pages', 'projects'), jsOptions));
-app.use('/about',    express.static(path.join(root, 'pages', 'about'),    jsOptions));
+app.use('/shared',      express.static(path.join(root, 'shared'),               jsOptions));
+app.use('/assets',      express.static(path.join(root, 'shared', 'assets'),     imgOptions));
+app.use('/blog',        express.static(path.join(root, 'pages', 'blog'),        jsOptions));
+app.use('/events',      express.static(path.join(root, 'pages', 'events'),      jsOptions));
+app.use('/projects',    express.static(path.join(root, 'pages', 'projects'),    jsOptions));
+app.use('/merchandise', express.static(path.join(root, 'pages', 'merchandise'), jsOptions));
+app.use('/about',       express.static(path.join(root, 'pages', 'about'),       jsOptions));
 app.use(express.static(path.join(root, 'public'), imgOptions));
 
 // ── Health check ──────────────────────────────────────────────────────────────
@@ -151,6 +152,8 @@ pages(app);
 app.use('/api/v1/membership', require('./api/membership'));
 app.use('/api/v1/content',    require('./api/content'));
 app.use('/api/v1/admin',      require('./api/admin'));
+app.use('/api/v1/payments',   require('./api/payments'));
+app.use('/api/v1/merchandise', require('./api/merchandise'));
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
